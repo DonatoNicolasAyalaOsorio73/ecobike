@@ -1,19 +1,48 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, Button, TouchableHighlight, Modal } from 'react-native';
+import { Text, View, TouchableHighlight, Modal, ActivityIndicator } from 'react-native';
 import MapView, { Polyline } from 'react-native-maps';
 import { StatusBar } from 'expo-status-bar';
 import * as Location from 'expo-location';
+import { getFirestore, doc, updateDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StyleSheet } from 'react-native';
+
+const calculateAndUpdatePoints = (newLocation, prevLocationRef, setLocalPoints, recording) => {
+  if (newLocation && prevLocationRef.current && newLocation.coords) {
+    const { latitude, longitude } = newLocation.coords;
+    const distance = calculateDistance(
+      prevLocationRef.current.coords.latitude,
+      prevLocationRef.current.coords.longitude,
+      latitude,
+      longitude
+    );
+    const timeDiff = newLocation.timestamp - prevLocationRef.current.timestamp;
+
+    if (timeDiff > 0) {
+      const speed = distance / timeDiff;
+
+      console.log('Distance:', distance, 'meters');
+      console.log('Speed:', speed, 'm/s');
+
+      if (recording && speed < 3 && distance >= 10) {
+        const pointsToAdd = Math.floor(distance / 10);
+        setLocalPoints(prevPoints => prevPoints + pointsToAdd);
+      }
+    }
+  }
+};
 
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371; // Radius of the earth in km
+  const R = 6371;
   const dLat = deg2rad(lat2 - lat1);
   const dLon = deg2rad(lon2 - lon1);
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = R * c; // Distance in km
-  return distance * 1000; // Convert to meters
+  const distance = R * c;
+  return distance * 1000;
 };
 
 const deg2rad = (deg) => {
@@ -24,26 +53,106 @@ export default function App() {
   const [location, setLocation] = useState(null);
   const [watching, setWatching] = useState(false);
   const [path, setPath] = useState([]);
-  const prevLocationRef = useRef();
   const [points, setPoints] = useState(0);
   const [recording, setRecording] = useState(false);
   const [showStartModal, setShowStartModal] = useState(false);
   const [showStopModal, setShowStopModal] = useState(false);
+  const [localPoints, setLocalPoints] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const prevLocationRef = useRef(null);
+
+  const authInstance = getAuth();
+  const userUid = authInstance.currentUser?.uid;
+
+  const db = getFirestore();
+
+  const updatePointsInAsyncStorage = async (newPoints) => {
+    try {
+      await AsyncStorage.setItem('puntosAcumulados', newPoints.toString());
+      console.log('Puntos actualizados en AsyncStorage');
+    } catch (error) {
+      console.error('Error al actualizar puntos en AsyncStorage:', error);
+    }
+  };
+
+  const updatePointsInDatabase = async (userId, newPoints) => {
+    const userDocRef = doc(db, 'usuarios', userId);
+
+    try {
+      await updateDoc(userDocRef, {
+        puntosAcumulados: newPoints,
+      });
+      console.log('Puntos actualizados en la base de datos');
+    } catch (error) {
+      console.error('Error al actualizar puntos en la base de datos:', error);
+    }
+  };
+
+  const retrievePointsFromAsyncStorage = async () => {
+    try {
+      const storedPoints = await AsyncStorage.getItem('puntosAcumulados');
+      if (storedPoints !== null) {
+        const parsedPoints = parseInt(storedPoints, 10);
+        setPoints(parsedPoints);
+      }
+    } catch (error) {
+      console.error('Error al recuperar puntos desde AsyncStorage:', error);
+    } finally {
+      setLoading(false); // Actualizar el estado de carga
+    }
+  };
 
   useEffect(() => {
-    async function startWatching() {
+    retrievePointsFromAsyncStorage();
+  }, []);
+
+  const startRecording = () => {
+    setRecording(true);
+    setLocalPoints(0);
+    setShowStartModal(false);
+    retrievePointsFromAsyncStorage();
+    // Cambio: Limpiar el trazado anterior
+    setPath([]);
+  };
+
+  const stopRecording = () => {
+    const newPoints = points + localPoints;
+    setRecording(false);
+    setPoints(newPoints);
+    setShowStopModal(true);
+    // Cambio: Limpiar el trazado al detener el recorrido
+    setPath([]);
+
+    const updateUserPoints = async () => {
+      try {
+        await updatePointsInDatabase(userUid, newPoints);
+        await updatePointsInAsyncStorage(newPoints);
+        console.log('Puntos actualizados en la base de datos y AsyncStorage');
+      } catch (error) {
+        console.error('Error al actualizar puntos:', error);
+      }
+    };
+
+    updateUserPoints();
+  };
+
+  useEffect(() => {
+    const startWatching = async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        console.warn('Permission to access location was denied');
+        console.warn('Permiso para acceder a la ubicación fue denegado');
+        setLoading(false); // Actualizar el estado de carga en caso de permiso denegado
         return;
       }
 
       setWatching(true);
+
       const locationListener = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.High,
-          distanceInterval: 1, // meters
-          timeInterval: 1000, // milliseconds
+          accuracy: Location.Accuracy.BestForNavigation,
+          distanceInterval: 10,
+          timeInterval: 500,
         },
         (newLocation) => {
           const { latitude, longitude } = newLocation.coords;
@@ -51,24 +160,8 @@ export default function App() {
           setPath((prevPath) => [...prevPath, newPoint]);
           setLocation(newLocation);
 
-          if (prevLocationRef.current) {
-            const prevPoint = prevLocationRef.current.coords;
-            const distance = calculateDistance(
-              prevPoint.latitude,
-              prevPoint.longitude,
-              newLocation.coords.latitude,
-              newLocation.coords.longitude
-            );
-            const timeDiff = newLocation.timestamp - prevLocationRef.current.timestamp;
-            const speed = distance / timeDiff; // meters per millisecond
-
-            console.log('Distance:', distance, 'meters');
-            console.log('Speed:', speed, 'm/s');
-
-            if (recording && speed < 5 && distance >= 10) {
-              const pointsToAdd = Math.floor(distance / 10);
-              setPoints((prevPoints) => prevPoints + pointsToAdd);
-            }
+          if (recording) {
+            calculateAndUpdatePoints(newLocation, prevLocationRef, setLocalPoints, recording);
           }
 
           prevLocationRef.current = newLocation;
@@ -81,32 +174,27 @@ export default function App() {
         }
         setWatching(false);
       };
-    }
+    };
 
-    startWatching();
+    if (recording) {
+      startWatching();
+    }
   }, [recording]);
 
-  const startRecording = () => {
-    setRecording(true);
-    setShowStartModal(false);
-  };
-
-  const stopRecording = () => {
-    setRecording(false);
-    setShowStopModal(true);
-  };
-
-  if (!location) {
-    return <Text>Loading...</Text>;
+  if (loading) {
+    return <ActivityIndicator size="large" />;
   }
 
   return (
     <View style={styles.container}>
+      {recording && (
+        <Text style={styles.localPointsText}>Puntos obtenidos: {localPoints}</Text>
+      )}
       <MapView
         style={styles.map}
         initialRegion={{
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
+          latitude: location?.coords?.latitude || 0,
+          longitude: location?.coords?.longitude || 0,
           latitudeDelta: 0.09,
           longitudeDelta: 0.04,
         }}
@@ -115,11 +203,7 @@ export default function App() {
       >
         <Polyline coordinates={path} strokeWidth={4} strokeColor="blue" />
       </MapView>
-      
-      <View style={styles.pointsInfo}>
-        <Text style={styles.pointsText}>Puntos acumulados: {points}</Text>
-      </View>
-      
+
       <Modal visible={showStartModal} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -127,7 +211,10 @@ export default function App() {
             <TouchableHighlight style={styles.modalButton} onPress={startRecording}>
               <Text style={styles.buttonText}>Sí</Text>
             </TouchableHighlight>
-            <TouchableHighlight style={styles.modalButton} onPress={() => setShowStartModal(false)}>
+            <TouchableHighlight
+              style={styles.modalButton}
+              onPress={() => setShowStartModal(false)}
+            >
               <Text style={styles.buttonText}>Cancelar</Text>
             </TouchableHighlight>
           </View>
@@ -138,8 +225,11 @@ export default function App() {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalText}>Recorrido finalizado</Text>
-            <Text>Puntos obtenidos: {points}</Text>
-            <TouchableHighlight style={styles.modalButton} onPress={() => setShowStopModal(false)}>
+            <Text>Puntos obtenidos en este recorrido: {localPoints}</Text>
+            <TouchableHighlight
+              style={styles.modalButton}
+              onPress={() => setShowStopModal(false)}
+            >
               <Text style={styles.buttonText}>Aceptar</Text>
             </TouchableHighlight>
           </View>
@@ -151,7 +241,10 @@ export default function App() {
           <Text style={styles.buttonText}>Finalizar recorrido</Text>
         </TouchableHighlight>
       ) : (
-        <TouchableHighlight style={styles.button} onPress={() => setShowStartModal(true)}>
+        <TouchableHighlight
+          style={styles.button}
+          onPress={() => setShowStartModal(true)}
+        >
           <Text style={styles.buttonText}>Iniciar recorrido</Text>
         </TouchableHighlight>
       )}
@@ -160,19 +253,20 @@ export default function App() {
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
   map: {
     flex: 1,
-    height: 200,
+    height: 0,
   },
   pointsInfo: {
     padding: 10,
     backgroundColor: 'rgba(255, 255, 255, 0.7)',
     position: 'absolute',
-    top: 10,
+    top: 50,
     left: 10,
     borderRadius: 5,
     zIndex: 1,
@@ -182,12 +276,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   button: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    padding: 10,
     backgroundColor: 'blue',
+    position: 'absolute',
+    top: 650,
+    left: 110,
     borderRadius: 5,
-    marginTop: 10,
-    alignSelf: 'center',
+    
+
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    
   },
   buttonText: {
     color: 'white',
@@ -202,7 +301,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: 'white',
-    padding: 20,
+    padding: 10,
     borderRadius: 10,
     alignItems: 'center',
   },

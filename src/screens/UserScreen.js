@@ -11,6 +11,7 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -37,6 +38,7 @@ export default function UserScreen() {
 	const [selectedImage, setSelectedImage] = useState(null);
 	const [isEditing, setIsEditing] = useState(false);
 	const [isEditingImage, setIsEditingImage] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 	useEffect(() => {
 		const fetchUserData = async () => {
 			const db = getFirestore();
@@ -58,9 +60,25 @@ export default function UserScreen() {
 	}, []);
 
 	const handleEdit = () => {
-		setIsEditing(true);
-		setIsEditingImage(false); // Reset image editing state
-	};
+    Alert.alert(
+      'Modificar',
+      '¿Estás seguro de que deseas editar tus datos?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Editar',
+          
+          onPress: () => {
+            setIsEditing(true);
+            setIsEditingImage(false);
+          },
+        },
+      ]
+    );
+  };
 
 	const handleImageSelect = async () => {
 		let result = await ImagePicker.launchImageLibraryAsync({
@@ -75,38 +93,61 @@ export default function UserScreen() {
 	};
   
 	const handleSave = async () => {
-		const db = getFirestore();
-		const userDocRef = doc(db, 'usuarios', userUid);
-		try {
-			if (selectedImage) {
-				const storage = getStorage();
-				const storageRef = ref(storage, `profileImages/${userUid}`);
-				await uploadBytes(storageRef, selectedImage);
-				const downloadURL = await getDownloadURL(storageRef);
-				// Update both editedData and selectedImage state
-				setEditedData({
-					...editedData
-					, profileImageUrl: downloadURL
-				, });
-				setSelectedImage(downloadURL);
-			}
-			// Update user data immediately for a better user experience
-			setUserData(editedData);
-			// Update the document in Firestore with editedData
-			await updateDoc(userDocRef, editedData);
-			setIsEditing(false);
-			setSelectedImage(null); // Reset selected image
-			console.log('Data and image updated successfully');
-		} catch (error) {
-			console.log('Error updating data:', error);
-			if (error.code === 'storage/unknown') {
-				console.log('Unknown storage error:', error.serverResponse);
-				if (error.serverResponse && error.serverResponse.body) {
-					console.log('Error body:', error.serverResponse.body);
-				}
-			}
-		}
-	};
+    setIsLoading(true);
+
+    Alert.alert(
+      'Confirmar cambios',
+      '¿Estás seguro de que deseas guardar los cambios?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Guardar',
+          onPress: async () => {
+            const db = getFirestore();
+            const userDocRef = doc(db, 'usuarios', userUid);
+            try {
+              if (selectedImage) {
+                const storage = getStorage();
+                const storageRef = ref(storage, `profileImages/${userUid}`);
+                await uploadBytes(storageRef, selectedImage);
+                const downloadURL = await getDownloadURL(storageRef);
+
+                setEditedData({
+                  ...editedData,
+                  profileImageUrl: downloadURL,
+                });
+                setSelectedImage(downloadURL);
+              }
+
+              setUserData(editedData);
+
+              await updateDoc(userDocRef, editedData);
+
+              setIsEditing(false);
+              setSelectedImage(null);
+
+              console.log('Data and image updated successfully');
+            } catch (error) {
+              console.log('Error updating data:', error);
+              if (error.code === 'storage/unknown') {
+                console.log('Unknown storage error:', error.serverResponse);
+                if (error.serverResponse && error.serverResponse.body) {
+                  console.log('Error body:', error.serverResponse.body);
+                }
+              }
+            } finally {
+              setIsLoading(false);
+              Alert.alert('Actualizacion de datos', 'Has cambiado tus datos correctamente.');
+            }
+          },
+        },
+      ],
+    );
+  };
+  
   
 	const handleInputChange = (field, value) => {
 		setEditedData({
