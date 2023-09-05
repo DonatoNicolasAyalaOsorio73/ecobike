@@ -1,17 +1,14 @@
-import React, {
-  useState,
-  useEffect
-} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   Image,
   TextInput,
-  Button,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Alert,
+  Modal, // Agrega Modal desde 'react-native'
+  TouchableHighlight, // Agrega TouchableHighlight desde 'react-native'
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -20,9 +17,7 @@ import {
   getDoc,
   updateDoc,
 } from 'firebase/firestore';
-import {
-  getAuth
-} from 'firebase/auth';
+import { getAuth, signOut } from 'firebase/auth';
 import {
   getStorage,
   ref,
@@ -30,190 +25,228 @@ import {
   getDownloadURL,
 } from 'firebase/storage';
 
-export default function UserScreen() {
-	const authInstance = getAuth();
-	const userUid = authInstance.currentUser.uid;
-	const [userData, setUserData] = useState(null);
-	const [editedData, setEditedData] = useState({});
-	const [selectedImage, setSelectedImage] = useState(null);
-	const [isEditing, setIsEditing] = useState(false);
-	const [isEditingImage, setIsEditingImage] = useState(false);
+export default function UserScreen({ navigation }) {
+  const authInstance = getAuth();
+  const userUid = authInstance.currentUser?.uid;
+  const [userData, setUserData] = useState(null);
+  const [editedData, setEditedData] = useState({});
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isEditingImage, setIsEditingImage] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-	useEffect(() => {
-		const fetchUserData = async () => {
-			const db = getFirestore();
-			const userDocRef = doc(db, 'usuarios', userUid);
-			try {
-				const userDocSnapshot = await getDoc(userDocRef);
-				if (userDocSnapshot.exists()) {
-					const userData = userDocSnapshot.data();
-					setUserData(userData);
-					setEditedData(userData);
-				} else {
-					console.log('User document not found');
-				}
-			} catch (error) {
-				console.log('Error fetching user data:', error);
-			}
-		};
-		fetchUserData();
-	}, []);
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const [showEditConfirmation, setShowEditConfirmation] = useState(false); // Agrega el estado showEditConfirmation
 
-	const handleEdit = () => {
-    Alert.alert(
-      'Modificar',
-      '¿Estás seguro de que deseas editar tus datos?',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
-        {
-          text: 'Editar',
-          
-          onPress: () => {
-            setIsEditing(true);
-            setIsEditingImage(false);
-          },
-        },
-      ]
-    );
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const db = getFirestore();
+      const userDocRef = doc(db, 'usuarios', userUid);
+      try {
+        const userDocSnapshot = await getDoc(userDocRef);
+        if (userDocSnapshot.exists()) {
+          const userData = userDocSnapshot.data();
+          setUserData(userData);
+          setEditedData(userData);
+        } else {
+          console.log('User document not found');
+        }
+      } catch (error) {
+        console.log('Error fetching user data:', error);
+      }
+    };
+    fetchUserData();
+  }, [userUid]);
+
+  const handleLogout = async () => {
+    setShowLogoutConfirmation(true);
   };
 
-	const handleImageSelect = async () => {
-		let result = await ImagePicker.launchImageLibraryAsync({
-			mediaTypes: ImagePicker.MediaTypeOptions.All
-			, allowsEditing: true
-			, aspect: [4, 4]
-			, quality: 1
-		, });
-		if (!result.canceled) {
-			setSelectedImage(result.assets[0].uri); // Access selected image's URI through "assets" array
-		}
-	};
-  
-	const handleSave = async () => {
+  const confirmLogout = async () => {
+    try {
+      await signOut(authInstance);
+      navigation.navigate('SignIn'); // Redirige al usuario al inicio
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    } finally {
+      setShowLogoutConfirmation(false);
+    }
+  };
+
+  const handleEdit = () => {
+    setShowEditConfirmation(true);
+  };
+
+  const confirmEdit = () => {
+    setIsEditing(true);
+    setIsEditingImage(false);
+    setShowEditConfirmation(false);
+  };
+
+  const handleImageSelect = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4, 4],
+      quality: 1,
+    });
+    if (!result.canceled) {
+      setSelectedImage(result.assets[0].uri);
+    }
+  };
+
+  const handleSave = async () => {
     setIsLoading(true);
 
-    Alert.alert(
-      'Confirmar cambios',
-      '¿Estás seguro de que deseas guardar los cambios?',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
-        {
-          text: 'Guardar',
-          onPress: async () => {
-            const db = getFirestore();
-            const userDocRef = doc(db, 'usuarios', userUid);
-            try {
-              if (selectedImage) {
-                const storage = getStorage();
-                const storageRef = ref(storage, `profileImages/${userUid}`);
-                await uploadBytes(storageRef, selectedImage);
-                const downloadURL = await getDownloadURL(storageRef);
+    const db = getFirestore();
+    const userDocRef = doc(db, 'usuarios', userUid);
 
-                setEditedData({
-                  ...editedData,
-                  profileImageUrl: downloadURL,
-                });
-                setSelectedImage(downloadURL);
-              }
+    try {
+      if (selectedImage) {
+        const storage = getStorage();
+        const storageRef = ref(storage, `profileImages/${userUid}`);
+        await uploadBytes(storageRef, selectedImage);
+        const downloadURL = await getDownloadURL(storageRef);
 
-              setUserData(editedData);
+        setEditedData({
+          ...editedData,
+          profileImageUrl: downloadURL,
+        });
+        setSelectedImage(downloadURL);
+      }
 
-              await updateDoc(userDocRef, editedData);
+      setUserData(editedData);
 
-              setIsEditing(false);
-              setSelectedImage(null);
+      await updateDoc(userDocRef, editedData);
 
-              console.log('Data and image updated successfully');
-            } catch (error) {
-              console.log('Error updating data:', error);
-              if (error.code === 'storage/unknown') {
-                console.log('Unknown storage error:', error.serverResponse);
-                if (error.serverResponse && error.serverResponse.body) {
-                  console.log('Error body:', error.serverResponse.body);
-                }
-              }
-            } finally {
-              setIsLoading(false);
-              Alert.alert('Actualizacion de datos', 'Has cambiado tus datos correctamente.');
-            }
-          },
-        },
-      ],
-    );
+      setIsEditing(false);
+      setSelectedImage(null);
+
+      console.log('Data and image updated successfully');
+    } catch (error) {
+      console.log('Error updating data:', error);
+      if (error.code === 'storage/unknown') {
+        console.log('Unknown storage error:', error.serverResponse);
+        if (error.serverResponse && error.serverResponse.body) {
+          console.log('Error body:', error.serverResponse.body);
+        }
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
-  
-  
-	const handleInputChange = (field, value) => {
-		setEditedData({
-			...editedData
-			, [field]: value
-		});
-	};
-	return (<ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-    {userData ? (
-      <View style={styles.scrollContainer}>
-        <TouchableOpacity
-          style={[styles.imageContainer, isEditing && styles.editableImageContainer]}
-          onPress={() => {
-            if (isEditing) {
-              handleImageSelect();
-            }
-          }}
-        >
-          {(selectedImage || userData.profileImageUrl) ? (
-            <Image
-              source={{ uri: selectedImage || userData.profileImageUrl }}
-              style={styles.image}
-            />
-          ) : (
-            <Text>Select Image</Text>
-          )}
+
+  const handleInputChange = (field, value) => {
+    setEditedData({
+      ...editedData,
+      [field]: value,
+    });
+  };
+
+  return (
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+          <Text style={styles.logoutButtonText}>Salir</Text>
         </TouchableOpacity>
-      
+      </View>
+      {userData ? (
+        <View style={styles.scrollContainer}>
+          <TouchableOpacity
+            style={[styles.imageContainer, isEditing && styles.editableImageContainer]}
+            onPress={() => {
+              if (isEditing) {
+                handleImageSelect();
+              }
+            }}
+          >
+            {(selectedImage || userData.profileImageUrl) ? (
+              <Image
+                source={{ uri: selectedImage || userData.profileImageUrl }}
+                style={styles.image}
+              />
+            ) : (
+              <Text>Select Image</Text>
+            )}
+          </TouchableOpacity>
+
           {isEditing && (
             <TouchableOpacity style={styles.imageButton} onPress={handleImageSelect}>
               <Text>{selectedImage ? 'Cambiar Imagen' : 'Seleccionar Imagen'}</Text>
             </TouchableOpacity>
           )}
-            <Text style={styles.title}>Nombres:</Text>
-            {isEditing ? (
-              <TextInput style={styles.input} value={editedData.nombres} onChangeText={(value) => handleInputChange('nombres', value)} />
-            ) : (
-              <Text style={styles.body}>{userData.nombres}</Text>
-            )}
-            <Text style={styles.title}>Apellidos:</Text>
-            {isEditing ? (
-              <TextInput style={styles.input} value={editedData.apellidos} onChangeText={(value) => handleInputChange('apellidos', value)} />
-            ) : (
-              <Text style={styles.body}>{userData.apellidos}</Text>
-            )}
-            <Text style={styles.title}>Edad:</Text>
-            {isEditing ? (
-              <TextInput style={styles.input} value={editedData.edad} onChangeText={(value) => handleInputChange('edad', value)} />
-            ) : (
-              <Text style={styles.body}>{userData.edad} years</Text>
-            )}
-            
-            <Text style={styles.title}>Identificación:</Text>
-            {isEditing ? (
-              <TextInput style={styles.input} value={editedData.identificacion} onChangeText={(value) => handleInputChange('identificacion', value)} />
-            ) : (
-              <Text style={styles.body}>{userData.identificacion}</Text>
-            )}
-            <TouchableOpacity style={styles.button} onPress={isEditing ? handleSave : handleEdit}>
-          <Text style={styles.buttonText}>{isEditing ? 'Guardar Cambios' : 'Editar'}</Text>
-        </TouchableOpacity>
-      </View>
-    ) : (
-      <Text>Loading data...</Text>
-    )}
-  </ScrollView>);
+
+          <Text style={styles.title}>Nombres:</Text>
+          {isEditing ? (
+            <TextInput style={styles.input} value={editedData.nombres} onChangeText={(value) => handleInputChange('nombres', value)} />
+          ) : (
+            <Text style={styles.body}>{userData.nombres}</Text>
+          )}
+
+          <Text style={styles.title}>Apellidos:</Text>
+          {isEditing ? (
+            <TextInput style={styles.input} value={editedData.apellidos} onChangeText={(value) => handleInputChange('apellidos', value)} />
+          ) : (
+            <Text style={styles.body}>{userData.apellidos}</Text>
+          )}
+
+          <Text style={styles.title}>Edad:</Text>
+          {isEditing ? (
+            <TextInput style={styles.input} value={editedData.edad} onChangeText={(value) => handleInputChange('edad', value)} />
+          ) : (
+            <Text style={styles.body}>{userData.edad} years</Text>
+          )}
+
+          <Text style={styles.title}>Identificación:</Text>
+          {isEditing ? (
+            <TextInput style={styles.input} value={editedData.identificacion} onChangeText={(value) => handleInputChange('identificacion', value)} />
+          ) : (
+            <Text style={styles.body}>{userData.identificacion}</Text>
+          )}
+
+          <TouchableOpacity style={styles.button} onPress={isEditing ? handleSave : handleEdit}>
+            <Text style={styles.buttonText}>{isEditing ? 'Guardar Cambios' : 'Editar'}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <Text>Loading data...</Text>
+      )}
+
+      <Modal visible={showLogoutConfirmation} transparent={true} animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalText}>¿Seguro que deseas cerrar sesión?</Text>
+            <TouchableHighlight style={styles.modalButton} onPress={confirmLogout}>
+              <Text style={styles.buttonText}>Sí</Text>
+            </TouchableHighlight>
+            <TouchableHighlight
+              style={styles.modalButton}
+              onPress={() => setShowLogoutConfirmation(false)}
+            >
+              <Text style={styles.buttonText}>Cancelar</Text>
+            </TouchableHighlight>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showEditConfirmation} transparent={true} animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalText}>¿Seguro que deseas editar tus datos?</Text>
+            <TouchableHighlight style={styles.modalButton} onPress={confirmEdit}>
+              <Text style={styles.buttonText}>Sí</Text>
+            </TouchableHighlight>
+            <TouchableHighlight
+              style={styles.modalButton}
+              onPress={() => setShowEditConfirmation(false)}
+            >
+              <Text style={styles.buttonText}>Cancelar</Text>
+            </TouchableHighlight>
+          </View>
+        </View>
+      </Modal>
+      
+    </ScrollView>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -222,13 +255,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     backgroundColor: 'transparent',
-    width: '100%',
-    marginTop: 40,
+    width: '90%',
+    marginTop: 30,
+    marginHorizontal: 20, // Margen izquierdo y derecho
   },
+  
+  
   scrollContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: 0,
     width: '100%',
   },
   imageContainer: {
@@ -282,9 +318,64 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: 0,
-    width: '100%',
+    width: '60%',
   },
   buttonText: {
     color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  logoutButton: {
+    backgroundColor: 'green',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    left: 140,
+  },
+  logoutButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  modalButton: {
+    backgroundColor: '#000000', // Cambiado el color de fondo a azul
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 10.32,
+    
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 20, // Aumentado el padding para dar más espacio al contenido
+    borderRadius: 10,
+    alignItems: 'center',
   },
 });

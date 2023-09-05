@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StyleSheet } from 'react-native';
 
 const calculateAndUpdatePoints = (newLocation, prevLocationRef, setLocalPoints, recording) => {
-  if (newLocation && prevLocationRef.current && newLocation.coords) {
+  if (newLocation && prevLocationRef.current && newLocation.coords && recording) {
     const { latitude, longitude } = newLocation.coords;
     const distance = calculateDistance(
       prevLocationRef.current.coords.latitude,
@@ -25,9 +25,9 @@ const calculateAndUpdatePoints = (newLocation, prevLocationRef, setLocalPoints, 
       console.log('Distance:', distance, 'meters');
       console.log('Speed:', speed, 'm/s');
 
-      if (recording && speed < 3 && distance >= 10) {
+      if (speed < 3 && distance >= 10) {
         const pointsToAdd = Math.floor(distance / 10);
-        setLocalPoints(prevPoints => prevPoints + pointsToAdd);
+        setLocalPoints((prevPoints) => prevPoints + pointsToAdd);
       }
     }
   }
@@ -59,8 +59,10 @@ export default function App() {
   const [showStopModal, setShowStopModal] = useState(false);
   const [localPoints, setLocalPoints] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [shouldDrawPath, setShouldDrawPath] = useState(false);
 
   const prevLocationRef = useRef(null);
+  const mapRef = useRef(null);
 
   const authInstance = getAuth();
   const userUid = authInstance.currentUser?.uid;
@@ -103,6 +105,18 @@ export default function App() {
     }
   };
 
+  const centerMapOnLocation = () => {
+    if (mapRef.current && location?.coords) {
+      mapRef.current.animateToRegion({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.0009, // Ajusta el nivel de zoom como desees
+        longitudeDelta: 0.0009, // Usar el mismo valor para latitudeDelta y longitudeDelta para un zoom cuadrado
+      });
+    }
+  };
+  
+
   useEffect(() => {
     retrievePointsFromAsyncStorage();
   }, []);
@@ -112,9 +126,21 @@ export default function App() {
     setLocalPoints(0);
     setShowStartModal(false);
     retrievePointsFromAsyncStorage();
-    // Cambio: Limpiar el trazado anterior
+    // Cambio: Limpiar el trazado anterior y activar el trazo
     setPath([]);
+    setShouldDrawPath(true);
+  
+    // Cambio: Hacer zoom al usuario y seguir su recorrido
+    if (mapRef.current && location?.coords) {
+      mapRef.current.animateToRegion({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.00009, // Ajusta el nivel de zoom como desees
+        longitudeDelta: 0.00009,
+      });
+    }
   };
+  
 
   const stopRecording = () => {
     const newPoints = points + localPoints;
@@ -123,6 +149,8 @@ export default function App() {
     setShowStopModal(true);
     // Cambio: Limpiar el trazado al detener el recorrido
     setPath([]);
+    // Cambio: Detener el dibujo del trazo
+    setShouldDrawPath(false);
 
     const updateUserPoints = async () => {
       try {
@@ -155,16 +183,24 @@ export default function App() {
           timeInterval: 500,
         },
         (newLocation) => {
-          const { latitude, longitude } = newLocation.coords;
-          const newPoint = { latitude, longitude };
-          setPath((prevPath) => [...prevPath, newPoint]);
-          setLocation(newLocation);
-
-          if (recording) {
+          if (recording) { // Verificar si está grabando antes de agregar puntos a la ruta
+            const { latitude, longitude } = newLocation.coords;
+            const newPoint = { latitude, longitude };
+            setPath((prevPath) => [...prevPath, newPoint]);
+            setLocation(newLocation);
             calculateAndUpdatePoints(newLocation, prevLocationRef, setLocalPoints, recording);
-          }
+            prevLocationRef.current = newLocation;
 
-          prevLocationRef.current = newLocation;
+            // Cambio: Actualizar la región del mapa para que siga al usuario
+            if (mapRef.current) {
+              mapRef.current.animateToRegion({
+                latitude,
+                longitude,
+                latitudeDelta: 0.0009, // Ajusta el nivel de zoom como desees
+                longitudeDelta: 0.0009,
+              });
+            }
+          }
         }
       );
 
@@ -181,27 +217,49 @@ export default function App() {
     }
   }, [recording]);
 
+  useEffect(() => {
+    const getLocation = async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.warn('Permiso para acceder a la ubicación fue denegado');
+        setLoading(false); // Actualizar el estado de carga en caso de permiso denegado
+        return;
+      }
+
+      const currentLocation = await Location.getCurrentPositionAsync({});
+      setLocation(currentLocation);
+      centerMapOnLocation(); // Centrar el mapa en la ubicación actual al iniciar
+    };
+
+    getLocation();
+  }, []);
+
   if (loading) {
     return <ActivityIndicator size="large" />;
   }
-
+  
   return (
     <View style={styles.container}>
-      {recording && (
-        <Text style={styles.localPointsText}>Puntos obtenidos: {localPoints}</Text>
-      )}
+  {recording && (
+    <View style={styles.rectangle}>
+      <Text style={styles.localPointsText}>Puntos obtenidos: {localPoints}</Text>
+    </View>
+  )}
+      
       <MapView
+        ref={mapRef}
         style={styles.map}
         initialRegion={{
           latitude: location?.coords?.latitude || 0,
           longitude: location?.coords?.longitude || 0,
-          latitudeDelta: 0.09,
-          longitudeDelta: 0.04,
+          latitudeDelta: 0.009,
+          longitudeDelta: 0.009,
         }}
         showsUserLocation={true}
-        followsUserLocation={true}
+        followsUserLocation={true} // Habilita el seguimiento del usuario
+        onMapReady={() => centerMapOnLocation()}
       >
-        <Polyline coordinates={path} strokeWidth={4} strokeColor="blue" />
+        <Polyline coordinates={shouldDrawPath ? path : []} strokeWidth={4} strokeColor="green" />
       </MapView>
 
       <Modal visible={showStartModal} transparent={true} animationType="slide">
@@ -253,7 +311,6 @@ export default function App() {
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -261,6 +318,21 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
     height: 0,
+  },
+  localPointsText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    position: 'absolute',
+     // Ajusta la posición vertical según tus necesidades
+     // Ajusta la posición horizontal según tus necesidades
+    zIndex: 2, // Asegura que esté por encima del elemento pointsInfo
+    color: 'black', // Cambiado el color de texto a negro
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+     // Para sombra en Android
   },
   pointsInfo: {
     padding: 10,
@@ -274,19 +346,26 @@ const styles = StyleSheet.create({
   pointsText: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#000', // Color de texto cambiado a negro
   },
   button: {
-    padding: 10,
-    backgroundColor: 'blue',
     position: 'absolute',
-    top: 650,
-    left: 110,
-    borderRadius: 5,
-    
-
+    bottom: 100,
+    alignSelf: 'center',
+    borderRadius: 16,
+    backgroundColor: '#000000',
     paddingVertical: 20,
-    paddingHorizontal: 20,
-    
+    paddingHorizontal: 30, // Aumentado el padding horizontal para hacer que el botón sea más grande
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 30,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.44,
+    shadowRadius: 10.32,
   },
   buttonText: {
     color: 'white',
@@ -301,9 +380,28 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: 'white',
-    padding: 10,
+    padding: 20, // Aumentado el padding para dar más espacio al contenido
     borderRadius: 10,
     alignItems: 'center',
+  },
+  rectangle: {
+    width: 200, // Ancho deseado del rectángulo
+    height: 50, // Alto deseado del rectángulo
+    backgroundColor: 'white', // Color de fondo del rectángulo
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    top: 60, // Ajusta la posición vertical según tus necesidades
+    left: 20, // Ajusta la posición horizontal según tus necesidades
+    zIndex: 2, // Asegura que esté por encima del elemento pointsInfo
+    borderRadius: 10, // Agregado para redondear las esquinas del rectángulo
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
   },
   modalText: {
     fontSize: 18,
@@ -311,10 +409,20 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: 'blue',
-    borderRadius: 5,
-    marginVertical: 5,
+    backgroundColor: '#000000', // Cambiado el color de fondo a azul
+    borderRadius: 16,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 10.32,
+    
   },
 });

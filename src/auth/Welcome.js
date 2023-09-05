@@ -24,12 +24,12 @@ const Welcome = ({navigation}) => {
               uri: 'https://i.pinimg.com/originals/f1/8d/c4/f18dc48903a12e939904ef622bc37cc9.png',
             }}
             style={{
-              width: '90%',
+              width: '100%',
               height: (height / 4.2) * 1.5,
               borderRadius: 4,
-              marginBottom: 70, // Ajusta el valor según tu preferencia
+              marginBottom: 60, // Ajusta el valor según tu preferencia
               alignSelf: 'center', // Centra la imagen horizontalmente
-              marginTop: 90, // Agrega margen superior si es necesario
+              marginTop: 80, // Agrega margen superior si es necesario
             }}
           />
           <View style={styles.contentContainer}>
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   contentContainer: {
-    paddingHorizontal: 30,
+    paddingHorizontal: 25,
   },
   title: {
     fontSize: 32,
