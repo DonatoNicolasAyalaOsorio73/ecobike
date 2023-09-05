@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
   },
   button: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 120,
     alignSelf: 'center',
     borderRadius: 16,
     backgroundColor: '#000000',
