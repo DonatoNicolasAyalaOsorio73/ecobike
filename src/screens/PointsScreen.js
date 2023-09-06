@@ -10,10 +10,10 @@ import {
   Animated,
   TouchableOpacity,
   Modal,
-  Button,
   TouchableHighlight,
 } from "react-native";
 
+import QRCode from 'react-native-qrcode-svg';
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -21,7 +21,9 @@ import {
   getFirestore,
   doc,
   getDoc,
-  runTransaction,
+  collection,
+  addDoc,
+  updateDoc,
 } from "@firebase/firestore";
 import { getAuth } from "@firebase/auth";
 import { useIsFocused } from "@react-navigation/native";
@@ -90,52 +92,91 @@ function Backdrop({ scrollX }) {
 
 export default function App() {
   const authInstance = getAuth();
-  const userUid = authInstance.currentUser?.uid; // Corregido: Acceder a currentUser de forma segura
+  const userUid = authInstance.currentUser?.uid;
   const [accumulatedPoints, setAccumulatedPoints] = useState(null);
   const isFocused = useIsFocused();
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showInsufficientPointsModal, setShowInsufficientPointsModal] = useState(false);
-  const [selectedStore, setSelectedStore] = useState(null); // Nuevo estado para almacenar la tienda seleccionada
+  const [selectedStore, setSelectedStore] = useState(null);
+  const [generatedCodes, setGeneratedCodes] = useState([]);
+  const [showCodesModal, setShowCodesModal] = useState(false);
+  const [showGeneratedCodesModal, setShowGeneratedCodesModal] = useState(false);
 
   const scrollX = React.useRef(new Animated.Value(0)).current;
 
-  const handleConfirmRedeem = () => {
-    setShowConfirmationModal(false); // Cierra el modal de confirmación
+  const handleConfirmRedeem = async () => {
+  setShowConfirmationModal(false);
 
-    if (accumulatedPoints >= selectedStore.pointsRequired) {
-      const db = getFirestore();
-      const userDocRef = doc(db, "usuarios", userUid);
+  if (accumulatedPoints >= selectedStore.pointsRequired) {
+    const db = getFirestore();
+    const userDocRef = doc(db, "usuarios", userUid);
 
-      try {
-        runTransaction(db, async (transaction) => {
-          const userDocSnapshot = await transaction.get(userDocRef);
-          if (userDocSnapshot.exists()) {
-            const userData = userDocSnapshot.data();
-            const newPoints = userData.puntosAcumulados - selectedStore.pointsRequired;
+    try {
+      const userDocSnapshot = await getDoc(userDocRef);
+      if (userDocSnapshot.exists()) {
+        const userData = userDocSnapshot.data();
+        const newPoints = userData.puntosAcumulados - selectedStore.pointsRequired;
 
-            if (newPoints >= 0) {
-              transaction.update(userDocRef, { puntosAcumulados: newPoints });
-              setAccumulatedPoints(newPoints);
-              await AsyncStorage.setItem("puntosAcumulados", newPoints.toString());
-            } else {
-              setShowInsufficientPointsModal(true);
-              console.log("No tienes suficientes puntos para realizar este descuento.");
-            }
-          }
-        });
-      } catch (error) {
-        console.log("Error al realizar el descuento:", error);
+        if (newPoints >= 0) {
+          await updateDoc(userDocRef, { puntosAcumulados: newPoints });
+          setAccumulatedPoints(newPoints);
+          await AsyncStorage.setItem("puntosAcumulados", newPoints.toString());
+
+          // Genera códigos después de que se haya confirmado el canje
+          generateCodes();
+
+          // Muestra el modal de códigos generados
+          setShowGeneratedCodesModal(true);
+
+          // Envía los códigos a la colección en la base de datos
+          const userCodesCollection = collection(userDocRef, "codigos_canjeados");
+          generatedCodes.forEach(async (code) => {
+            const codeData = {
+              code: code,
+              store: selectedStore.name,
+              userId: userUid,
+            };
+            await addDoc(userCodesCollection, codeData);
+          });
+        } else {
+          setShowInsufficientPointsModal(true);
+          console.log("No tienes suficientes puntos para realizar este descuento.");
+        }
       }
-    } else {
-      setShowInsufficientPointsModal(true);
-      console.log("No tienes suficientes puntos para realizar este descuento.");
+    } catch (error) {
+      console.log("Error al realizar el descuento:", error);
     }
-  };
+  } else {
+    setShowInsufficientPointsModal(true);
+    console.log("No tienes suficientes puntos para realizar este descuento.");
+  }
+};
+
+  
 
   const handleStoreInteraction = (store) => {
-    setSelectedStore(store); // Almacena la tienda seleccionada
-    setShowConfirmationModal(true); // Muestra el modal de confirmación
+    setSelectedStore(store);
+    setShowConfirmationModal(true);
   };
+
+  const generateCodes = () => {
+    const codeLength = 25; // Longitud del código
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; // Caracteres permitidos en el código
+    const codes = [];
+  
+    let code = '';
+    for (let j = 0; j < codeLength; j++) {
+      const randomIndex = Math.floor(Math.random() * characters.length);
+      code += characters[randomIndex];
+    }
+  
+    codes.push(code); // Agrega un solo código
+  
+    setGeneratedCodes(codes);
+    setShowCodesModal(true);
+  };
+  
+  
 
   useEffect(() => {
     if (isFocused) {
@@ -215,7 +256,11 @@ export default function App() {
                   {item.name}
                 </Text>
                 <TouchableOpacity
-                  onPress={() => handleStoreInteraction(item)}
+                  onPress={() => {
+                    handleStoreInteraction(item);
+                    // Aquí generamos los códigos cuando el usuario interactúa con la tienda
+                    generateCodes();
+                  }}
                   style={styles.storeButton}
                 >
                   <Text style={{ color: "white" }}>
@@ -228,8 +273,8 @@ export default function App() {
         }}
       />
 
-       {/* Modal de confirmación */}
-       <Modal visible={showConfirmationModal} transparent={true} animationType="slide">
+      {/* Modal de confirmación */}
+      <Modal visible={showConfirmationModal} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalText}>
@@ -267,15 +312,58 @@ export default function App() {
           </View>
         </View>
       </Modal>
+
+      
+      {generatedCodes.length > 0 && (
+        // Modal de códigos generados
+<Modal visible={showGeneratedCodesModal} transparent={true} animationType="slide">
+  <View style={styles.modalContainer}>
+    <View style={styles.modalContent}>
+      <Text style={styles.modalText}>Disfruta tu recompensa:</Text>
+      {generatedCodes.map((code, index) => (
+        <View key={index} style={styles.qrContainer}>
+          <Text style={styles.codesText}>{code}</Text>
+          <View style={styles.qrWrapper}>
+            <QRCode value={code} size={200} />
+          </View>
+        </View>
+      ))}
+      <TouchableHighlight
+        style={styles.modalButton}
+        onPress={() => setShowGeneratedCodesModal(false)}
+      >
+        <Text style={styles.buttonText}>Cerrar</Text>
+      </TouchableHighlight>
+    </View>
+  </View>
+</Modal>
+
+
+
+
+
+
+      )}
     </SafeAreaView>
   );
 }
 
+
 const styles = StyleSheet.create({
+  
   container: {
     flex: 1,
     backgroundColor: "#fff",
     justifyContent: "center",
+    alignItems: "center",
+  },
+  codesContainer: {
+    marginTop: 0,
+    alignItems: "center",
+  },
+  codesText: {
+    fontSize: 18,
+    marginBottom: 10,
   },
   posterImage: {
     width: "100%",
@@ -309,6 +397,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 10,
   },
+  qrContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  qrWrapper: {
+    alignItems: 'center',
+  },
+  
   pointsText: {
     fontSize: 18,
     fontWeight: "bold",
