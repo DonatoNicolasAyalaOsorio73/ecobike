@@ -240,11 +240,11 @@ export default function App() {
   
   return (
     <View style={styles.container}>
-  {recording && (
+  
     <View style={styles.rectangle}>
       <Text style={styles.localPointsText}>Puntos obtenidos: {localPoints}</Text>
     </View>
-  )}
+
       
       <MapView
         ref={mapRef}

@@ -11,11 +11,13 @@ import {
   TouchableOpacity,
   Modal,
   TouchableHighlight,
+  ScrollView,
 } from "react-native";
 
 import QRCode from 'react-native-qrcode-svg';
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getDocs } from "@firebase/firestore";
 
 import {
   getFirestore,
@@ -101,6 +103,8 @@ export default function App() {
   const [generatedCodes, setGeneratedCodes] = useState([]);
   const [showCodesModal, setShowCodesModal] = useState(false);
   const [showGeneratedCodesModal, setShowGeneratedCodesModal] = useState(false);
+  const [showAllCodesModal, setShowAllCodesModal] = useState(false); // Definición del estado
+  const [allCodes, setAllCodes] = useState([]); // Estado para almacenar los códigos canjeados
 
   const scrollX = React.useRef(new Animated.Value(0)).current;
 
@@ -152,7 +156,26 @@ export default function App() {
   }
 };
 
-  
+const loadAllCodes = async () => {
+  const db = getFirestore();
+  const userDocRef = doc(db, "usuarios", userUid);
+  const userCodesCollection = collection(userDocRef, "codigos_canjeados");
+  const codes = [];
+
+  try {
+    const querySnapshot = await getDocs(userCodesCollection); // Utiliza getDocs para obtener los documentos de la colección
+    querySnapshot.forEach((doc) => {
+      const codeData = doc.data();
+      codes.push(codeData.code);
+    });
+    setAllCodes(codes);
+  } catch (error) {
+    console.error("Error al cargar los códigos canjeados:", error);
+  }
+};
+
+
+
 
   const handleStoreInteraction = (store) => {
     setSelectedStore(store);
@@ -263,10 +286,22 @@ export default function App() {
                   }}
                   style={styles.storeButton}
                 >
-                  <Text style={{ color: "white" }}>
+                  <Text style={{ color: "white",  fontWeight: "bold" }}>
                     Descuento: {item.pointsRequired} puntos
                   </Text>
+                  
                 </TouchableOpacity>
+                <TouchableHighlight
+  style={styles.viewAllCodesButton}
+  onPress={() => {
+    loadAllCodes(); // Carga los códigos antes de mostrar el modal
+    setShowAllCodesModal(true);
+  }}
+>
+  <Text style={styles.buttonTexts}>Mis Codigos</Text>
+</TouchableHighlight>
+
+
               </Animated.View>
             </View>
           );
@@ -313,6 +348,37 @@ export default function App() {
         </View>
       </Modal>
 
+      <Modal visible={showAllCodesModal} transparent={true} animationType="slide">
+  <View style={styles.modalContainer}>
+    {/* Utiliza un ScrollView para hacer que el contenido sea scrollable */}
+    <ScrollView
+      contentContainerStyle={{
+        ...styles.scrollViewContainer,
+        paddingTop: 100, // Ajusta el paddingTop según sea necesario
+      }}
+    >
+      <View style={styles.modalContent}>
+        <Text style={styles.modalText}>Códigos Canjeados:</Text>
+        {allCodes.map((code, index) => (
+          <View key={index} style={styles.qrContainer}>
+            <Text style={styles.codesText}>{code}</Text>
+            <View style={styles.qrWrapper}>
+              <QRCode value={code} size={200} />
+            </View>
+          </View>
+        ))}
+        <TouchableHighlight
+          style={styles.modalButton}
+          onPress={() => setShowAllCodesModal(false)}
+        >
+          <Text style={styles.buttonText}>Cerrar</Text>
+        </TouchableHighlight>
+      </View>
+    </ScrollView>
+  </View>
+</Modal>
+
+
       
       {generatedCodes.length > 0 && (
         // Modal de códigos generados
@@ -337,6 +403,9 @@ export default function App() {
     </View>
   </View>
 </Modal>
+
+
+
 
 
 
@@ -400,11 +469,24 @@ const styles = StyleSheet.create({
   qrContainer: {
     justifyContent: 'center',
     alignItems: 'center',
+    
   },
   qrWrapper: {
     alignItems: 'center',
+    
   },
-  
+  viewAllCodesButton: {
+    backgroundColor: "#007AFF", // Color de fondo del botón
+    padding: 10, // Espacio interno
+    borderRadius: 10, // Borde redondeado
+    marginTop: 20, // Espacio superior
+    alignItems: "center", // Alinear contenido al centro horizontalmente
+  },
+  buttonTexts: {
+    color: "#FFFFFF", // Color del texto del botón
+    fontSize: 13, // Tamaño del texto
+
+  },
   pointsText: {
     fontSize: 18,
     fontWeight: "bold",
