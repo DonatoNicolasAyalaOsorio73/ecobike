@@ -476,12 +476,14 @@ const styles = StyleSheet.create({
     
   },
   viewAllCodesButton: {
-    backgroundColor: "#007AFF", // Color de fondo del botón
+    backgroundColor: "#ADF14B", // Color de fondo del botón
     padding: 10, // Espacio interno
     borderRadius: 10, // Borde redondeado
     marginTop: 20, // Espacio superior
-    alignItems: "center", // Alinear contenido al centro horizontalmente
+    alignItems: "center", 
+    
   },
+  
   buttonTexts: {
     color: "#FFFFFF", // Color del texto del botón
     fontSize: 13, // Tamaño del texto

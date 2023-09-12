@@ -33,20 +33,20 @@ const Welcome = ({navigation}) => {
             }}
           />
           <View style={styles.contentContainer}>
-            <Text style={styles.title}>El Mundo </Text>
-            <Text style={styles.title}>Sobre Dos Ruedas</Text>
-            <Text style={styles.body}>Descubre emocionantes aventuras en bicicleta y gana puntos canjeables por premios.
+            <Text style={styles.title}>El mundo </Text>
+            <Text style={styles.title}>sobre dos ruedas</Text>
+            <Text style={styles.body}>Vive emocionantes aventuras en tu bicicleta y gana puntos canjeables por cupones en tus tiendas favoritas.
             </Text>
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                onPress={() => navigation.navigate('Register')}
                style={styles.button2}>
-                <Text style={styles.buttonsText}>Register</Text>
+                <Text style={styles.buttonsText}>Únete</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => navigation.navigate('SignIn')}
                 style={styles.button1}>
-                <Text style={styles.buttonsText}>Sign In</Text>
+                <Text style={styles.buttonsText}>Entra</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -66,6 +66,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 25,
+    marginTop: -20,
   },
   title: {
     fontSize: 32,
@@ -73,10 +74,11 @@ const styles = StyleSheet.create({
     lineHeight: 35,
     textAlign: 'center',
     color: '#353147',
+    
   },
   body: {
     paddingTop: 20,
-    fontSize: 16,
+    fontSize: 20,
     lineHeight: 23,
     fontWeight: '400',
     textAlign: 'center',
@@ -105,6 +107,6 @@ const styles = StyleSheet.create({
     borderColor: 'white',
     borderRadius: 16,
     backgroundColor: '#DFE3E630',
-    marginTop: 40,
+    marginTop: 40
   },
 });

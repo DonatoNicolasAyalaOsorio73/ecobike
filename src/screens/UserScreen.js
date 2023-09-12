@@ -7,8 +7,8 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Modal, // Agrega Modal desde 'react-native'
-  TouchableHighlight, // Agrega TouchableHighlight desde 'react-native'
+  Modal,
+  TouchableHighlight,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -29,13 +29,21 @@ export default function UserScreen({ navigation }) {
   const authInstance = getAuth();
   const userUid = authInstance.currentUser?.uid;
   const [userData, setUserData] = useState(null);
-  const [editedData, setEditedData] = useState({});
+  const [editedData, setEditedData] = useState({
+    nombres: '',
+    apellidos: '',
+    identificacion: '',
+    fechaNacimiento: new Date(),
+    sexo: '',
+    email: '',
+    contraseña: '',
+    confirmarContraseña: '',
+  });
   const [selectedImage, setSelectedImage] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [isEditingImage, setIsEditingImage] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
-  const [showEditConfirmation, setShowEditConfirmation] = useState(false); // Agrega el estado showEditConfirmation
+  const [showEditConfirmation, setShowEditConfirmation] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -64,7 +72,7 @@ export default function UserScreen({ navigation }) {
   const confirmLogout = async () => {
     try {
       await signOut(authInstance);
-      navigation.navigate('SignIn'); // Redirige al usuario al inicio
+      navigation.navigate('SignIn');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
     } finally {
@@ -78,58 +86,59 @@ export default function UserScreen({ navigation }) {
 
   const confirmEdit = () => {
     setIsEditing(true);
-    setIsEditingImage(false);
     setShowEditConfirmation(false);
   };
+
+  // ...
 
   const handleImageSelect = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
-      aspect: [4, 4],
+      aspect: [1, 1],
       quality: 1,
     });
+  
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
+      setEditedData({
+        ...editedData,
+        profileImageUrl: result.assets[0].uri,
+      });
     }
   };
 
   const handleSave = async () => {
     setIsLoading(true);
-
+  
     const db = getFirestore();
     const userDocRef = doc(db, 'usuarios', userUid);
-
+  
     try {
-      if (selectedImage) {
+      if (selectedImage !== userData.profileImageUrl) {
         const storage = getStorage();
         const storageRef = ref(storage, `profileImages/${userUid}`);
-        await uploadBytes(storageRef, selectedImage);
+  
+        const response = await fetch(selectedImage);
+        const blob = await response.blob();
+        await uploadBytes(storageRef, blob);
+  
         const downloadURL = await getDownloadURL(storageRef);
-
-        setEditedData({
+  
+        await updateDoc(userDocRef, {
           ...editedData,
           profileImageUrl: downloadURL,
         });
-        setSelectedImage(downloadURL);
+      } else {
+        await updateDoc(userDocRef, editedData);
       }
-
-      setUserData(editedData);
-
-      await updateDoc(userDocRef, editedData);
-
+  
       setIsEditing(false);
       setSelectedImage(null);
-
+  
       console.log('Data and image updated successfully');
     } catch (error) {
       console.log('Error updating data:', error);
-      if (error.code === 'storage/unknown') {
-        console.log('Unknown storage error:', error.serverResponse);
-        if (error.serverResponse && error.serverResponse.body) {
-          console.log('Error body:', error.serverResponse.body);
-        }
-      }
     } finally {
       setIsLoading(false);
     }
@@ -159,7 +168,7 @@ export default function UserScreen({ navigation }) {
               }
             }}
           >
-            {(selectedImage || userData.profileImageUrl) ? (
+            {selectedImage || userData.profileImageUrl ? (
               <Image
                 source={{ uri: selectedImage || userData.profileImageUrl }}
                 style={styles.image}
@@ -244,7 +253,6 @@ export default function UserScreen({ navigation }) {
           </View>
         </View>
       </Modal>
-      
     </ScrollView>
   );
 }
@@ -257,10 +265,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     width: '90%',
     marginTop: 30,
-    marginHorizontal: 20, // Margen izquierdo y derecho
+    marginHorizontal: 20,
   },
-  
-  
   scrollContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -270,9 +276,9 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: 210,
     height: 210,
-    borderRadius: 60,
+    borderRadius: 110,
     borderWidth: 3,
-    borderColor: 'black',
+    borderColor: '#54CD64',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
@@ -284,7 +290,7 @@ const styles = StyleSheet.create({
   image: {
     width: 200,
     height: 200,
-    borderRadius: 60,
+    borderRadius: 110,
   },
   imageButton: {
     marginBottom: 10,
@@ -333,7 +339,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   logoutButton: {
-    backgroundColor: 'green',
+    backgroundColor: '#54CD64',
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 10,
@@ -356,7 +362,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalButton: {
-    backgroundColor: '#000000', // Cambiado el color de fondo a azul
+    backgroundColor: '#000000',
     borderRadius: 16,
     paddingVertical: 10,
     paddingHorizontal: 30,
@@ -370,11 +376,10 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.2,
     shadowRadius: 10.32,
-    
   },
   modalContent: {
     backgroundColor: 'white',
-    padding: 20, // Aumentado el padding para dar más espacio al contenido
+    padding: 20,
     borderRadius: 10,
     alignItems: 'center',
   },
