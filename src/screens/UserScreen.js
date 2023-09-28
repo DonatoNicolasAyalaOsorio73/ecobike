@@ -10,20 +10,21 @@ import {
   Modal,
   TouchableHighlight,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import {
   getFirestore,
   doc,
   getDoc,
   updateDoc,
 } from 'firebase/firestore';
-import { getAuth, signOut } from 'firebase/auth';
 import {
   getStorage,
   ref,
   uploadBytes,
   getDownloadURL,
 } from 'firebase/storage';
+import * as ImagePicker from 'expo-image-picker';
+import { getAuth, signOut } from 'firebase/auth';
+import { TextInputMask } from 'react-native-masked-text';
 
 export default function UserScreen({ navigation }) {
   const authInstance = getAuth();
@@ -33,7 +34,7 @@ export default function UserScreen({ navigation }) {
     nombres: '',
     apellidos: '',
     identificacion: '',
-    fechaNacimiento: new Date(),
+    fechaNacimiento: '',
     sexo: '',
     email: '',
     contraseña: '',
@@ -41,9 +42,14 @@ export default function UserScreen({ navigation }) {
   });
   const [selectedImage, setSelectedImage] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
   const [showEditConfirmation, setShowEditConfirmation] = useState(false);
+  const [imageChanged, setImageChanged] = useState(false);
+  const [dataUpdated, setDataUpdated] = useState(false);
+  const [showGenderModal, setShowGenderModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGenderChanged, setIsGenderChanged] = useState(false);
+  const [isUserDataChanged, setIsUserDataChanged] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -55,6 +61,7 @@ export default function UserScreen({ navigation }) {
           const userData = userDocSnapshot.data();
           setUserData(userData);
           setEditedData(userData);
+          setDataUpdated(false);
         } else {
           console.log('User document not found');
         }
@@ -63,7 +70,58 @@ export default function UserScreen({ navigation }) {
       }
     };
     fetchUserData();
-  }, [userUid]);
+  }, [userUid, dataUpdated]);
+
+  const handleSave = async () => {
+    setIsLoading(true);
+    if (!validateDate(editedData.fechaNacimiento)) {
+      Alert.alert('Error', 'La fecha de nacimiento no es válida.');
+      setIsLoading(false);
+      return;
+    }
+    const db = getFirestore();
+    const userDocRef = doc(db, 'usuarios', userUid);
+    try {
+      if (imageChanged) {
+        if (selectedImage !== userData.profileImageUrl) {
+          const storage = getStorage();
+          const storageRef = ref(storage, `profileImages/${userUid}`);
+          const response = await fetch(selectedImage);
+          const blob = await response.blob();
+          await uploadBytes(storageRef, blob);
+          const downloadURL = await getDownloadURL(storageRef);
+  
+          await updateDoc(userDocRef, {
+            ...editedData,
+            profileImageUrl: downloadURL,
+          });
+        } else {
+          await updateDoc(userDocRef, {
+            ...editedData,
+          });
+        }
+      } else {
+        await updateDoc(userDocRef, {
+          ...editedData,
+        });
+      }
+      if (isGenderChanged) {
+        await updateDoc(userDocRef, {
+          sexo: editedData.sexo,
+        });
+      }
+      setIsEditing(false);
+      setSelectedImage(null);
+      setImageChanged(false);
+      setIsGenderChanged(false);
+      setDataUpdated(true);
+      console.log('Data and image updated successfully');
+    } catch (error) {
+      console.log('Error updating data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     setShowLogoutConfirmation(true);
@@ -89,8 +147,6 @@ export default function UserScreen({ navigation }) {
     setShowEditConfirmation(false);
   };
 
-  // ...
-
   const handleImageSelect = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
@@ -98,128 +154,148 @@ export default function UserScreen({ navigation }) {
       aspect: [1, 1],
       quality: 1,
     });
-  
+
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
       setEditedData({
         ...editedData,
         profileImageUrl: result.assets[0].uri,
       });
+      setImageChanged(true); // Indicar que la imagen ha cambiado
     }
   };
 
-  const handleSave = async () => {
-    setIsLoading(true);
-  
-    const db = getFirestore();
-    const userDocRef = doc(db, 'usuarios', userUid);
-  
-    try {
-      if (selectedImage !== userData.profileImageUrl) {
-        const storage = getStorage();
-        const storageRef = ref(storage, `profileImages/${userUid}`);
-  
-        const response = await fetch(selectedImage);
-        const blob = await response.blob();
-        await uploadBytes(storageRef, blob);
-  
-        const downloadURL = await getDownloadURL(storageRef);
-  
-        await updateDoc(userDocRef, {
-          ...editedData,
-          profileImageUrl: downloadURL,
-        });
-      } else {
-        await updateDoc(userDocRef, editedData);
-      }
-  
-      setIsEditing(false);
-      setSelectedImage(null);
-  
-      console.log('Data and image updated successfully');
-    } catch (error) {
-      console.log('Error updating data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleInputChange = (field, value) => {
+  const handleGenderSelect = (gender) => {
     setEditedData({
       ...editedData,
-      [field]: value,
+      sexo: gender,
     });
+    setIsGenderChanged(true); // Marca que el género ha cambiado
+    setShowGenderModal(false);
   };
+  
+  const handleInputChange = (field, value) => {
+  setEditedData({
+    ...editedData,
+    [field]: value,
+  });
+  setIsUserDataChanged(true); // Marca que los datos del usuario han cambiado
+};
+
+const validateDate = (date) => {
+  const parts = date.split('/');
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const year = parseInt(parts[2], 10);
+  const currentYear = new Date().getFullYear();
+  if (
+    day >= 1 && day <= 31 &&
+    month >= 1 && month <= 12 &&
+    year >= 1800 && year <= 2023
+  ) {
+    return true;
+  } else {
+    return false;
+  }
+};
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Text style={styles.logoutButtonText}>Salir</Text>
-        </TouchableOpacity>
-      </View>
+      <View style={styles.header}></View>
       {userData ? (
         <View style={styles.scrollContainer}>
-          <TouchableOpacity
-            style={[styles.imageContainer, isEditing && styles.editableImageContainer]}
-            onPress={() => {
-              if (isEditing) {
-                handleImageSelect();
-              }
-            }}
-          >
-            {selectedImage || userData.profileImageUrl ? (
-              <Image
-                source={{ uri: selectedImage || userData.profileImageUrl }}
-                style={styles.image}
-              />
-            ) : (
-              <Text>Select Image</Text>
-            )}
-          </TouchableOpacity>
-
+          <View style={[styles.imageContainer, isEditing && styles.editableImageContainer]}>
+            <TouchableOpacity
+              style={[
+                styles.image,
+                isEditing && styles.editableImageContainer,
+                {
+                  backgroundColor: 'white', 
+                  overflow: 'hidden',
+                  borderWidth: 3,
+                  backgroundColor: '#54CD64',
+                  width: 220,
+                  height: 220,
+                  borderRadius: 110,
+                  
+                  
+                },
+              ]}
+              onPress={() => {
+                if (isEditing) {
+                  handleImageSelect();
+                }
+              }}
+            >
+              {selectedImage || userData.profileImageUrl ? (
+                <Image
+                  source={{ uri: selectedImage || userData.profileImageUrl }}
+                  style={styles.image}
+                />
+              ) : (
+                <Text>Select Image</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+  
           {isEditing && (
             <TouchableOpacity style={styles.imageButton} onPress={handleImageSelect}>
-              <Text>{selectedImage ? 'Cambiar Imagen' : 'Seleccionar Imagen'}</Text>
             </TouchableOpacity>
           )}
-
-          <Text style={styles.title}>Nombres:</Text>
+  
+          <Text style={styles.title}>Usuario</Text>
           {isEditing ? (
-            <TextInput style={styles.input} value={editedData.nombres} onChangeText={(value) => handleInputChange('nombres', value)} />
+            <TextInput style={styles.input} editable={true} value={editedData.username} onChangeText={(value) => handleInputChange('username', value)} />
           ) : (
-            <Text style={styles.body}>{userData.nombres}</Text>
+            <TextInput style={styles.body} editable={false}>{userData.username}</TextInput>
           )}
-
-          <Text style={styles.title}>Apellidos:</Text>
+  
+          <Text style={styles.title}>Género</Text>
           {isEditing ? (
-            <TextInput style={styles.input} value={editedData.apellidos} onChangeText={(value) => handleInputChange('apellidos', value)} />
+            <TouchableOpacity
+              style={styles.input}
+              onPress={() => setShowGenderModal(true)}
+            >
+              <Text>{editedData.sexo || 'Seleccionar Género'}</Text>
+            </TouchableOpacity>
           ) : (
-            <Text style={styles.body}>{userData.apellidos}</Text>
+            <TextInput style={styles.body} editable={false} >{userData.sexo}</TextInput>
           )}
-
-          <Text style={styles.title}>Edad:</Text>
+  
+          <Text style={styles.title}>Fecha de nacimiento</Text>
           {isEditing ? (
-            <TextInput style={styles.input} value={editedData.edad} onChangeText={(value) => handleInputChange('edad', value)} />
+            <TextInputMask
+              type={'datetime'}
+              options={{
+                format: 'DD/MM/YYYY',
+              }}
+              style={styles.input}
+              placeholder="dd/mm/yyyy"
+              placeholderTextColor="#BFBFC1"
+              autoCorrect={false}
+              onChangeText={(text) => handleInputChange('fechaNacimiento', text)}
+              value={editedData.fechaNacimiento}
+            />
           ) : (
-            <Text style={styles.body}>{userData.edad} years</Text>
+            <TextInput style={styles.body} editable={false}>{userData.fechaNacimiento}</TextInput>
           )}
-
-          <Text style={styles.title}>Identificación:</Text>
-          {isEditing ? (
-            <TextInput style={styles.input} value={editedData.identificacion} onChangeText={(value) => handleInputChange('identificacion', value)} />
-          ) : (
-            <Text style={styles.body}>{userData.identificacion}</Text>
-          )}
-
-          <TouchableOpacity style={styles.button} onPress={isEditing ? handleSave : handleEdit}>
-            <Text style={styles.buttonText}>{isEditing ? 'Guardar Cambios' : 'Editar'}</Text>
-          </TouchableOpacity>
+  
+          <Text style={styles.title}>Correo</Text>
+          <TextInput style={styles.body}editable={false}>{userData.email}</TextInput>
+  
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.button} onPress={isEditing ? handleSave : handleEdit}>
+              <Text style={styles.buttonText}>{isEditing ? 'Guardar' : 'Editar'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+              <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       ) : (
         <Text>Loading data...</Text>
       )}
-
+  
       <Modal visible={showLogoutConfirmation} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -236,7 +312,7 @@ export default function UserScreen({ navigation }) {
           </View>
         </View>
       </Modal>
-
+  
       <Modal visible={showEditConfirmation} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -253,9 +329,40 @@ export default function UserScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+  
+      <Modal
+        visible={showGenderModal}
+        transparent={true}
+        animationType="slide"
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalText}>Selecciona tu Género</Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => handleGenderSelect('Masculino')}
+            >
+              <Text style={styles.buttonText}>Masculino</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => handleGenderSelect('Femenino')}
+            >
+              <Text style={styles.buttonText}>Femenino</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => handleGenderSelect('Otro')}
+            >
+              <Text style={styles.buttonText}>Otro</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -263,68 +370,93 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     backgroundColor: 'transparent',
-    width: '90%',
-    marginTop: 30,
-    marginHorizontal: 20,
+    width: '80%',
+    marginTop: 25,
+    marginHorizontal: 40,
   },
   scrollContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 0,
     width: '100%',
   },
   imageContainer: {
-    width: 210,
-    height: 210,
-    borderRadius: 110,
-    borderWidth: 3,
-    borderColor: '#54CD64',
+    width: 200, // Ancho igual al radio del círculo
+    height: 200, // Alto igual al radio del círculo
+    borderRadius: 100, // Para hacer un círculo perfecto
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
+    marginTop: 20,
+    shadowColor: '#ADF14B',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 10,
+    shadowRadius: 30,
+    backgroundColor: 'white',
   },
   editableImageContainer: {
-    borderWidth: 3,
-    borderColor: 'gray',
+    width: 200, // Ancho igual al radio del círculo
+    height: 200, // Alto igual al radio del círculo
+    borderRadius: 100, // Para hacer un círculo perfecto
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    marginTop: 20,
+    borderColor: '#888888',
+    shadowColor: 'black',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 1,
+    shadowRadius: 15,
   },
   image: {
-    width: 200,
-    height: 200,
-    borderRadius: 110,
+    width: '100%', // Ancho y alto del 100% para ocupar todo el contenedor
+    height: '100%',
+    borderRadius: 100, // Para hacer un círculo perfecto
+    borderColor: '#ADF14B',
+    resizeMode: 'cover', // Ajustar la imagen para cubrir todo el contenedor
   },
   imageButton: {
-    marginBottom: 10,
+    marginBottom: 0,
   },
   title: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: '#353147',
     alignSelf: 'flex-start',
     marginBottom: 5,
+    marginTop: 14,
+  
   },
   body: {
-    backgroundColor: '#F7F7F7',
-    padding: 18,
-    borderRadius: 26,
-    marginBottom: 10,
+    backgroundColor: '#FFFFFF',
+    padding: 15,
+    borderRadius: 16,
     width: '100%',
   },
   input: {
     backgroundColor: '#FFFFFF',
-    padding: 18,
+    padding: 15,
     borderRadius: 16,
-    marginBottom: 10,
     width: '100%',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 1.5,
   },
   button: {
     backgroundColor: '#000000',
     paddingVertical: 20,
-    paddingHorizontal: 30,
     borderRadius: 16,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 0,
-    width: '60%',
+    justifyContent: 'left',
+    width: '45%',
   },
   buttonText: {
     color: 'white',
@@ -340,15 +472,23 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     backgroundColor: '#54CD64',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    left: 140,
+    paddingVertical: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'left',
+    width: '45%',
   },
   logoutButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between', 
+    width: '85%',
+    marginBottom: 10,
+    paddingTop: 40,
   },
   modalContainer: {
     flex: 1,

@@ -11,25 +11,33 @@ import {
   Platform,
   Modal,
 } from "react-native";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, collection, doc, setDoc } from "firebase/firestore";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+} from "firebase/auth";
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+} from "firebase/firestore";
 import { Ionicons } from "@expo/vector-icons";
-import DatePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
+import { TextInputMask } from 'react-native-masked-text';
 
 const Register = ({ navigation }) => {
   const [userData, setUserData] = useState({
     nombres: "",
     apellidos: "",
     identificacion: "",
-    fechaNacimiento: new Date(), // Cambiamos esto para que sea un objeto Date
+    fechaNacimiento: "",
     sexo: "",
     email: "",
     contraseña: "",
     confirmarContraseña: "",
   });
 
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isPlaceholder, setIsPlaceholder] = useState(true);
   const [showSexModal, setShowSexModal] = useState(false);
 
   const showAlert = (title, message) => {
@@ -73,57 +81,74 @@ const Register = ({ navigation }) => {
     return true;
   };
 
-  const handleDateChange = (event, selectedDate) => {
-    setShowDatePicker(Platform.OS === "ios"); // Mostrar el selector en iOS
-    if (selectedDate) {
+  const handleFocus = () => {
+    if (isPlaceholder) {
       setUserData((prevData) => ({
         ...prevData,
-        fechaNacimiento: selectedDate,
+        fechaNacimiento: "",
       }));
+      setIsPlaceholder(false);
     }
   };
 
-  const handleSexPress = () => {
-    setShowSexModal(true);
+  const handleBlur = () => {
+    if (userData.fechaNacimiento === "dd/mm/yyyy") {
+      setUserData((prevData) => ({
+        ...prevData,
+        fechaNacimiento: "",
+      }));
+      setIsPlaceholder(true);
+    } else {
+      const formattedDate = userData.fechaNacimiento.replace(
+        /(\d{2})(\d{2})(\d{4})/,
+        "$1/$2/$3"
+      );
+      const isValidDate = validateDate(formattedDate);
+      if (isValidDate) {
+        setUserData((prevData) => ({
+          ...prevData,
+          fechaNacimiento: formattedDate,
+        }));
+      } else {
+        showAlert("Alerta", "Fecha de nacimiento no válida.");
+        setUserData((prevData) => ({
+          ...prevData,
+          fechaNacimiento: "",
+        }));
+        setIsPlaceholder(true);
+      }
+    }
   };
 
-  const handleSexSelect = (value) => {
-    setShowSexModal(false);
-    setUserData((prevData) => ({
-      ...prevData,
-      sexo: value === "Seleccione una opción" ? "" : value,
-    }));
-  };
-
-  const showDatepicker = () => {
-    setShowDatePicker(true);
-  };
-
-  const hideDatepicker = () => {
-    setShowDatePicker(false);
-  };
-
-  const acceptDate = () => {
-    // Aquí puedes realizar cualquier acción que necesites con la fecha de nacimiento seleccionada.
-    // En este ejemplo, simplemente ocultamos el selector de fecha.
-    hideDatepicker();
+  const validateDate = (date) => {
+    const parts = date.split('/');
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+    if (
+      day >= 1 && day <= 31 &&
+      month >= 1 && month <= 12 &&
+      year >= 1900 && year <= 9999
+    ) {
+      return true;
+    } else {
+      return false;
+    }
   };
 
   const handleRegister = async () => {
     const db = getFirestore();
-
     if (!validateFields()) {
       return;
     }
-
     try {
       const authInstance = getAuth();
+      const username = generateUsername(userData.nombres);
       await createUserWithEmailAndPassword(
         authInstance,
         userData.email,
         userData.contraseña
       );
-
       if (authInstance.currentUser) {
         const userDocRef = doc(
           db,
@@ -137,14 +162,13 @@ const Register = ({ navigation }) => {
             nombres: userData.nombres,
             apellidos: userData.apellidos,
             identificacion: userData.identificacion,
-            fechaNacimiento: userData.fechaNacimiento.toISOString(),
-            sexo: userData.sexo, // Agregamos el campo "sexo"
+            fechaNacimiento: userData.fechaNacimiento,
+            sexo: userData.sexo,
+            username: username 
           },
           { merge: true }
-        ); // Utilizamos merge para actualizar o crear el documento
-
+        );
         console.log("Datos agregados a Firestore exitosamente");
-
         showAlert(
           "Registro Exitoso",
           "Tu registro ha sido exitoso. Ahora puedes iniciar sesión."
@@ -156,14 +180,18 @@ const Register = ({ navigation }) => {
     } catch (error) {
       console.log("Error object:", error);
       let errorMessage = "Error al registrar usuario.";
-      switch (
-        error.code
-        // ... (rest of the error handling remains the same)
-      ) {
+      switch (error.code) {
       }
       showAlert("Alerta", errorMessage);
     }
   };
+  
+const generateUsername = (name) => {
+  const formattedName = name.toLowerCase().replace(/\s/g, '');
+  const randomSuffix = Math.floor(Math.random() * 9000) + 1000;
+  const username = formattedName + '#' + randomSuffix;
+  return username;
+};
 
   return (
     <SafeAreaView style={styles.container}>
@@ -180,12 +208,32 @@ const Register = ({ navigation }) => {
           {Object.keys(userData).map((key) => (
             <View key={key} style={styles.dataContainer}>
               {key === "fechaNacimiento" ? (
-                <TouchableOpacity style={styles.input} onPress={showDatepicker}>
-                  <Text style={styles.label}>Fecha de Nacimiento:</Text>
-                  <Text style={styles.label}>
-                    {userData.fechaNacimiento.toDateString()}
-                  </Text>
-                </TouchableOpacity>
+                <View style={styles.inputContainer}>
+                  <TextInputMask
+                    type={'datetime'}
+                    options={{
+                      format: 'DD/MM/YYYY'
+                    }}
+                    key={key}
+                    style={styles.input}
+                    placeholder={
+                      isPlaceholder
+                        ? "Fecha de nacimiento"
+                        : "dd/mm/yyyy"
+                    }
+                    placeholderTextColor="#BFBFC1"
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                    autoCorrect={false}
+                    onChangeText={(value) =>
+                      setUserData((prevData) => ({
+                        ...prevData,
+                        fechaNacimiento: value,
+                      }))
+                    }
+                    value={userData.fechaNacimiento}
+                  />
+                </View>
               ) : (
                 <View style={styles.inputContainer}>
                   {key === "sexo" ? (
@@ -208,7 +256,11 @@ const Register = ({ navigation }) => {
                     <TextInput
                       key={key}
                       style={styles.input}
-                      placeholder={key.charAt(0).toUpperCase() + key.slice(1)}
+                      placeholder={
+                        key === "confirmarContraseña"
+                          ? "Confirma tu contraseña"
+                          : key.charAt(0).toUpperCase() + key.slice(1)
+                      }
                       autoCorrect={false}
                       secureTextEntry={
                         key === "contraseña" || key === "confirmarContraseña"
@@ -238,63 +290,36 @@ const Register = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-      <Modal
-  animationType="slide"
-  transparent={true}
-  visible={showSexModal}
-  onRequestClose={() => setShowSexModal(false)}
->
-  <View style={styles.modalContainer}>
-    <View style={styles.modalContent}>
-      <Text style={styles.modalTitle}>Selecciona tu Sexo</Text>
-      <Picker
-        selectedValue={userData.sexo}
-        onValueChange={(itemValue) =>
-          setUserData((prevData) => ({ ...prevData, sexo: itemValue }))
-        }
-      >
-        <Picker.Item label="Masculino" value="Masculino" />
-        <Picker.Item label="Femenino" value="Femenino" />
-        <Picker.Item label="Otro" value="Otro" />
-      </Picker>
-      <TouchableOpacity
-        style={styles.modalButton}
-        onPress={() => {
-          if (!userData.sexo) {
-            // Si no se eligió ninguna opción, establecer "Masculino" automáticamente
-            setUserData((prevData) => ({ ...prevData, sexo: 'Masculino' }));
-          }
-          setShowSexModal(false);
-        }}
-      >
-        <Text style={styles.modalText}>Seleccionar</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal>
 
       <Modal
         animationType="slide"
         transparent={true}
-        visible={showDatePicker}
-        onRequestClose={hideDatepicker}
+        visible={showSexModal}
+        onRequestClose={() => setShowSexModal(false)}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              Selecciona tu Fecha de Nacimiento
-            </Text>
-            <View style={{ alignItems: "center" }}>
-              <DatePicker
-                style={styles.datePicker}
-                mode="date"
-                value={userData.fechaNacimiento}
-                onChange={handleDateChange}
-              />
-            </View>
-
-            <TouchableOpacity style={styles.modalButton} onPress={acceptDate}>
-              <Text style={styles.modalText}>Aceptar</Text>
+            <Text style={styles.modalTitle}>Selecciona tu Sexo</Text>
+            <Picker
+              selectedValue={userData.sexo}
+              onValueChange={(itemValue) =>
+                setUserData((prevData) => ({ ...prevData, sexo: itemValue }))
+              }
+            >
+              <Picker.Item label="Masculino" value="Masculino" />
+              <Picker.Item label="Femenino" value="Femenino" />
+              <Picker.Item label="Otro" value="Otro" />
+            </Picker>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                if (!userData.sexo) {
+                  setUserData((prevData) => ({ ...prevData, sexo: 'Masculino' }));
+                }
+                setShowSexModal(false);
+              }}
+            >
+              <Text style={styles.modalText}>Seleccionar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -317,7 +342,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 30,
-    borderRadius: 4,
+    borderRadius: 33,
     backgroundColor: "white",
     paddingVertical: 50,
     shadowColor: "#000",
@@ -362,25 +387,6 @@ const styles = StyleSheet.create({
     left: 20,
     zIndex: 1,
   },
-  acceptButton: {
-    backgroundColor: "#000000",
-    padding: 10,
-    borderRadius: 16,
-    alignItems: "center",
-    marginVertical: 10,
-    shadowColor: "#000000",
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.44,
-    shadowRadius: 5.32,
-    elevation: 5,
-  },
-  acceptButtonText: {
-    color: "white",
-    fontWeight: "bold",
-  },
   registerButton: {
     backgroundColor: "#000000",
     padding: 20,
@@ -395,17 +401,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.44,
     shadowRadius: 10.32,
   },
-  label: {
-    marginBottom: 10,
-    color: "#BFBFC1", // Cambia el color del texto a gris
-  },
   modalContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.5)", // Agrega un fondo semitransparente
   },
-
   modalButton: {
     backgroundColor: "#000000", // Cambiado el color de fondo a azul
     borderRadius: 16,
@@ -425,19 +426,13 @@ const styles = StyleSheet.create({
   modalText: {
     fontSize: 18,
     fontWeight: "bold",
-
     color: "white",
   },
   modalContent: {
     backgroundColor: "white",
     padding: 20,
     borderRadius: 10,
-    width: "80%", // Ajusta el ancho del modalContent al 80% del ancho de la pantalla
-  },
-  textInputStyle: {
-    backgroundColor: "#F7F7F7",
-
-    color: "#BFBFC1", // Cambiar el color del texto a un gris más suave
+    width: "80%",
   },
 });
 
