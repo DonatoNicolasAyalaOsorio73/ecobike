@@ -5,9 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3a76a4d2-6a2d-430a-8576-bc07b7dee031" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/shared/BottomTabs/AnimatedCircle.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/shared/BottomTabs/AnimatedCircle.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/shared/BottomTabs/CustomBottomTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/shared/BottomTabs/CustomBottomTab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/shared/BottomTabs/TabItem.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/shared/BottomTabs/TabItem.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

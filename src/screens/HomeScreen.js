@@ -1,40 +1,42 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
-  FlatList,
-  TouchableOpacity,
   TextInput,
   Button,
   StyleSheet,
+  Modal,
+  FlatList,
+  TouchableOpacity,
+  Alert,
 } from "react-native";
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, arrayRemove } from "@firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+  updateDoc,
+  arrayRemove,
+  query,
+  where,
+} from "@firebase/firestore";
 import { getAuth } from "@firebase/auth";
 
 export default function FollowUsers() {
   const [users, setUsers] = useState([]);
   const [followedUsers, setFollowedUsers] = useState([]);
   const [newFollowUsername, setNewFollowUsername] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
   const auth = getAuth();
   const userUid = auth.currentUser?.uid;
 
-  // Obtener la colección de usuarios de Firebase Firestore
   const db = getFirestore();
   const usersCollection = collection(db, "usuarios");
 
   useEffect(() => {
-    // Cargar la lista de usuarios
-    const loadUsers = async () => {
-      const querySnapshot = await getDocs(usersCollection);
-      const usersData = [];
-      querySnapshot.forEach((doc) => {
-        const userData = doc.data();
-        usersData.push(userData);
-      });
-      setUsers(usersData);
-    };
-
-    // Cargar la lista de usuarios seguidos por el usuario actual
     const loadFollowedUsers = async () => {
       if (userUid) {
         const userDocRef = doc(db, "usuarios", userUid);
@@ -46,87 +48,235 @@ export default function FollowUsers() {
       }
     };
 
-    loadUsers();
     loadFollowedUsers();
   }, [userUid]);
 
-  // Función para seguir a un usuario
-  const followUser = async (usernameToFollow) => {
-    const userToFollow = users.find((user) => user.username === usernameToFollow);
-    if (!userToFollow) {
-      console.log("Usuario no encontrado");
+  const searchUser = useCallback(async () => {
+    if (newFollowUsername.trim() === "") {
       return;
     }
 
-    const updatedFollowedUsers = [...followedUsers, userToFollow.username];
+    try {
+      const querySnapshot = await getDocs(
+        query(collection(db, "usuarios"), where("username", "==", newFollowUsername))
+      );
 
-    const userDocRef = doc(db, "usuarios", userUid);
-    await setDoc(userDocRef, { following: updatedFollowedUsers }, { merge: true });
+      if (!querySnapshot.empty) {
+        setSelectedUser(querySnapshot.docs[0].data());
+        setModalVisible(true);
+      } else {
+        setSelectedUser(null);
+        setModalVisible(false);
+      }
+    } catch (error) {
+      console.error("Error al buscar usuario:", error);
+    }
+  }, [newFollowUsername]);
 
-    setFollowedUsers(updatedFollowedUsers);
-    setNewFollowUsername("");
+  const followUser = async () => {
+    if (selectedUser) {
+      const updatedFollowedUsers = [...followedUsers, selectedUser.username];
+
+      const userDocRef = doc(db, "usuarios", userUid);
+      await setDoc(userDocRef, { following: updatedFollowedUsers }, { merge: true });
+
+      setFollowedUsers(updatedFollowedUsers);
+      setNewFollowUsername("");
+      setModalVisible(false);
+    }
   };
 
-  // Función para dejar de seguir a un usuario
   const unfollowUser = async (usernameToUnfollow) => {
-    const updatedFollowedUsers = followedUsers.filter((username) => username !== usernameToUnfollow);
+    if (usernameToUnfollow) {
+      const updatedFollowedUsers = followedUsers.filter(
+        (username) => username !== usernameToUnfollow
+      );
 
-    const userDocRef = doc(db, "usuarios", userUid);
-    await updateDoc(userDocRef, { following: arrayRemove(usernameToUnfollow) });
+      const userDocRef = doc(db, "usuarios", userUid);
+      await updateDoc(userDocRef, { following: updatedFollowedUsers });
 
-    setFollowedUsers(updatedFollowedUsers);
+      setFollowedUsers(updatedFollowedUsers);
+      setModalVisible(false);
+    }
+  };
+
+  const deleteUser = async () => {
+    if (selectedUser) {
+      // Agregar confirmación antes de eliminar al usuario
+      Alert.alert(
+        "Confirmación",
+        `¿Seguro que quieres eliminar a ${selectedUser.username}?`,
+        [
+          {
+            text: "Cancelar",
+            style: "cancel",
+          },
+          {
+            text: "Eliminar",
+            style: "destructive",
+            onPress: async () => {
+              // Realiza la eliminación del usuario aquí
+              // Puedes usar Firestore para eliminar el documento del usuario
+              try {
+                const userDocRef = doc(db, "usuarios", userUid);
+                await updateDoc(userDocRef, { following: arrayRemove(selectedUser.username) });
+                setModalVisible(false);
+              } catch (error) {
+                console.error("Error al eliminar usuario:", error);
+              }
+            },
+          },
+        ]
+      );
+    }
   };
 
   return (
     <View style={styles.container}>
-      <Text>Usuarios:</Text>
-      <FlatList
-        data={users}
-        keyExtractor={(item, index) => (item.id ? item.id.toString() : index.toString())}
-        renderItem={({ item }) => (
-          <View>
-            <Text>{item.username}</Text>
-            {userUid !== item.id && !followedUsers.includes(item.username) && (
-              <TouchableOpacity onPress={() => followUser(item.username)}>
-                <Text>Seguir</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      />
-      <Text>Usuarios Seguidos:</Text>
-      <FlatList
-        data={followedUsers}
-        keyExtractor={(item) => item}
-        renderItem={({ item }) => (
-          <View style={styles.followedUserItem}>
-            <Text>{item}</Text>
-            <TouchableOpacity onPress={() => unfollowUser(item)}>
-              <Text>Dejar de seguir</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      />
+      <Text style={styles.title}>Agregar Amigos:</Text>
       <TextInput
+        style={styles.input}
         placeholder="Nombre de usuario a seguir"
         value={newFollowUsername}
         onChangeText={(text) => setNewFollowUsername(text)}
       />
-      <Button title="Seguir Usuario" onPress={() => followUser(newFollowUsername)} />
+     <TouchableOpacity
+  style={styles.button}
+  onPress={searchUser}
+>
+  <Text style={styles.buttonText}>Buscar Usuario</Text>
+</TouchableOpacity>
+
+
+      <Modal animationType="slide" transparent={true} visible={modalVisible}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalText}>
+              {selectedUser ? selectedUser.username : ""}
+            </Text>
+            {selectedUser && !followedUsers.includes(selectedUser.username) ? (
+              <TouchableOpacity style={styles.modalButton} onPress={followUser}>
+                <Text style={styles.modalButtonText}>Seguir</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.logoutButton}
+                onPress={() => unfollowUser(selectedUser.username)}
+              >
+                <Text style={styles.logoutButtonText}>Dejar de seguir</Text>
+              </TouchableOpacity>
+            )}
+            <Button
+              title="Cerrar"
+              onPress={() => {
+                setModalVisible(false);
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    top: "50%",
+    paddingHorizontal: 20,
+    backgroundColor: "#F5F5F5", // Color de fondo del contenedor principal
   },
-  followedUserItem: {
-    flexDirection: "row",
+  title: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#353147",
+    marginBottom: 5,
+    marginTop: 14,
+  },
+  input: {
+    backgroundColor: "#FFFFFF",
+    padding: 15,
+    borderRadius: 16,
+    width: "100%",
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 1.5,
+    marginBottom: 10,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
-    justifyContent: "space-between",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  modalText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+  modalButton: {
+    backgroundColor: "#000000",
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 10.32,
+  },
+  modalButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  logoutButton: {
+    backgroundColor: "red",
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 10.32,
+  },
+  logoutButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  button: {
+    backgroundColor: "#000000",
+    paddingVertical: 20,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "45%",
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
