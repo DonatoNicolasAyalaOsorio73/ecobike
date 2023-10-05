@@ -37,22 +37,31 @@ export default function FollowUsers() {
   const usersCollection = collection(db, "usuarios");
 
   useEffect(() => {
-    const loadFollowedUsers = async () => {
-      if (userUid) {
-        const userDocRef = doc(db, "usuarios", userUid);
-        const userDocSnapshot = await getDoc(userDocRef);
-        if (userDocSnapshot.exists()) {
-          const userData = userDocSnapshot.data();
-          setFollowedUsers(userData.following || []);
-        }
-      }
-    };
-
     loadFollowedUsers();
   }, [userUid]);
 
-  const searchUser = useCallback(async () => {
+  const loadFollowedUsers = async () => {
+    if (!userUid) return;
+
+    const userDocRef = doc(db, "usuarios", userUid);
+    try {
+      const userDocSnapshot = await getDoc(userDocRef);
+      if (userDocSnapshot.exists()) {
+        const userData = userDocSnapshot.data();
+        setFollowedUsers(userData.following || []);
+      }
+    } catch (error) {
+      handleFirebaseError("Error al cargar usuarios seguidos:", error);
+    }
+  };
+
+  const handleFirebaseError = (message, error) => {
+    Alert.alert("Error", `${message} ${error.message}`);
+  };
+
+  const validateAndSearchUser = async () => {
     if (newFollowUsername.trim() === "") {
+      Alert.alert("Error", "Por favor, ingrese un nombre de usuario válido.");
       return;
     }
 
@@ -67,22 +76,26 @@ export default function FollowUsers() {
       } else {
         setSelectedUser(null);
         setModalVisible(false);
+        Alert.alert("Error", "Usuario no encontrado.");
       }
     } catch (error) {
-      console.error("Error al buscar usuario:", error);
+      handleFirebaseError("Error al buscar usuario:", error);
     }
-  }, [newFollowUsername]);
+  };
 
   const followUser = async () => {
     if (selectedUser) {
       const updatedFollowedUsers = [...followedUsers, selectedUser.username];
-
       const userDocRef = doc(db, "usuarios", userUid);
-      await setDoc(userDocRef, { following: updatedFollowedUsers }, { merge: true });
 
-      setFollowedUsers(updatedFollowedUsers);
-      setNewFollowUsername("");
-      setModalVisible(false);
+      try {
+        await setDoc(userDocRef, { following: updatedFollowedUsers }, { merge: true });
+        setFollowedUsers(updatedFollowedUsers);
+        setNewFollowUsername("");
+        setModalVisible(false);
+      } catch (error) {
+        handleFirebaseError("Error al seguir al usuario:", error);
+      }
     }
   };
 
@@ -91,43 +104,15 @@ export default function FollowUsers() {
       const updatedFollowedUsers = followedUsers.filter(
         (username) => username !== usernameToUnfollow
       );
-
       const userDocRef = doc(db, "usuarios", userUid);
-      await updateDoc(userDocRef, { following: updatedFollowedUsers });
 
-      setFollowedUsers(updatedFollowedUsers);
-      setModalVisible(false);
-    }
-  };
-
-  const deleteUser = async () => {
-    if (selectedUser) {
-      // Agregar confirmación antes de eliminar al usuario
-      Alert.alert(
-        "Confirmación",
-        `¿Seguro que quieres eliminar a ${selectedUser.username}?`,
-        [
-          {
-            text: "Cancelar",
-            style: "cancel",
-          },
-          {
-            text: "Eliminar",
-            style: "destructive",
-            onPress: async () => {
-              // Realiza la eliminación del usuario aquí
-              // Puedes usar Firestore para eliminar el documento del usuario
-              try {
-                const userDocRef = doc(db, "usuarios", userUid);
-                await updateDoc(userDocRef, { following: arrayRemove(selectedUser.username) });
-                setModalVisible(false);
-              } catch (error) {
-                console.error("Error al eliminar usuario:", error);
-              }
-            },
-          },
-        ]
-      );
+      try {
+        await updateDoc(userDocRef, { following: updatedFollowedUsers });
+        setFollowedUsers(updatedFollowedUsers);
+        setModalVisible(false);
+      } catch (error) {
+        handleFirebaseError("Error al dejar de seguir al usuario:", error);
+      }
     }
   };
 
@@ -138,15 +123,13 @@ export default function FollowUsers() {
         style={styles.input}
         placeholder="Nombre de usuario a seguir"
         value={newFollowUsername}
-        onChangeText={(text) => setNewFollowUsername(text)}
+        onChangeText={(text) => {
+          setNewFollowUsername(text);
+        }}
       />
-     <TouchableOpacity
-  style={styles.button}
-  onPress={searchUser}
->
-  <Text style={styles.buttonText}>Buscar Usuario</Text>
-</TouchableOpacity>
-
+      <TouchableOpacity style={styles.button} onPress={validateAndSearchUser}>
+        <Text style={styles.buttonText}>Buscar Usuario</Text>
+      </TouchableOpacity>
 
       <Modal animationType="slide" transparent={true} visible={modalVisible}>
         <View style={styles.modalContainer}>

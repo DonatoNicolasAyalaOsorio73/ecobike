@@ -32,19 +32,20 @@ export const CustomBottomTab: FC<BottomTabBarProps> = ({
   };
 
   const selectIcon = (routeName: string) => {
-    switch (routeName) {
-      case 'Casa':
-        return 'home';
-      case 'Mapa':
-        return 'map';
-      case 'Puntos':
-        return 'award';
-      case 'Usuario':
-        return 'user';
-      default:
-        return 'home';
-    }
-  };
+  switch (routeName) {
+    case 'Mapa':
+      return 'map';
+    case 'Puntos':
+      return 'award';
+    case 'Amigos':
+      return 'users';
+    case 'Usuario':
+      return 'user';
+    default:
+      return 'map'; // Valor por defecto si no coincide con ningún caso
+  }
+};
+
 
   const animatedProps = useAnimatedProps(() => {
     const currentPath = interpolatePath(

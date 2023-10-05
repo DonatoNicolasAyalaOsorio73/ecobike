@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Welcome from './auth/Welcome';
 import SignIn from './auth/SignIn';
 import Register from './auth/Register';
-import HomeScreen from './screens/HomeScreen';
+import FriendsScreen from './screens/FriendsScreen';
 import MapScreen from './screens/MapScreen';
 import PointsScreen from './screens/PointsScreen';
 import UserScreen from './screens/UserScreen';
@@ -23,9 +23,9 @@ function MainTabs() {
         screenOptions={{
           headerShown: false,
         }}>
-      <Tab.Screen name="Casa" component={HomeScreen} />
       <Tab.Screen name="Mapa" component={MapScreen} />
       <Tab.Screen name="Puntos" component={PointsScreen} />
+      <Tab.Screen name="Amigos" component={FriendsScreen} />
       <Tab.Screen name="Usuario" component={UserScreen} />
       </Tab.Group>
     </Tab.Navigator> 
