@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Text, View, TouchableHighlight, Modal, ActivityIndicator } from 'react-native';
+import { Text, View, TouchableHighlight, Modal, ActivityIndicator, TextInput, ScrollView } from 'react-native';
 import MapView, { Polyline } from 'react-native-maps';
 import { StatusBar } from 'expo-status-bar';
 import * as Location from 'expo-location';
@@ -62,13 +61,120 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [shouldDrawPath, setShouldDrawPath] = useState(false);
 
+  const [searchText, setSearchText] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedRoute, setSelectedRoute] = useState(null);
+  const [showRouteModal, setShowRouteModal] = useState(false);
+  const [selectedRouteCoordinates, setSelectedRouteCoordinates] = useState([]);
+  const [routeCoordinates, setRouteCoordinates] = useState([]);
+  const [isRouteSelected, setIsRouteSelected] = useState(false);
+  const [selectedEcologicalRoute, setSelectedEcologicalRoute] = useState(null);
+  const [currentLocation, setCurrentLocation] = useState(null);
+
+
+
+
+  const [showSearchModal, setShowSearchModal] = useState(false);
+
   const prevLocationRef = useRef(null);
   const mapRef = useRef(null);
 
   const authInstance = getAuth();
   const userUid = authInstance.currentUser?.uid;
 
-  const db = getFirestore();
+  const db = getFirestore();  
+
+  const decodePolyline = (encoded) => {
+    const poly = [];
+    let index = 0;
+    let lat = 0;
+    let lng = 0;
+  
+    while (index < encoded.length) {
+      let b;
+      let shift = 0;
+      let result = 0;
+  
+      do {
+        b = encoded.charCodeAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+  
+      const dlat = (result & 1) !== 0 ? ~(result >> 1) : result >> 1;
+      lat += dlat;
+  
+      shift = 0;
+      result = 0;
+  
+      do {
+        b = encoded.charCodeAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+  
+      const dlng = (result & 1) !== 0 ? ~(result >> 1) : result >> 1;
+      lng += dlng;
+  
+      const latitude = lat / 1e5;
+      const longitude = lng / 1e5;
+  
+      poly.push({ latitude, longitude });
+    }
+  
+    return poly;
+  };
+  
+
+  const searchLocation = async () => {
+    try {
+      const apiKey = 'REMOVED_GOOGLE_API_KEY'; // Reemplaza con tu propia clave API de Google Maps
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchText}&key=${apiKey}`
+      );
+      const data = await response.json();
+      setSearchResults(data.results);
+    } catch (error) {
+      console.error('Error al buscar ubicación:', error);
+    }
+  };
+
+  
+  const selectLocation = async (selectedLocation) => {
+    try {
+      const apiKey = 'REMOVED_GOOGLE_API_KEY'; // Reemplaza con tu clave de API válida
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/directions/json?origin=${location.coords.latitude},${location.coords.longitude}&destination=${selectedLocation.geometry.location.lat},${selectedLocation.geometry.location.lng}&key=${apiKey}`
+      );
+  
+      const data = await response.json();
+  
+      if (data.status === 'OK' && data.routes.length > 0) {
+        // Encuentra la ruta deseada, por ejemplo, la primera ruta disponible
+        const selectedRoute = data.routes[0];
+  
+        const coordinates = selectedRoute.overview_polyline.points;
+        const decodedCoordinates = decodePolyline(coordinates);
+        setSelectedRouteCoordinates(decodedCoordinates);
+        // Marca la ruta como seleccionada
+        setSelectedEcologicalRoute(selectedRoute);
+  
+        // Cierra automáticamente el modal después de que se haya cargado la ruta
+        setShowSearchModal(false);
+        setIsRouteSelected(true);
+  
+        // Inicia el recorrido automáticamente
+        startRecording();
+      } else {
+        console.error('No se encontraron rutas válidas.');
+      }
+    } catch (error) {
+      console.error('Error al obtener la dirección:', error);
+    }
+  };
+  
+  
+
 
   const updatePointsInAsyncStorage = async (newPoints) => {
     try {
@@ -126,21 +232,26 @@ export default function App() {
     setRecording(true);
     setLocalPoints(0);
     setShowStartModal(false);
-    retrievePointsFromAsyncStorage();
-    // Cambio: Limpiar el trazado anterior y activar el trazo
-    setPath([]);
+    setRouteCoordinates([]); // Restablece las coordenadas de la ruta actual
     setShouldDrawPath(true);
   
-    // Cambio: Hacer zoom al usuario y seguir su recorrido
     if (mapRef.current && location?.coords) {
       mapRef.current.animateToRegion({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        latitudeDelta: 0.00009, // Ajusta el nivel de zoom como desees
+        latitudeDelta: 0.00009,
         longitudeDelta: 0.00009,
       });
     }
+  
+    if (isRouteSelected) {
+      // Inicia la suma de puntos automáticamente
+      const initialPoints = Math.floor(localPoints / 10);
+      setLocalPoints(initialPoints);
+    }
   };
+  
+  
   
 
   const stopRecording = () => {
@@ -148,11 +259,11 @@ export default function App() {
     setRecording(false);
     setPoints(newPoints);
     setShowStopModal(true);
-    // Cambio: Limpiar el trazado al detener el recorrido
-    setPath([]);
-    // Cambio: Detener el dibujo del trazo
     setShouldDrawPath(false);
-
+  
+    // Guarda las coordenadas de la ruta actual en el estado routeCoordinates
+    setRouteCoordinates([...routeCoordinates, ...path]);
+  
     const updateUserPoints = async () => {
       try {
         await updatePointsInDatabase(userUid, newPoints);
@@ -162,9 +273,10 @@ export default function App() {
         console.error('Error al actualizar puntos:', error);
       }
     };
-
+  
     updateUserPoints();
   };
+  
 
   useEffect(() => {
     const startWatching = async () => {
@@ -241,12 +353,18 @@ export default function App() {
   
   return (
     <View style={styles.container}>
+      <View style={styles.rectangle}>
+        <Text style={styles.localPointsText}>Puntos obtenidos: {localPoints}</Text>
+      </View>
+      <View style={styles.rectangle2}>
+        <TouchableHighlight
+          style={styles.button}
+          onPress={() => setShowSearchModal(true)} // Esto abrirá el modal de búsqueda
+        >
+          <Text style={styles.buttonText}>Ruta Ecológica</Text>
+        </TouchableHighlight>
+      </View>
   
-    <View style={styles.rectangle}>
-      <Text style={styles.localPointsText}>Puntos obtenidos: {localPoints}</Text>
-    </View>
-
-      
       <MapView
         ref={mapRef}
         style={styles.map}
@@ -257,12 +375,26 @@ export default function App() {
           longitudeDelta: 0.009,
         }}
         showsUserLocation={true}
-        followsUserLocation={true} // Habilita el seguimiento del usuario
+        followsUserLocation={true}
         onMapReady={() => centerMapOnLocation()}
       >
-        <Polyline coordinates={shouldDrawPath ? path : []} strokeWidth={4} strokeColor="green" />
+        {shouldDrawPath && (
+          <Polyline
+            coordinates={path}
+            strokeWidth={4}
+            strokeColor="green"
+          />
+        )}
+  
+        {selectedRouteCoordinates.length > 0 && (
+          <Polyline
+            coordinates={selectedRouteCoordinates}
+            strokeWidth={4}
+            strokeColor="green" // Color de la ruta seleccionada
+          />
+        )}
       </MapView>
-
+  
       <Modal visible={showStartModal} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -279,7 +411,7 @@ export default function App() {
           </View>
         </View>
       </Modal>
-
+  
       <Modal visible={showStopModal} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -294,7 +426,47 @@ export default function App() {
           </View>
         </View>
       </Modal>
-
+  
+      <Modal visible={showSearchModal} transparent={true} animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="¿Dónde quieres ir?"
+              placeholderTextColor="gray"
+              onChangeText={(text) => setSearchText(text)}
+              value={searchText}
+            />
+  
+            <ScrollView style={styles.resultsContainer}>
+              {searchResults.map((result, index) => (
+                <TouchableHighlight
+                  key={result.place_id}
+                  style={[
+                    styles.searchResult,
+                    index !== searchResults.length - 1 && styles.divider, // Agregar borde inferior excepto al último elemento
+                  ]}
+                  onPress={() => selectLocation(result)}
+                >
+                  <Text style={styles.resultText}>{result.name}</Text>
+                </TouchableHighlight>
+              ))}
+            </ScrollView>
+  
+            <TouchableHighlight style={styles.modalButton} onPress={searchLocation}>
+              <Text style={styles.buttonText}>Buscar</Text>
+            </TouchableHighlight>
+  
+            <TouchableHighlight
+              style={styles.modalButton}
+              onPress={() => setShowSearchModal(false)}
+            >
+              <Text style={styles.buttonText}>Cancelar</Text>
+            </TouchableHighlight>
+          </View>
+        </View>
+      </Modal>
+  
       {recording ? (
         <TouchableHighlight style={styles.button} onPress={stopRecording}>
           <Text style={styles.buttonText}>Finalizar recorrido</Text>
@@ -302,20 +474,36 @@ export default function App() {
       ) : (
         <TouchableHighlight
           style={styles.button}
-          onPress={() => setShowStartModal(true)}
+          onPress={() => {
+            if (isRouteSelected) {
+              // Iniciar la suma de puntos automáticamente
+              const initialPoints = Math.floor(localPoints / 10);
+              setLocalPoints(initialPoints);
+            }
+  
+            if (selectedEcologicalRoute) {
+              // Si hay una ruta ecológica seleccionada, inicia el recorrido automáticamente
+              startRecording();
+            } else {
+              // Si no, muestra el modal de inicio de recorrido
+              setShowStartModal(true);
+            }
+          }}
         >
           <Text style={styles.buttonText}>Iniciar recorrido</Text>
         </TouchableHighlight>
       )}
+  
       <StatusBar style="auto" />
     </View>
   );
-}
+}  
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  
   map: {
     flex: 1,
     height: 0,
@@ -324,16 +512,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     position: 'absolute',
-     // Ajusta la posición vertical según tus necesidades
-     // Ajusta la posición horizontal según tus necesidades
-    zIndex: 2, // Asegura que esté por encima del elemento pointsInfo
-    color: 'black', // Cambiado el color de texto a negro
+    zIndex: 2, 
+    color: 'black', 
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-     // Para sombra en Android
   },
   pointsInfo: {
     padding: 10,
@@ -347,16 +532,16 @@ const styles = StyleSheet.create({
   pointsText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#000', // Color de texto cambiado a negro
+    color: '#000', 
   },
   button: {
     position: 'absolute',
     bottom: 120,
-    alignSelf: 'center',
+    marginHorizontal: 20,
     borderRadius: 16,
     backgroundColor: '#000000',
     paddingVertical: 20,
-    paddingHorizontal: 30, // Aumentado el padding horizontal para hacer que el botón sea más grande
+    paddingHorizontal: 20, 
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: 30,
@@ -381,21 +566,21 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: 'white',
-    padding: 20, // Aumentado el padding para dar más espacio al contenido
+    padding: 20, 
     borderRadius: 10,
     alignItems: 'center',
   },
   rectangle: {
-    width: 200, // Ancho deseado del rectángulo
-    height: 50, // Alto deseado del rectángulo
-    backgroundColor: 'white', // Color de fondo del rectángulo
+    width: 200,
+    height: 50, 
+    backgroundColor: 'white', 
     justifyContent: 'center',
     alignItems: 'center',
     position: 'absolute',
-    top: 60, // Ajusta la posición vertical según tus necesidades
-    left: 20, // Ajusta la posición horizontal según tus necesidades
-    zIndex: 2, // Asegura que esté por encima del elemento pointsInfo
-    borderRadius: 10, // Agregado para redondear las esquinas del rectángulo
+    top: 60, 
+    left: 20, 
+    zIndex: 2, 
+    borderRadius: 10, 
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -404,13 +589,57 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 10,
   },
+  divider: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'lightgray', 
+    marginBottom: 10,
+  },
+  
+  searchInput: {
+    marginBottom: 30,
+    width: 300,
+    height: 50,
+    backgroundColor: 'white', 
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+  },
+
+  rectangle2: {
+    bottom: -0,
+     
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute', 
+    right: 95, 
+    zIndex: 2, 
+    borderRadius: 10, 
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+  },
+  resultsContainer: {
+    maxHeight: 200, 
+  },
+  resultText: {
+    fontSize: 18,
+  },
   modalText: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 20,
   },
   modalButton: {
-    backgroundColor: '#000000', // Cambiado el color de fondo a azul
+    backgroundColor: '#000000', 
     borderRadius: 16,
     paddingVertical: 15,
     paddingHorizontal: 30,
