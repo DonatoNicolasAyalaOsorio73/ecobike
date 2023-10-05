@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Text, View, TouchableHighlight, Modal, ActivityIndicator, TextInput, ScrollView } from 'react-native';
+import {
+  Text,
+  View,
+  TouchableHighlight,
+  Modal,
+  ActivityIndicator,
+  TextInput,
+  ScrollView,
+} from 'react-native';
 import MapView, { Polyline } from 'react-native-maps';
 import { StatusBar } from 'expo-status-bar';
 import * as Location from 'expo-location';
@@ -8,30 +16,7 @@ import { getAuth } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StyleSheet } from 'react-native';
 
-const calculateAndUpdatePoints = (newLocation, prevLocationRef, setLocalPoints, recording) => {
-  if (newLocation && prevLocationRef.current && newLocation.coords && recording) {
-    const { latitude, longitude } = newLocation.coords;
-    const distance = calculateDistance(
-      prevLocationRef.current.coords.latitude,
-      prevLocationRef.current.coords.longitude,
-      latitude,
-      longitude
-    );
-    const timeDiff = newLocation.timestamp - prevLocationRef.current.timestamp;
-
-    if (timeDiff > 0) {
-      const speed = distance / timeDiff;
-
-      console.log('Distance:', distance, 'meters');
-      console.log('Speed:', speed, 'm/s');
-
-      if (speed < 3 && distance >= 10) {
-        const pointsToAdd = Math.floor(distance / 10);
-        setLocalPoints((prevPoints) => prevPoints + pointsToAdd);
-      }
-    }
-  }
-};
+const API_KEY = 'REMOVED_GOOGLE_API_KEY'; // Replace with your API key
 
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371;
@@ -71,9 +56,6 @@ export default function App() {
   const [selectedEcologicalRoute, setSelectedEcologicalRoute] = useState(null);
   const [currentLocation, setCurrentLocation] = useState(null);
 
-
-
-
   const [showSearchModal, setShowSearchModal] = useState(false);
 
   const prevLocationRef = useRef(null);
@@ -82,149 +64,64 @@ export default function App() {
   const authInstance = getAuth();
   const userUid = authInstance.currentUser?.uid;
 
-  const db = getFirestore();  
+  const db = getFirestore();
 
   const decodePolyline = (encoded) => {
     const poly = [];
     let index = 0;
     let lat = 0;
     let lng = 0;
-  
+
     while (index < encoded.length) {
       let b;
       let shift = 0;
       let result = 0;
-  
+
       do {
         b = encoded.charCodeAt(index++) - 63;
         result |= (b & 0x1f) << shift;
         shift += 5;
       } while (b >= 0x20);
-  
+
       const dlat = (result & 1) !== 0 ? ~(result >> 1) : result >> 1;
       lat += dlat;
-  
+
       shift = 0;
       result = 0;
-  
+
       do {
         b = encoded.charCodeAt(index++) - 63;
         result |= (b & 0x1f) << shift;
         shift += 5;
       } while (b >= 0x20);
-  
+
       const dlng = (result & 1) !== 0 ? ~(result >> 1) : result >> 1;
       lng += dlng;
-  
+
       const latitude = lat / 1e5;
       const longitude = lng / 1e5;
-  
+
       poly.push({ latitude, longitude });
     }
-  
+
     return poly;
   };
-  
-
-  const searchLocation = async () => {
-    try {
-      const apiKey = 'REMOVED_GOOGLE_API_KEY'; // Reemplaza con tu propia clave API de Google Maps
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchText}&key=${apiKey}`
-      );
-      const data = await response.json();
-      setSearchResults(data.results);
-    } catch (error) {
-      console.error('Error al buscar ubicación:', error);
-    }
-  };
-
-  
-  const selectLocation = async (selectedLocation) => {
-    try {
-      const apiKey = 'REMOVED_GOOGLE_API_KEY'; // Reemplaza con tu clave de API válida
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/directions/json?origin=${location.coords.latitude},${location.coords.longitude}&destination=${selectedLocation.geometry.location.lat},${selectedLocation.geometry.location.lng}&key=${apiKey}`
-      );
-  
-      const data = await response.json();
-  
-      if (data.status === 'OK' && data.routes.length > 0) {
-        // Encuentra la ruta deseada, por ejemplo, la primera ruta disponible
-        const selectedRoute = data.routes[0];
-  
-        const coordinates = selectedRoute.overview_polyline.points;
-        const decodedCoordinates = decodePolyline(coordinates);
-        setSelectedRouteCoordinates(decodedCoordinates);
-        // Marca la ruta como seleccionada
-        setSelectedEcologicalRoute(selectedRoute);
-  
-        // Cierra automáticamente el modal después de que se haya cargado la ruta
-        setShowSearchModal(false);
-        setIsRouteSelected(true);
-  
-        // Inicia el recorrido automáticamente
-        startRecording();
-      } else {
-        console.error('No se encontraron rutas válidas.');
-      }
-    } catch (error) {
-      console.error('Error al obtener la dirección:', error);
-    }
-  };
-  
-  
-
-
-  const updatePointsInAsyncStorage = async (newPoints) => {
-    try {
-      await AsyncStorage.setItem('puntosAcumulados', newPoints.toString());
-      console.log('Puntos actualizados en AsyncStorage');
-    } catch (error) {
-      console.error('Error al actualizar puntos en AsyncStorage:', error);
-    }
-  };
-
-  const updatePointsInDatabase = async (userId, newPoints) => {
-    const userDocRef = doc(db, 'usuarios', userId);
-
-    try {
-      await updateDoc(userDocRef, {
-        puntosAcumulados: newPoints,
-      });
-      console.log('Puntos actualizados en la base de datos');
-    } catch (error) {
-      console.error('Error al actualizar puntos en la base de datos:', error);
-    }
-  };
-
-  const retrievePointsFromAsyncStorage = async () => {
-    try {
-      const storedPoints = await AsyncStorage.getItem('puntosAcumulados');
-      if (storedPoints !== null) {
-        const parsedPoints = parseInt(storedPoints, 10);
-        setPoints(parsedPoints);
-      }
-    } catch (error) {
-      console.error('Error al recuperar puntos desde AsyncStorage:', error);
-    } finally {
-      setLoading(false); // Actualizar el estado de carga
-    }
-  };
-
-  const centerMapOnLocation = () => {
-    if (mapRef.current && location?.coords) {
-      mapRef.current.animateToRegion({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        latitudeDelta: 0.0009, // Ajusta el nivel de zoom como desees
-        longitudeDelta: 0.0009, // Usar el mismo valor para latitudeDelta y longitudeDelta para un zoom cuadrado
-      });
-    }
-  };
-  
 
   useEffect(() => {
+    const retrievePointsFromAsyncStorage = async () => {
+      try {
+        const storedPoints = await AsyncStorage.getItem('puntosAcumulados');
+        if (storedPoints !== null) {
+          const parsedPoints = parseInt(storedPoints, 10);
+          setPoints(parsedPoints);
+        }
+      } catch (error) {
+        console.error('Error al recuperar puntos desde AsyncStorage:', error);
+      } finally {
+        setLoading(false); // Update the loading state
+      }
+    };
+
     retrievePointsFromAsyncStorage();
   }, []);
 
@@ -232,9 +129,9 @@ export default function App() {
     setRecording(true);
     setLocalPoints(0);
     setShowStartModal(false);
-    setRouteCoordinates([]); // Restablece las coordenadas de la ruta actual
+    setRouteCoordinates([]); // Reset the current route coordinates
     setShouldDrawPath(true);
-  
+
     if (mapRef.current && location?.coords) {
       mapRef.current.animateToRegion({
         latitude: location.coords.latitude,
@@ -243,16 +140,13 @@ export default function App() {
         longitudeDelta: 0.00009,
       });
     }
-  
+
     if (isRouteSelected) {
-      // Inicia la suma de puntos automáticamente
+      // Start point accumulation automatically
       const initialPoints = Math.floor(localPoints / 10);
       setLocalPoints(initialPoints);
     }
   };
-  
-  
-  
 
   const stopRecording = () => {
     const newPoints = points + localPoints;
@@ -260,30 +154,60 @@ export default function App() {
     setPoints(newPoints);
     setShowStopModal(true);
     setShouldDrawPath(false);
-  
-    // Guarda las coordenadas de la ruta actual en el estado routeCoordinates
     setRouteCoordinates([...routeCoordinates, ...path]);
-  
+
+    setPath([]);
+    setShouldDrawPath(false);
+    setSelectedRouteCoordinates([]);
+    setRouteCoordinates([]);
+    setIsRouteSelected(false);
+    setSelectedEcologicalRoute(null);
+    setCurrentLocation(null);
+
     const updateUserPoints = async () => {
       try {
         await updatePointsInDatabase(userUid, newPoints);
         await updatePointsInAsyncStorage(newPoints);
-        console.log('Puntos actualizados en la base de datos y AsyncStorage');
+        console.log('Points updated in the database and AsyncStorage');
       } catch (error) {
-        console.error('Error al actualizar puntos:', error);
+        console.error('Error updating points:', error);
       }
     };
-  
+
     updateUserPoints();
   };
-  
 
   useEffect(() => {
+    const calculateAndUpdatePoints = (newLocation, prevLocationRef, setLocalPoints, recording) => {
+      if (newLocation && prevLocationRef.current && newLocation.coords && recording) {
+        const { latitude, longitude } = newLocation.coords;
+        const distance = calculateDistance(
+          prevLocationRef.current.coords.latitude,
+          prevLocationRef.current.coords.longitude,
+          latitude,
+          longitude
+        );
+        const timeDiff = newLocation.timestamp - prevLocationRef.current.timestamp;
+
+        if (timeDiff > 0) {
+          const speed = distance / timeDiff;
+
+          console.log('Distance:', distance, 'meters');
+          console.log('Speed:', speed, 'm/s');
+
+          if (speed < 3 && distance >= 10) {
+            const pointsToAdd = Math.floor(distance / 10);
+            setLocalPoints((prevPoints) => prevPoints + pointsToAdd);
+          }
+        }
+      }
+    };
+
     const startWatching = async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        console.warn('Permiso para acceder a la ubicación fue denegado');
-        setLoading(false); // Actualizar el estado de carga en caso de permiso denegado
+        console.warn('Permission to access location was denied');
+        setLoading(false); // Update the loading state in case of denied permission
         return;
       }
 
@@ -296,7 +220,8 @@ export default function App() {
           timeInterval: 500,
         },
         (newLocation) => {
-          if (recording) { // Verificar si está grabando antes de agregar puntos a la ruta
+          if (recording) {
+            // Check if recording before adding points to the route
             const { latitude, longitude } = newLocation.coords;
             const newPoint = { latitude, longitude };
             setPath((prevPath) => [...prevPath, newPoint]);
@@ -304,12 +229,12 @@ export default function App() {
             calculateAndUpdatePoints(newLocation, prevLocationRef, setLocalPoints, recording);
             prevLocationRef.current = newLocation;
 
-            // Cambio: Actualizar la región del mapa para que siga al usuario
+            // Update the map region to follow the user
             if (mapRef.current) {
               mapRef.current.animateToRegion({
                 latitude,
                 longitude,
-                latitudeDelta: 0.0009, // Ajusta el nivel de zoom como desees
+                latitudeDelta: 0.0009, // Adjust the zoom level as desired
                 longitudeDelta: 0.0009,
               });
             }
@@ -334,23 +259,97 @@ export default function App() {
     const getLocation = async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        console.warn('Permiso para acceder a la ubicación fue denegado');
-        setLoading(false); // Actualizar el estado de carga en caso de permiso denegado
+        console.warn('Permission to access location was denied');
+        setLoading(false); // Update the loading state in case of denied permission
         return;
       }
 
       const currentLocation = await Location.getCurrentPositionAsync({});
       setLocation(currentLocation);
-      centerMapOnLocation(); // Centrar el mapa en la ubicación actual al iniciar
+      centerMapOnLocation(); // Center the map on the current location when initializing
     };
 
     getLocation();
   }, []);
 
-  if (loading) {
-    return <ActivityIndicator size="large" />;
-  }
-  
+  const centerMapOnLocation = () => {
+    if (mapRef.current && location?.coords) {
+      mapRef.current.animateToRegion({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.0009, // Adjust the zoom level as desired
+        longitudeDelta: 0.0009,
+      });
+    }
+  };
+
+  const updatePointsInAsyncStorage = async (newPoints) => {
+    try {
+      await AsyncStorage.setItem('puntosAcumulados', newPoints.toString());
+      console.log('Points updated in AsyncStorage');
+    } catch (error) {
+      console.error('Error updating points in AsyncStorage:', error);
+    }
+  };
+
+  const updatePointsInDatabase = async (userId, newPoints) => {
+    const userDocRef = doc(db, 'usuarios', userId);
+
+    try {
+      await updateDoc(userDocRef, {
+        puntosAcumulados: newPoints,
+      });
+      console.log('Points updated in the database');
+    } catch (error) {
+      console.error('Error updating points in the database:', error);
+    }
+  };
+
+  const searchLocation = async () => {
+    try {
+      const apiKey = API_KEY; // Use your API key here
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchText}&key=${apiKey}`
+      );
+      const data = await response.json();
+      setSearchResults(data.results);
+    } catch (error) {
+      console.error('Error searching location:', error);
+    }
+  };
+
+  const selectLocation = async (selectedLocation) => {
+    try {
+      const apiKey = API_KEY; // Use your API key here
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/directions/json?origin=${location.coords.latitude},${location.coords.longitude}&destination=${selectedLocation.geometry.location.lat},${selectedLocation.geometry.location.lng}&key=${apiKey}`
+      );
+
+      const data = await response.json();
+
+      if (data.status === 'OK' && data.routes.length > 0) {
+        // Find the desired route, e.g., the first available route
+        const selectedRoute = data.routes[0];
+
+        const coordinates = selectedRoute.overview_polyline.points;
+        const decodedCoordinates = decodePolyline(coordinates);
+        setSelectedRouteCoordinates(decodedCoordinates);
+        // Mark the route as selected
+        setSelectedEcologicalRoute(selectedRoute);
+
+        // Close the modal automatically after the route has loaded
+        setShowSearchModal(false);
+        setIsRouteSelected(true);
+
+        // Start recording automatically
+        startRecording();
+      } else {
+        console.error('No valid routes found.');
+      }
+    } catch (error) {
+      console.error('Error getting directions:', error);
+    }
+  };
   return (
     <View style={styles.container}>
       <View style={styles.rectangle}>
