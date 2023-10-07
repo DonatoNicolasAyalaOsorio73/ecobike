@@ -213,7 +213,7 @@ const validateDate = (date) => {
                   backgroundColor: 'white', 
                   overflow: 'hidden',
                   borderWidth: 3,
-                  backgroundColor: '#54CD64',
+                  backgroundColor: '#ADF14B',
                   width: 220,
                   height: 220,
                   borderRadius: 110,
@@ -300,14 +300,14 @@ const validateDate = (date) => {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalText}>¿Seguro que deseas cerrar sesión?</Text>
-            <TouchableHighlight style={styles.modalButton} onPress={confirmLogout}>
+            <TouchableHighlight style={styles.modalButton2} onPress={confirmLogout}>
               <Text style={styles.buttonText}>Sí</Text>
             </TouchableHighlight>
             <TouchableHighlight
               style={styles.modalButton}
               onPress={() => setShowLogoutConfirmation(false)}
             >
-              <Text style={styles.buttonText}>Cancelar</Text>
+              <Text style={styles.logoutButtonText}>Cancelar</Text>
             </TouchableHighlight>
           </View>
         </View>
@@ -317,14 +317,14 @@ const validateDate = (date) => {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalText}>¿Seguro que deseas editar tus datos?</Text>
-            <TouchableHighlight style={styles.modalButton} onPress={confirmEdit}>
+            <TouchableHighlight style={styles.modalButton2} onPress={confirmEdit}>
               <Text style={styles.buttonText}>Sí</Text>
             </TouchableHighlight>
             <TouchableHighlight
               style={styles.modalButton}
               onPress={() => setShowEditConfirmation(false)}
             >
-              <Text style={styles.buttonText}>Cancelar</Text>
+              <Text style={styles.logoutButtonText}>Cancelar</Text>
             </TouchableHighlight>
           </View>
         </View>
@@ -339,19 +339,19 @@ const validateDate = (date) => {
           <View style={styles.modalContent}>
             <Text style={styles.modalText}>Selecciona tu Género</Text>
             <TouchableOpacity
-              style={styles.modalButton}
+              style={styles.modalButton2}
               onPress={() => handleGenderSelect('Masculino')}
             >
               <Text style={styles.buttonText}>Masculino</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.modalButton}
+              style={styles.modalButton2}
               onPress={() => handleGenderSelect('Femenino')}
             >
               <Text style={styles.buttonText}>Femenino</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.modalButton}
+              style={styles.modalButton2}
               onPress={() => handleGenderSelect('Otro')}
             >
               <Text style={styles.buttonText}>Otro</Text>
@@ -451,15 +451,23 @@ const styles = StyleSheet.create({
     shadowRadius: 1.5,
   },
   button: {
-    backgroundColor: '#000000',
+    backgroundColor: '#ADF14B',
     paddingVertical: 20,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'left',
     width: '45%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.44,
+    shadowRadius: 2.32,
+  
   },
   buttonText: {
-    color: 'white',
+    color: '#3e3742',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -471,12 +479,20 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   logoutButton: {
-    backgroundColor: '#54CD64',
+    backgroundColor: 'black',
     paddingVertical: 20,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'left',
     width: '45%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.44,
+    shadowRadius: 2.32,
+ 
   },
   logoutButtonText: {
     color: 'white',
@@ -503,6 +519,22 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     backgroundColor: '#000000',
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 10.32,
+  },
+  modalButton2: {
+    backgroundColor: '#ADF14B',
     borderRadius: 16,
     paddingVertical: 10,
     paddingHorizontal: 30,

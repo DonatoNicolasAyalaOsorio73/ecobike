@@ -61,9 +61,9 @@ const TabItem: FC<TabProps> = ({
   useEffect(() => {
     animatedActiveIndex.value = activeIndex;
     if (activeIndex === index + 1) {
-      iconColor.value = withTiming('black');
+      iconColor.value = withTiming('#3e3742');
     } else {
-      iconColor.value = withTiming('white');
+      iconColor.value = withTiming('#3e3742');
     }
   }, [activeIndex]);
 

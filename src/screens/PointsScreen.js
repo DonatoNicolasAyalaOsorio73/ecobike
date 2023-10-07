@@ -323,10 +323,10 @@ const loadAllCodes = async () => {
               <Text style={styles.buttonText}>Confirmar</Text>
             </TouchableHighlight>
             <TouchableHighlight
-              style={styles.modalButton}
+              style={styles.modalButton2}
               onPress={() => setShowConfirmationModal(false)}
             >
-              <Text style={styles.buttonText}>Cancelar</Text>
+              <Text style={{ color: "white",  fontWeight: "bold" }}>Cancelar</Text>
             </TouchableHighlight>
           </View>
         </View>
@@ -482,12 +482,21 @@ const styles = StyleSheet.create({
     borderRadius: 10, // Borde redondeado
     marginTop: 20, // Espacio superior
     alignItems: "center", 
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.44,
+    shadowRadius: 2.32,
+ 
     
   },
   
   buttonTexts: {
-    color: "#FFFFFF", // Color del texto del botón
+    color: "#3e3742", // Color del texto del botón
     fontSize: 13, // Tamaño del texto
+    fontWeight: "bold",
 
   },
   pointsText: {
@@ -495,7 +504,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   buttonText: {
-    color: 'white',
+    color: '#3e3742',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -517,7 +526,24 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalButton: {
-    backgroundColor: '#000000', // Cambiado el color de fondo a azul
+    backgroundColor: '#ADF14B', // Cambiado el color de fondo a azul
+    borderRadius: 16,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 20.32,
+    
+  },
+  modalButton2: {
+    backgroundColor: 'black', // Cambiado el color de fondo a azul
     borderRadius: 16,
     paddingVertical: 15,
     paddingHorizontal: 30,

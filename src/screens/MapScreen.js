@@ -16,7 +16,7 @@ import { getAuth } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StyleSheet } from 'react-native';
 
-const API_KEY = 'REMOVED_GOOGLE_API_KEY'; // Replace with your API key
+const API_KEY = 'REMOVED_GOOGLE_API_KEY'; 
 
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371;
@@ -55,6 +55,10 @@ export default function App() {
   const [isRouteSelected, setIsRouteSelected] = useState(false);
   const [selectedEcologicalRoute, setSelectedEcologicalRoute] = useState(null);
   const [currentLocation, setCurrentLocation] = useState(null);
+  const [showLossText, setShowLossText] = useState(false);
+
+  
+  
 
   const [showSearchModal, setShowSearchModal] = useState(false);
 
@@ -131,6 +135,7 @@ export default function App() {
     setShowStartModal(false);
     setRouteCoordinates([]); // Reset the current route coordinates
     setShouldDrawPath(true);
+    setShowLossText(false);
 
     if (mapRef.current && location?.coords) {
       mapRef.current.animateToRegion({
@@ -149,12 +154,16 @@ export default function App() {
   };
 
   const stopRecording = () => {
+    
     const newPoints = points + localPoints;
+    
     setRecording(false);
     setPoints(newPoints);
     setShowStopModal(true);
     setShouldDrawPath(false);
     setRouteCoordinates([...routeCoordinates, ...path]);
+    setShowLossText(true);
+    
 
     setPath([]);
     setShouldDrawPath(false);
@@ -163,6 +172,8 @@ export default function App() {
     setIsRouteSelected(false);
     setSelectedEcologicalRoute(null);
     setCurrentLocation(null);
+    
+    
 
     const updateUserPoints = async () => {
       try {
@@ -178,8 +189,8 @@ export default function App() {
   };
 
   useEffect(() => {
-    const calculateAndUpdatePoints = (newLocation, prevLocationRef, setLocalPoints, recording) => {
-      if (newLocation && prevLocationRef.current && newLocation.coords && recording) {
+    const calculateAndUpdatePoints = (newLocation, prevLocationRef, setLocalPoints, recording, isRecordingFinished) => {
+      if (newLocation && prevLocationRef.current && newLocation.coords && recording && !isRecordingFinished) {
         const { latitude, longitude } = newLocation.coords;
         const distance = calculateDistance(
           prevLocationRef.current.coords.latitude,
@@ -188,13 +199,13 @@ export default function App() {
           longitude
         );
         const timeDiff = newLocation.timestamp - prevLocationRef.current.timestamp;
-
+    
         if (timeDiff > 0) {
           const speed = distance / timeDiff;
-
+    
           console.log('Distance:', distance, 'meters');
           console.log('Speed:', speed, 'm/s');
-
+    
           if (speed < 3 && distance >= 10) {
             const pointsToAdd = Math.floor(distance / 10);
             setLocalPoints((prevPoints) => prevPoints + pointsToAdd);
@@ -202,6 +213,9 @@ export default function App() {
         }
       }
     };
+    
+    
+    
 
     const startWatching = async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -352,6 +366,15 @@ export default function App() {
   };
   return (
     <View style={styles.container}>
+      {showLossText && (
+      <View style={styles.redContainer}>
+     
+        
+          <Text style={styles.localPointsText2}>Podrías estar acumulando</Text>
+        
+      
+    </View>
+    )}
       <View style={styles.rectangle}>
         <Text style={styles.localPointsText}>Puntos obtenidos: {localPoints}</Text>
       </View>
@@ -360,7 +383,7 @@ export default function App() {
           style={styles.button}
           onPress={() => setShowSearchModal(true)} // Esto abrirá el modal de búsqueda
         >
-          <Text style={styles.buttonText}>Ruta Ecológica</Text>
+          <Text style={styles.buttonText2}>Planear EcoRuta</Text>
         </TouchableHighlight>
       </View>
   
@@ -389,7 +412,7 @@ export default function App() {
           <Polyline
             coordinates={selectedRouteCoordinates}
             strokeWidth={4}
-            strokeColor="green" // Color de la ruta seleccionada
+            strokeColor="#ADF14B" // Color de la ruta seleccionada
           />
         )}
       </MapView>
@@ -398,8 +421,8 @@ export default function App() {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalText}>¿Iniciar recorrido en bicicleta?</Text>
-            <TouchableHighlight style={styles.modalButton} onPress={startRecording}>
-              <Text style={styles.buttonText}>Sí</Text>
+            <TouchableHighlight style={styles.modalButton2} onPress={startRecording}>
+              <Text style={styles.buttonText2}>Sí</Text>
             </TouchableHighlight>
             <TouchableHighlight
               style={styles.modalButton}
@@ -417,10 +440,10 @@ export default function App() {
             <Text style={styles.modalText}>Recorrido finalizado</Text>
             <Text>Puntos obtenidos en este recorrido: {localPoints}</Text>
             <TouchableHighlight
-              style={styles.modalButton}
+              style={styles.modalButton2}
               onPress={() => setShowStopModal(false)}
             >
-              <Text style={styles.buttonText}>Aceptar</Text>
+              <Text style={styles.buttonText2}>Aceptar</Text>
             </TouchableHighlight>
           </View>
         </View>
@@ -452,8 +475,8 @@ export default function App() {
               ))}
             </ScrollView>
   
-            <TouchableHighlight style={styles.modalButton} onPress={searchLocation}>
-              <Text style={styles.buttonText}>Buscar</Text>
+            <TouchableHighlight style={styles.modalButton2} onPress={searchLocation}>
+              <Text style={styles.buttonText2}>Buscar</Text>
             </TouchableHighlight>
   
             <TouchableHighlight
@@ -468,7 +491,7 @@ export default function App() {
   
       {recording ? (
         <TouchableHighlight style={styles.button} onPress={stopRecording}>
-          <Text style={styles.buttonText}>Finalizar recorrido</Text>
+          <Text style={styles.buttonText2}>Finalizar recorrido</Text>
         </TouchableHighlight>
       ) : (
         <TouchableHighlight
@@ -489,7 +512,7 @@ export default function App() {
             }
           }}
         >
-          <Text style={styles.buttonText}>Iniciar recorrido</Text>
+          <Text style={styles.buttonText2}>Iniciar recorrido</Text>
         </TouchableHighlight>
       )}
   
@@ -519,6 +542,18 @@ const styles = StyleSheet.create({
       height: 2,
     },
   },
+  localPointsText2: {
+    fontSize: 18,
+    
+    position: 'absolute',
+    zIndex: 2, 
+    color: 'red', 
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+  },
   pointsInfo: {
     padding: 10,
     backgroundColor: 'rgba(255, 255, 255, 0.7)',
@@ -536,9 +571,9 @@ const styles = StyleSheet.create({
   button: {
     position: 'absolute',
     bottom: 120,
-    marginHorizontal: 20,
+    marginHorizontal: 10,
     borderRadius: 16,
-    backgroundColor: '#000000',
+    backgroundColor: '#ADF14B',
     paddingVertical: 20,
     paddingHorizontal: 20, 
     alignItems: 'center',
@@ -550,7 +585,12 @@ const styles = StyleSheet.create({
       height: 8,
     },
     shadowOpacity: 0.44,
-    shadowRadius: 10.32,
+    shadowRadius: 2.32,
+  },
+  buttonText2: {
+    color: '#3e3742',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   buttonText: {
     color: 'white',
@@ -570,16 +610,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rectangle: {
-    width: 200,
-    height: 50, 
-    backgroundColor: 'white', 
+    width: 250,
+    height: 60,
+    backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'absolute',
-    top: 60, 
-    left: 20, 
-    zIndex: 2, 
-    borderRadius: 10, 
+    top: 60,
+    left: '50%', // Centra horizontalmente usando porcentaje
+    transform: [{ translateX: -125 }], // Ajusta la posición según el ancho del contenedor
+    zIndex: 2,
+    borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -588,6 +629,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 10,
   },
+  
   divider: {
     borderBottomWidth: 1,
     borderBottomColor: 'lightgray', 
@@ -601,13 +643,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'white', 
     borderRadius: 10,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
+    
+    shadowColor: '#000',
+  shadowOffset: {
+    width: 0,
+    height: 2,
   },
+  shadowOpacity: 0.2,
+  shadowRadius: 10,
+  textAlign: 'center', // Centra el texto horizontalmente
+  alignSelf: 'center', // Centra el TextInput horizontalmente en su contenedor
+},
 
   rectangle2: {
     bottom: -0,
@@ -626,6 +672,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 10,
   },
+  redContainer: {
+    width: 264,
+    height: 15,  
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    padding: 20,
+    borderRadius: 8,
+    top: 120,
+    left: '17%',
+    zIndex: 2, // Ajusta el valor de zIndex según sea necesario
+  },
+  
+  
   resultsContainer: {
     maxHeight: 200, 
   },
@@ -652,6 +712,23 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.2,
     shadowRadius: 10.32,
+    
+  },
+  modalButton2: {
+    backgroundColor: '#ADF14B', 
+    borderRadius: 16,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 16.32,
     
   },
 });
