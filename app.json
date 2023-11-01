@@ -1,7 +1,11 @@
 {
   "expo": {
     "android": {
-      "jsEngine": "v8"
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.justdona.EcoBike"
     },
     "name": "EcoBike",
     "slug": "EcoBike",
@@ -18,16 +22,17 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
+      "supportsTablet": true,
+      "bundleIdentifier": "com.justdona.EcoBike"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "5ff23fdc-9237-4044-9dca-962f9aa11970"
+      }
+    },
+    "owner": "justdona"
   }
 }

@@ -1,0 +1,19 @@
+{
+  "build": {
+    "production": {
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview": {
+      "android": {
+        "gradleCommand": "app:assembleRelease"
+      }
+    },
+    "development": {
+      "android": {
+        "developmentClient": true
+      }
+    }
+  }
+}
