@@ -11,6 +11,7 @@ import PointsScreen from './screens/PointsScreen';
 import UserScreen from './screens/UserScreen';
 import PasswordResetScreen from './auth/PasswordResetScreen';
 import CustomBottomTab from './components/shared/BottomTabs/CustomBottomTab';
+import AdminPanel from './screens/AdminPanel'; 
 
 
 const Tab = createBottomTabNavigator();
@@ -27,6 +28,7 @@ function MainTabs() {
       <Tab.Screen name="Puntos" component={PointsScreen} />
       <Tab.Screen name="Amigos" component={FriendsScreen} />
       <Tab.Screen name="Usuario" component={UserScreen} />
+      <Tab.Screen name="AdminPanel" component={AdminPanel}/>
       </Tab.Group>
     </Tab.Navigator> 
   );

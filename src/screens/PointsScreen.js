@@ -106,6 +106,9 @@ export default function App() {
   const [showGeneratedCodesModal, setShowGeneratedCodesModal] = useState(false);
   const [showAllCodesModal, setShowAllCodesModal] = useState(false); // Definición del estado
   const [allCodes, setAllCodes] = useState([]); // Estado para almacenar los códigos canjeados
+  const [storesData, setStoresData] = useState([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
+
 
   const scrollX = React.useRef(new Animated.Value(0)).current;
 
@@ -200,33 +203,95 @@ const loadAllCodes = async () => {
     setShowCodesModal(true);
   };
   
+  const fetchStoresData = async () => {
+    const db = getFirestore();
+    const storesCollection = collection(db, "tiendas");
+  
+    try {
+      const querySnapshot = await getDocs(storesCollection);
+      const stores = [];
+  
+      querySnapshot.forEach((doc) => {
+        const storeData = doc.data();
+        stores.push({
+          id: doc.id,
+          name: storeData.name,
+          logo: storeData.logo, // Asegúrate de almacenar la URL del logo en la base de datos
+          pointsRequired: storeData.pointsRequired,
+        });
+      });
+  
+      setStoresData(stores);
+      setDataLoaded(true);
+    } catch (error) {
+      console.error("Error al obtener datos de tiendas:", error);
+    }
+  };
   
 
   useEffect(() => {
-    if (isFocused) {
-      const fetchAccumulatedPoints = async () => {
-        const db = getFirestore();
-        const userDocRef = doc(db, "usuarios", userUid);
-        try {
-          const userDocSnapshot = await getDoc(userDocRef);
-          if (userDocSnapshot.exists()) {
-            const userData = userDocSnapshot.data();
-            setAccumulatedPoints(userData.puntosAcumulados);
-            const storedPoints = await AsyncStorage.getItem("puntosAcumulados");
-            if (storedPoints !== null) {
-              setAccumulatedPoints(parseInt(storedPoints, 10));
+    const fetchData = async () => {
+      if (isFocused) {
+        // Fetch user points
+        const fetchAccumulatedPoints = async () => {
+          const db = getFirestore();
+          const userDocRef = doc(db, "usuarios", userUid);
+          try {
+            const userDocSnapshot = await getDoc(userDocRef);
+            if (userDocSnapshot.exists()) {
+              const userData = userDocSnapshot.data();
+              setAccumulatedPoints(userData.puntosAcumulados);
+              const storedPoints = await AsyncStorage.getItem("puntosAcumulados");
+              if (storedPoints !== null) {
+                setAccumulatedPoints(parseInt(storedPoints, 10));
+              }
+            } else {
+              console.log("User document not found");
             }
-          } else {
-            console.log("User document not found");
+          } catch (error) {
+            console.log("Error fetching user data:", error);
           }
-        } catch (error) {
-          console.log("Error fetching user data:", error);
-        }
-      };
-
-      fetchAccumulatedPoints();
-    }
+        };
+  
+        // Fetch stores data
+        const fetchStoresData = async () => {
+          const db = getFirestore();
+          const storesCollection = collection(db, "tiendas");
+  
+          try {
+            const querySnapshot = await getDocs(storesCollection);
+            const stores = [];
+  
+            querySnapshot.forEach((doc) => {
+              const storeData = doc.data();
+              stores.push({
+                id: doc.id,
+                name: storeData.name,
+                logo: storeData.logo, // URL del logo directamente
+                pointsRequired: storeData.pointsRequired,
+                description: storeData.description,
+                imagePath: storeData.imagePath, // Ruta de la imagen en Firebase Storage
+              });
+            });
+  
+            setStoresData(stores);
+            setDataLoaded(true);
+          } catch (error) {
+            console.error("Error al obtener datos de tiendas:", error);
+          }
+        };
+  
+        // Fetch accumulated points and stores data
+        fetchAccumulatedPoints();
+        fetchStoresData();
+      }
+    };
+  
+    fetchData();
   }, [isFocused]);
+  
+ 
+  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -251,8 +316,8 @@ const loadAllCodes = async () => {
         decelerationRate={0}
         scrollEventThrottle={16}
         data={storesData}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item, index }) => {
+  keyExtractor={(item) => item.id.toString()}
+  renderItem={({ item, index }) => {
           const inputRange = [
             (index - 1) * ANCHO_CONTENEDOR,
             index * ANCHO_CONTENEDOR,
@@ -275,13 +340,21 @@ const loadAllCodes = async () => {
                   transform: [{ translateY: scrollY }],
                 }}
               >
-                <Image source={item.logo} style={styles.posterImage} />
+                <Image source={{ uri: item.logo }} style={styles.posterImage} />
+                <Image
+                  source={{ uri: `${item.logo}/${item.imagePath}` }}
+                  style={styles.storeImage} // Ajusta este estilo según tus necesidades
+                />
                 <Text style={{ fontWeight: "bold", fontSize: 26 }}>
                   {item.name}
                 </Text>
+                <Text>{item.description}</Text>
+                <Text>Puntos requeridos</Text>
+                {/* Puedes agregar más elementos aquí según sea necesario */}
                 <TouchableOpacity
                   onPress={() => {
                     handleStoreInteraction(item);
+            
                     // Aquí generamos los códigos cuando el usuario interactúa con la tienda
                     generateCodes();
                   }}
