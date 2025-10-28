@@ -61,3 +61,42 @@ export default function MyNavigation() {
     </Stack.Navigator>
   );
 }
+
+{
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "build:web": "expo export:web",
+    "deploy": "gh-pages -d web-build"
+  },
+  "dependencies": {
+    "react-native-web": "~0.19.6",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "gh-pages": "^6.0.0",
+    "@expo/webpack-config": "^19.0.0"
+  },
+  "expo": {
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "platforms": ["ios", "android", "web"]
+  }
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>EcoBike - Tu Compañero de Ciclismo</title>
+</head>
+<body>
+    <div id="root"></div>
+</body>
+</html>
