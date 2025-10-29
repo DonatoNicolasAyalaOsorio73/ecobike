@@ -3,6 +3,7 @@
     "jsx": "react-jsx",
     "strict": true,
     "skipLibCheck": true,
+    "module": "esnext",
     "moduleResolution": "bundler"
   },
   "extends": "expo/tsconfig.base"

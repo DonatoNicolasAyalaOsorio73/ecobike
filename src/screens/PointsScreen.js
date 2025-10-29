@@ -1,4 +1,3 @@
-
 import { StatusBar } from "expo-status-bar";
 import React, { useState, useEffect } from "react";
 import {
@@ -93,7 +92,7 @@ function Backdrop({ scrollX }) {
   );
 }
 
-export default function App() {
+const PointsScreen = () => {
   const authInstance = getAuth();
   const userUid = authInstance.currentUser?.uid;
   const [accumulatedPoints, setAccumulatedPoints] = useState(null);

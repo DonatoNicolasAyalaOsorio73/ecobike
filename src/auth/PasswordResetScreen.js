@@ -1,15 +1,6 @@
 import React, { useState } from 'react';
-import {
-  SafeAreaView,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-  StyleSheet,
-  Text,
-  Alert,
-  View,
-} from 'react-native';
-
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../FireDataBase';
 import { Ionicons } from '@expo/vector-icons';

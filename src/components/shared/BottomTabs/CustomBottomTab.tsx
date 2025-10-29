@@ -1,17 +1,19 @@
-import React, { FC } from 'react';
+import React, { FC, useEffect } from 'react';
 import { StyleSheet, View, Dimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import Animated, {
   useAnimatedProps,
   useSharedValue,
   withTiming,
+  Easing,
 } from 'react-native-reanimated';
+import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
 import { SCREEN_WIDTH } from '../../../constants/Screen';
 import usePath from '../../../hooks/usePath';
 import TabItem from './TabItem';
 import AnimatedCircle from './AnimatedCircle';
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { getPathXCenterByIndex } from '../../../utils/Path';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
@@ -24,6 +26,14 @@ export const CustomBottomTab: FC<BottomTabBarProps> = ({
   const circleXCoordinate = useSharedValue(0);
   const progress = useSharedValue(0);
 
+  useEffect(() => {
+    const centerX = getPathXCenterByIndex(curvedPaths, state.index);
+    circleXCoordinate.value = withTiming(centerX - 30, {
+      duration: 400,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+    });
+  }, [state.index]);
+
   const selectIcon = (routeName: string) => {
     switch (routeName) {
       case 'Mapa':
@@ -34,15 +44,15 @@ export const CustomBottomTab: FC<BottomTabBarProps> = ({
         return 'users';
       case 'Usuario':
         return 'user';
+      case 'AdminPanel':
+        return 'settings';
       default:
         return 'map';
     }
   };
 
   const animatedProps = useAnimatedProps(() => {
-    const index = Math.round(progress.value);
-    const currentPath = curvedPaths[index] || curvedPaths[0];
-
+    const currentPath = curvedPaths[Math.round(progress.value)] || curvedPaths[0];
     return {
       d: `${containerPath} ${currentPath}`,
     };
@@ -50,12 +60,9 @@ export const CustomBottomTab: FC<BottomTabBarProps> = ({
 
   const handleTabPress = (index: number, tab: string) => {
     navigation.navigate(tab);
-    progress.value = withTiming(index, { duration: 300 });
-
-    // Calcular posición X del círculo
-    const tabWidth = SCREEN_WIDTH / state.routes.length;
-    circleXCoordinate.value = withTiming(tabWidth * index + tabWidth / 2, {
-      duration: 300,
+    progress.value = withTiming(index, {
+      duration: 400,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
     });
   };
 
@@ -114,10 +121,10 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   shadowMd: {
-    elevation: 3,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
 });

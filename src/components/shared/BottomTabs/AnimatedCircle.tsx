@@ -1,19 +1,36 @@
-import {StyleSheet, Text, View} from 'react-native';
-import React, {FC} from 'react';
-import Animated, {useAnimatedStyle} from 'react-native-reanimated';
-type CircleProps = {
-  circleX: Animated.SharedValue<number>;
-};
-const circleContainerSize = 50;
+import React from 'react';
+import {StyleSheet} from 'react-native';
+import Animated, {useAnimatedStyle, withSpring, SharedValue} from 'react-native-reanimated';
+import Svg, {Circle} from 'react-native-svg';
 
-const AnimatedCircle: FC<CircleProps> = ({circleX}) => {
+const AnimatedCircle = ({circleX}: {circleX: SharedValue<number>}) => {
   const circleContainerStyle = useAnimatedStyle(() => {
     return {
-      transform: [{translateX: circleX.value - circleContainerSize / 2}],
+      transform: [
+        {
+          translateX: withSpring(circleX.value, {
+            damping: 15,
+            stiffness: 150,
+          }),
+        },
+      ],
     };
   }, []);
 
-  return <Animated.View style={[circleContainerStyle, styles.container]} />;
+  return (
+    <Animated.View style={[styles.container, circleContainerStyle]}>
+      <Svg width={60} height={60}>
+        <Circle
+          cx={30}
+          cy={30}
+          r={25}
+          fill="#54CD64"
+          strokeWidth={3}
+          stroke="#fff"
+        />
+      </Svg>
+    </Animated.View>
+  );
 };
 
 export default AnimatedCircle;
@@ -21,11 +38,10 @@ export default AnimatedCircle;
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: -circleContainerSize / 2.1,
-    width: circleContainerSize,
-    borderRadius: circleContainerSize,
-    height: circleContainerSize,
-    backgroundColor: '#ADF14B',
+    top: -30,
+    left: 0,
+    width: 60,
+    height: 60,
     justifyContent: 'center',
     alignItems: 'center',
   },
