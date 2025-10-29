@@ -43,7 +43,7 @@ const Welcome = ({ navigation }) => {
       <MyBlur />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <View style={styles.container}>
-          {/* Logo - Protagonista */}
+          {/* Logo - Parte superior */}
           <View style={styles.logoContainer}>
             <Image
               source={{
@@ -54,7 +54,7 @@ const Welcome = ({ navigation }) => {
             />
           </View>
           
-          {/* Textos */}
+          {/* Textos - Centro con blobs verdes atrás */}
           <View style={styles.contentContainer}>
             <Text style={styles.title}>El mundo</Text>
             <Text style={styles.title}>sobre dos ruedas</Text>
@@ -63,7 +63,7 @@ const Welcome = ({ navigation }) => {
             </Text>
           </View>
 
-          {/* Botones */}
+          {/* Botones - Estilo Apple */}
           <View style={styles.buttonContainerWrapper}>
             <View style={styles.buttonContainer}>
               <Animated.View style={[styles.buttonWrapper, button2AnimatedStyle]}>
@@ -100,6 +100,7 @@ const Welcome = ({ navigation }) => {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   safeArea: {
     flex: 1,
@@ -107,24 +108,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 30,
-    paddingTop: height * 0.08,
-    paddingBottom: 30,
+    paddingTop: height * 0.06,
+    paddingBottom: 40,
   },
   logoContainer: {
-    flex: 2.5,
-    justifyContent: 'center',
+    flex: 1.8,
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingTop: 20,
   },
   logo: {
-    width: width * 0.85,
-    height: height * 0.45,
+    width: width * 0.8,
+    height: height * 0.35,
   },
   contentContainer: {
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 10,
-    marginBottom: 20,
+    zIndex: 1,
   },
   title: {
     fontSize: 32,
@@ -142,17 +143,25 @@ const styles = StyleSheet.create({
     color: '#353147',
   },
   buttonContainerWrapper: {
-    paddingBottom: 10,
+    paddingTop: 20,
   },
   buttonContainer: {
     flexDirection: 'row',
     width: '100%',
     height: 60,
     borderWidth: 2,
-    borderColor: 'white',
+    borderColor: 'rgba(255, 255, 255, 0.8)',
     borderRadius: 16,
-    backgroundColor: '#DFE3E630',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
   },
   buttonWrapper: {
     flex: 1,
@@ -161,12 +170,15 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff70',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(255, 255, 255, 0.5)',
   },
   button2: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   buttonText: {
     fontSize: 18,

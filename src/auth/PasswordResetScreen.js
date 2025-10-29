@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../FireDataBase';
 import { Ionicons } from '@expo/vector-icons';
+import MyBlur from '../components/MyBlur';
 
 const PasswordResetScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -19,7 +20,7 @@ const PasswordResetScreen = ({ navigation }) => {
         'Correo de Restablecimiento Enviado',
         'Se ha enviado un correo para restablecer tu contraseña.'
       );
-      navigation.navigate('SignIn'); // Regresar a la pantalla de inicio de sesión después de enviar el correo
+      navigation.navigate('SignIn');
     } catch (error) {
       let errorMessage = 'Error al enviar el correo de restablecimiento.';
 
@@ -38,125 +39,194 @@ const PasswordResetScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.contentContainer}>
-        <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color="#353147" />
-          </TouchableOpacity>
+    <View style={styles.wrapper}>
+      <MyBlur />
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.container}>
+            {/* Botón de regreso */}
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.7}
+            >
+              <View style={styles.backButtonCircle}>
+                <Ionicons name="arrow-back" size={24} color="#353147" />
+              </View>
+            </TouchableOpacity>
 
-          <Text style={styles.title}>Recuperar Contraseña</Text>
+            {/* Contenido principal */}
+            <View style={styles.contentContainer}>
+              <Text style={styles.title}>Recuperar</Text>
+              <Text style={styles.title}>Contraseña</Text>
 
-          <Text style={styles.body}>
-            Ingresa tu correo electrónico para restablecer la contraseña:
-          </Text>
+              <Text style={styles.body}>
+                Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
+              </Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Correo electrónico"
-            autoCorrect={false}
-            onChangeText={setEmail}
-            value={email}
-            maxLength={50}
-          />
+              {/* Input de email */}
+              <View style={styles.inputContainer}>
+                <Ionicons 
+                  name="mail-outline" 
+                  size={20} 
+                  color="#353147" 
+                  style={styles.inputIcon} 
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Correo electrónico"
+                  placeholderTextColor="#353147"
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  onChangeText={setEmail}
+                  value={email}
+                  maxLength={50}
+                />
+              </View>
 
-          <TouchableOpacity style={styles.signInButton} onPress={handlePasswordReset}>
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>Enviar</Text>
-          </TouchableOpacity>
+              {/* Botón de enviar */}
+              <TouchableOpacity 
+                style={styles.sendButton} 
+                onPress={handlePasswordReset}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.sendButtonText}>Enviar enlace</Text>
+              </TouchableOpacity>
 
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+              {/* Botón para volver a inicio de sesión */}
+              <TouchableOpacity 
+                style={styles.backToLoginButton}
+                onPress={() => navigation.navigate('SignIn')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.backToLoginText}>Volver al inicio de sesión</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  safeArea: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
   container: {
     flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
-  contentContainer: {
     paddingHorizontal: 30,
+    paddingTop: 20,
+    paddingBottom: 40,
   },
   backButton: {
-    position: 'absolute',
-    top: -75, 
-    left: 10,
-    zIndex: 1,
+    marginBottom: 20,
   },
-  backButtonText: {
-    fontWeight: '500',
-    color: '#353147',
+  backButtonCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  contentContainer: {
+    flex: 1,
+    justifyContent: 'center',
   },
   title: {
     fontSize: 32,
     fontWeight: '700',
-    lineHeight: 35,
+    lineHeight: 38,
     textAlign: 'center',
     color: '#353147',
   },
   body: {
-    padding: 20,
-    fontSize: 20,
-    lineHeight: 35,
-    marginBottom: 20,
+    marginTop: 20,
+    marginBottom: 40,
+    fontSize: 17,
+    lineHeight: 24,
     fontWeight: '400',
     textAlign: 'center',
     color: '#353147',
+    paddingHorizontal: 10,
   },
-  buttonsText: {
-    fontWeight: '500',
-    color: '#353147',
-  },
-  button1: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: '#ffffff70',
-    padding: 16,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: 'white',
-    borderRadius: 16,
-    marginHorizontal: 10,
-  },
-  button2: {
-    flex: 1,
-    alignItems: 'center',
-    padding: 16,
-  },
-  buttonContainer: {
+  inputContainer: {
     flexDirection: 'row',
-    width: '100%',
-
-    backgroundColor: '#DFE3E630',
-    marginTop: 40,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   input: {
-    backgroundColor: '#F7F7F7',
-    padding: 20,
-    borderRadius: 20,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#4A4A4A',
+    flex: 1,
+    paddingVertical: 18,
+    fontSize: 16,
+    color: '#353147',
+    fontWeight: '500',
   },
-  signInButton: {
-    backgroundColor: '#000000',
+  sendButton: {
+    backgroundColor: '#353147',
     padding: 20,
     borderRadius: 16,
     alignItems: 'center',
-    marginVertical: 30,
-    shadowColor: '#000000',
+    marginTop: 10,
+    shadowColor: '#353147',
     shadowOffset: {
       width: 0,
       height: 8,
     },
-    shadowOpacity: 0.44,
-    shadowRadius: 10.32,
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  sendButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  backToLoginButton: {
+    marginTop: 20,
+    padding: 16,
+    alignItems: 'center',
+  },
+  backToLoginText: {
+    color: '#353147',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

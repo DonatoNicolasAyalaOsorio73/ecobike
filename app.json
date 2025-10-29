@@ -1,14 +1,7 @@
 {
   "expo": {
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.justdona.EcoBike"
-    },
-    "name": "EcoBike",
-    "slug": "EcoBike",
+    "name": "EcoBike Demo",
+    "slug": "ecobike-demo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -23,19 +16,19 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.justdona.EcoBike"
+      "bundleIdentifier": "com.ecobike.demo"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.ecobike.demo"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "5ff23fdc-9237-4044-9dca-962f9aa11970"
-      }
-    },
-    "owner": "justdona",
-    "plugins": [
-      "expo-font"
-    ]
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    }
   }
 }
