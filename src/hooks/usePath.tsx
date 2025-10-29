@@ -1,8 +1,7 @@
-import {useMemo} from 'react';
+import { useMemo } from 'react';
 import { curveBasis, line } from 'd3-shape';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {SCREEN_WIDTH} from '../constants/Screen';
-import {parse} from 'react-native-redash';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SCREEN_WIDTH } from '../constants/Screen';
 
 type GenerateTabShapePath = (
   position: number,
@@ -45,13 +44,12 @@ const usePath = () => {
   }, [tHeight]);
 
   const curvedPaths = useMemo(() => {
-    return Array.from({length: NUM_TABS}, (_, index) => {
-      const tabShapePath = generateTabShapePath(index + 0.5, adjustedHeight);
-      return parse(`${tabShapePath}`);
+    return Array.from({ length: NUM_TABS }, (_, index) => {
+      return generateTabShapePath(index + 0.5, adjustedHeight);
     });
   }, [adjustedHeight]);
 
-  return {containerPath, curvedPaths, tHeight};
+  return { containerPath, curvedPaths, tHeight };
 };
 
 export default usePath;

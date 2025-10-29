@@ -33,6 +33,9 @@
         "projectId": "5ff23fdc-9237-4044-9dca-962f9aa11970"
       }
     },
-    "owner": "justdona"
+    "owner": "justdona",
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

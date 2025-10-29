@@ -1,17 +1,14 @@
-import React, { FC, useMemo, useState } from 'react';
-import { StyleSheet, View, Dimensions } from 'react-native'; // Importamos Dimensions
+import React, { FC } from 'react';
+import { StyleSheet, View, Dimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import Animated, {
-  runOnJS,
   useAnimatedProps,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { interpolatePath } from 'react-native-redash';
 
 import { SCREEN_WIDTH } from '../../../constants/Screen';
 import usePath from '../../../hooks/usePath';
-import { getPathXCenter } from '../../../utils/Path';
 import TabItem from './TabItem';
 import AnimatedCircle from './AnimatedCircle';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -25,35 +22,27 @@ export const CustomBottomTab: FC<BottomTabBarProps> = ({
 }) => {
   const { containerPath, curvedPaths, tHeight } = usePath();
   const circleXCoordinate = useSharedValue(0);
-  const progress = useSharedValue(1);
-
-  const handleMoveCircle = (currentPath: string) => {
-    circleXCoordinate.value = getPathXCenter(currentPath);
-  };
+  const progress = useSharedValue(0);
 
   const selectIcon = (routeName: string) => {
-  switch (routeName) {
-    case 'Mapa':
-      return 'map';
-    case 'Puntos':
-      return 'award';
-    case 'Amigos':
-      return 'users';
-    case 'Usuario':
-      return 'user';
-    default:
-      return 'map'; // Valor por defecto si no coincide con ningún caso
-  }
-};
-
+    switch (routeName) {
+      case 'Mapa':
+        return 'map';
+      case 'Puntos':
+        return 'award';
+      case 'Amigos':
+        return 'users';
+      case 'Usuario':
+        return 'user';
+      default:
+        return 'map';
+    }
+  };
 
   const animatedProps = useAnimatedProps(() => {
-    const currentPath = interpolatePath(
-      progress.value,
-      Array.from({ length: curvedPaths.length }, (_, index) => index + 1),
-      curvedPaths,
-    );
-    runOnJS(handleMoveCircle)(currentPath);
+    const index = Math.round(progress.value);
+    const currentPath = curvedPaths[index] || curvedPaths[0];
+
     return {
       d: `${containerPath} ${currentPath}`,
     };
@@ -61,12 +50,22 @@ export const CustomBottomTab: FC<BottomTabBarProps> = ({
 
   const handleTabPress = (index: number, tab: string) => {
     navigation.navigate(tab);
-    progress.value = withTiming(index);
+    progress.value = withTiming(index, { duration: 300 });
+
+    // Calcular posición X del círculo
+    const tabWidth = SCREEN_WIDTH / state.routes.length;
+    circleXCoordinate.value = withTiming(tabWidth * index + tabWidth / 2, {
+      duration: 300,
+    });
   };
 
   return (
     <View style={styles.tabBarContainer}>
-      <Svg width={Dimensions.get('window').width} height={tHeight} style={styles.shadowMd}>
+      <Svg
+        width={Dimensions.get('window').width}
+        height={tHeight}
+        style={styles.shadowMd}
+      >
         <AnimatedPath fill={'#54CD64'} animatedProps={animatedProps} />
       </Svg>
       <AnimatedCircle circleX={circleXCoordinate} />
@@ -75,7 +74,7 @@ export const CustomBottomTab: FC<BottomTabBarProps> = ({
           styles.tabItemsContainer,
           {
             height: tHeight,
-            width: Dimensions.get('window').width, // Usamos las dimensiones de la ventana
+            width: Dimensions.get('window').width,
           },
         ]}
       >
@@ -87,9 +86,9 @@ export const CustomBottomTab: FC<BottomTabBarProps> = ({
               key={index.toString()}
               label={label as string}
               icon={selectIcon(route.name)}
-              activeIndex={state.index + 1}
+              activeIndex={state.index}
               index={index}
-              onTabPress={() => handleTabPress(index + 1, route.name)}
+              onTabPress={() => handleTabPress(index, route.name)}
             />
           );
         })}
@@ -106,7 +105,7 @@ const styles = StyleSheet.create({
   },
   tabBarContainer: {
     position: 'absolute',
-    bottom: 0, // Ajustamos el valor de 'bottom' para que esté en la parte inferior de la pantalla
+    bottom: 0,
     zIndex: 2,
   },
   tabItemsContainer: {
