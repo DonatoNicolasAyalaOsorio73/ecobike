@@ -26,7 +26,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { getAuth, signOut } from 'firebase/auth';
 import { TextInputMask } from 'react-native-masked-text';
 
-export default function UserScreen({ navigation }) {
+function UserScreen({ navigation }) {
   const authInstance = getAuth();
   const userUid = authInstance.currentUser?.uid;
   const [userData, setUserData] = useState(null);
@@ -556,3 +556,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+
+export default UserScreen;
+
+

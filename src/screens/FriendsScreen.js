@@ -24,7 +24,7 @@ import {
 } from "@firebase/firestore";
 import { getAuth } from "@firebase/auth";
 
-export default function FollowUsers() {
+function FollowUsers() {
   const [users, setUsers] = useState([]);
   const [followedUsers, setFollowedUsers] = useState([]);
   const [newFollowUsername, setNewFollowUsername] = useState("");
@@ -271,3 +271,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+
+const FriendsScreen = FollowUsers;
+export default FriendsScreen;
+
