@@ -1,22 +1,17 @@
 {
   "name": "ecobike",
   "version": "1.0.0",
-  "homepage": "https://DonatoNicolasAyalaOsorio.github.io/EcoBike",
-  "main": "src/index.js",
+  "type": "module",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "deploy": "gh-pages -d build"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && gh-pages -d dist"
   },
   "dependencies": {
-    "@google/maps": "^1.1.1",
-    "axios": "^1.6.2",
     "date-fns": "^2.30.0",
     "firebase": "^11.0.2",
     "leaflet": "^1.9.4",
-    "nanoid": "^5.0.9",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^4.12.0",
@@ -24,30 +19,11 @@
     "react-router-dom": "^6.20.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.26.0",
-    "@types/node": "^24.9.2",
-    "@types/react": "^19.1.10",
-    "@types/react-dom": "^19.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.2.1",
     "gh-pages": "^6.3.0",
-    "react-scripts": "^5.0.1",
-    "typescript": "^5.7.2"
-  },
-  "overrides": {
-    "@xmldom/xmldom": "^0.9.5",
-    "glob": "^11.0.0",
-    "inflight": "npm:@npmcli/inflight@^1.0.1",
-    "rimraf": "^6.0.1"
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11"
   }
 }

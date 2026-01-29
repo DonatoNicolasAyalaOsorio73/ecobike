@@ -1,8 +1,6 @@
 import React from 'react';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { View, Text, StyleSheet } from 'react-native';
 import MyNavigation from './src/MyNavigation';
+import './App.css';
 
 export default function App() {
   const [error, setError] = React.useState<string | null>(null);
@@ -21,38 +19,16 @@ export default function App() {
 
   if (error) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorTitle}>Error al cargar la aplicación</Text>
-        <Text style={styles.errorMessage}>{error}</Text>
-      </View>
+      <div className="error-container">
+        <h1 className="error-title">Error al cargar la aplicación</h1>
+        <p className="error-message">{error}</p>
+      </div>
     );
   }
 
   return (
-    <SafeAreaProvider>
-      <StatusBar style="auto" />
+    <div className="app-container">
       <MyNavigation />
-    </SafeAreaProvider>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-  },
-  errorTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ff0000',
-    marginBottom: 10,
-  },
-  errorMessage: {
-    fontSize: 16,
-    color: '#333',
-    textAlign: 'center',
-  },
-});
