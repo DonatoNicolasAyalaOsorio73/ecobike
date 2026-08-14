@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "EcoBike",
+    "slug": "EcoBike",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ADF14B"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.justdona.EcoBike",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "EcoBike usa tu ubicación para registrar tus recorridos en bicicleta y calcular los puntos ganados.",
+        "NSCameraUsageDescription": "EcoBike necesita acceso a la cámara para actualizar tu foto de perfil.",
+        "NSPhotoLibraryUsageDescription": "EcoBike necesita acceso a tu galería para seleccionar tu foto de perfil.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "EcoBike usa tu ubicación en segundo plano para registrar tu recorrido completo en bicicleta."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ADF14B"
+      },
+      "package": "com.justdona.EcoBike",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "CAMERA"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "5ff23fdc-9237-4044-9dca-962f9aa11970"
+      }
+    },
+    "owner": "justdona"
+  }
+}
