@@ -440,31 +440,35 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)", // Agrega un fondo semitransparente
   },
   modalButton: {
-    backgroundColor: "#000000", // Cambiado el color de fondo a azul
+    backgroundColor: colors.brand,
     borderRadius: 16,
-    paddingVertical: 10,
+    paddingVertical: 14,
     paddingHorizontal: 30,
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: 10,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 10.32,
+    marginTop: 12,
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.6)",
+    ...shadows.brandGlow,
   },
   modalText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "white",
+    fontSize: 16,
+    fontWeight: "800",
+    color: colors.onBrand,
   },
   modalContent: {
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 10,
-    width: "80%",
+    ...glass.modal,
+    padding: 24,
+    borderRadius: 24,
+    width: "85%",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: colors.textDark,
+    textAlign: "center",
+    marginBottom: 8,
   },
 });
 

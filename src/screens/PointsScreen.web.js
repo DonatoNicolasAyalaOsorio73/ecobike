@@ -4,7 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import React, { useState, useEffect } from "react";
 import {
   StyleSheet, Text, View, Image, SafeAreaView, Animated,
-  TouchableOpacity, Modal, TouchableHighlight, ScrollView,
+  TouchableOpacity, Modal, TouchableHighlight, ScrollView, Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import QRCode from "react-native-qrcode-svg";
@@ -89,12 +89,8 @@ export default function PointsScreen() {
 
   const [accumulatedPoints, setAccumulatedPoints] = useState(null);
   const [storesData, setStoresData] = useState(FALLBACK_STORES);
-  const [selectedStore, setSelectedStore] = useState(null);
   const [generatedCodes, setGeneratedCodes] = useState([]);
   const [allCodes, setAllCodes] = useState([]);
-  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
-  const [showInsufficientPointsModal, setShowInsufficientPointsModal] = useState(false);
-  const [showCodesModal, setShowCodesModal] = useState(false);
   const [showGeneratedCodesModal, setShowGeneratedCodesModal] = useState(false);
   const [showAllCodesModal, setShowAllCodesModal] = useState(false);
 
@@ -157,10 +153,23 @@ export default function PointsScreen() {
     } catch (e) { console.error("Error loading codes:", e); }
   };
 
-  const handleConfirmRedeem = async () => {
-    setShowConfirmationModal(false);
-    if (!userUid || accumulatedPoints < selectedStore.pointsRequired) {
-      setShowInsufficientPointsModal(true);
+  const insufficientPoints = () =>
+    Alert.alert("Puntos insuficientes", "No tienes suficientes puntos para canjear este descuento.");
+
+  const confirmRedeem = (store) => {
+    Alert.alert(
+      "Canjear descuento",
+      `¿Canjear en ${store.name} por ${store.pointsRequired} puntos?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Confirmar", onPress: () => handleConfirmRedeem(store) },
+      ]
+    );
+  };
+
+  const handleConfirmRedeem = async (store) => {
+    if (!userUid || accumulatedPoints < store.pointsRequired) {
+      insufficientPoints();
       return;
     }
     const db = getFirestore();
@@ -168,8 +177,8 @@ export default function PointsScreen() {
       const ref = doc(db, "usuarios", userUid);
       const snap = await getDoc(ref);
       if (snap.exists()) {
-        const newPoints = snap.data().puntosAcumulados - selectedStore.pointsRequired;
-        if (newPoints < 0) { setShowInsufficientPointsModal(true); return; }
+        const newPoints = snap.data().puntosAcumulados - store.pointsRequired;
+        if (newPoints < 0) { insufficientPoints(); return; }
         await updateDoc(ref, { puntosAcumulados: newPoints });
         setAccumulatedPoints(newPoints);
         await AsyncStorage.setItem("puntosAcumulados", newPoints.toString());
@@ -177,7 +186,7 @@ export default function PointsScreen() {
         setShowGeneratedCodesModal(true);
         const codesCol = collection(ref, "codigos_canjeados");
         for (const c of newCodes) {
-          await addDoc(codesCol, { code: c, store: selectedStore.name, userId: userUid });
+          await addDoc(codesCol, { code: c, store: store.name, userId: userUid });
         }
       }
     } catch (e) { console.log("Redeem error:", e); }
@@ -229,7 +238,7 @@ export default function PointsScreen() {
                   <Text style={styles.pointsPillText}>★ {item.pointsRequired} puntos</Text>
                 </View>
                 <TouchableOpacity
-                  onPress={() => { setSelectedStore(item); setShowConfirmationModal(true); }}
+                  onPress={() => confirmRedeem(item)}
                   style={styles.storeButton}
                   activeOpacity={0.85}
                 >
@@ -271,31 +280,6 @@ export default function PointsScreen() {
           </View>
         </>
       )}
-
-      <Modal visible={showConfirmationModal} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalText}>¿Estás seguro de canjear el descuento en el restaurante?</Text>
-            <TouchableHighlight style={styles.modalButton} onPress={handleConfirmRedeem}>
-              <Text style={styles.buttonText}>Confirmar</Text>
-            </TouchableHighlight>
-            <TouchableHighlight style={styles.modalButton2} onPress={() => setShowConfirmationModal(false)}>
-              <Text style={{ color: "white", fontWeight: "bold" }}>Cancelar</Text>
-            </TouchableHighlight>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal visible={showInsufficientPointsModal} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalText}>No tienes suficientes puntos para realizar este descuento.</Text>
-            <TouchableHighlight style={styles.modalButton} onPress={() => setShowInsufficientPointsModal(false)}>
-              <Text style={styles.buttonText}>Aceptar</Text>
-            </TouchableHighlight>
-          </View>
-        </View>
-      </Modal>
 
       <Modal visible={showAllCodesModal} transparent animationType="slide">
         <View style={styles.modalContainer}>

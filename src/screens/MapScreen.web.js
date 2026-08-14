@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Text, View, TouchableHighlight, TouchableOpacity, Modal, StyleSheet, ActivityIndicator, Alert,
+  Text, View, TouchableHighlight, TouchableOpacity, StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Location from 'expo-location';
@@ -42,8 +42,6 @@ export default function MapScreenWeb() {
   const [path, setPath] = useState([]);
   const [points, setPoints] = useState(0);
   const [recording, setRecording] = useState(false);
-  const [showStartModal, setShowStartModal] = useState(false);
-  const [showStopModal, setShowStopModal] = useState(false);
   const [localPoints, setLocalPoints] = useState(0);
   const [shouldDrawPath, setShouldDrawPath] = useState(false);
   const [showLossText, setShowLossText] = useState(false);
@@ -173,7 +171,6 @@ export default function MapScreenWeb() {
   }, [recording]);
 
   const startRecording = async () => {
-    setShowStartModal(false);
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Ubicación necesaria', 'Permite el acceso a tu ubicación para iniciar un recorrido.');
@@ -193,9 +190,9 @@ export default function MapScreenWeb() {
     const newPoints = points + localPoints;
     setRecording(false);
     setPoints(newPoints);
-    setShowStopModal(true);
     setShouldDrawPath(false);
     setShowLossText(true);
+    Alert.alert('Recorrido finalizado', `Ganaste ${localPoints} puntos en este recorrido.`);
     if (userUid) {
       updateDoc(doc(db, 'usuarios', userUid), { puntosAcumulados: newPoints }).catch(console.error);
       AsyncStorage.setItem('puntosAcumulados', newPoints.toString());
@@ -298,32 +295,6 @@ export default function MapScreenWeb() {
         </View>
       )}
 
-      <Modal visible={showStartModal} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalText}>¿Iniciar recorrido en bicicleta?</Text>
-            <TouchableHighlight style={styles.modalButton2} onPress={startRecording}>
-              <Text style={styles.buttonText2}>Sí</Text>
-            </TouchableHighlight>
-            <TouchableHighlight style={styles.modalButton} onPress={() => setShowStartModal(false)}>
-              <Text style={styles.buttonText}>Cancelar</Text>
-            </TouchableHighlight>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal visible={showStopModal} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalText}>Recorrido finalizado</Text>
-            <Text style={{ fontSize: 15, color: '#5a7050', marginBottom: 8 }}>Puntos en este recorrido: {localPoints}</Text>
-            <TouchableHighlight style={styles.modalButton2} onPress={() => setShowStopModal(false)}>
-              <Text style={styles.buttonText2}>Aceptar</Text>
-            </TouchableHighlight>
-          </View>
-        </View>
-      </Modal>
-
       {/* Bottom control stack — centered, spaced, no overlap */}
       <View style={styles.bottomControls}>
         <TouchableHighlight
@@ -341,7 +312,15 @@ export default function MapScreenWeb() {
             <Text style={styles.buttonText2}>Finalizar recorrido</Text>
           </TouchableHighlight>
         ) : (
-          <TouchableHighlight style={styles.button} onPress={() => setShowStartModal(true)}>
+          <TouchableHighlight
+            style={styles.button}
+            onPress={() =>
+              Alert.alert('¿Iniciar recorrido?', 'Vas a registrar tu ruta en bicicleta.', [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: 'Sí, iniciar', onPress: startRecording },
+              ])
+            }
+          >
             <Text style={styles.buttonText2}>Iniciar recorrido</Text>
           </TouchableHighlight>
         )}
@@ -425,38 +404,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35, shadowRadius: 14,
   },
   buttonText2: { color: '#1a2e10', fontSize: 15, fontWeight: '700' },
-  buttonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   redContainer: {
     position: 'absolute', top: 136, left: '50%',
     transform: [{ translateX: -125 }],
     width: 250, alignItems: 'center', zIndex: 2,
-  },
-  modalContainer: {
-    flex: 1, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.52)',
-  },
-  modalContent: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    backdropFilter: 'blur(28px) saturate(160%)',
-    WebkitBackdropFilter: 'blur(28px) saturate(160%)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.68)',
-    padding: 24, borderRadius: 24, alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1, shadowRadius: 24, width: '85%',
-  },
-  modalText: { fontSize: 17, fontWeight: '700', marginBottom: 14, textAlign: 'center', color: '#1a2e10' },
-  modalButton: {
-    backgroundColor: 'rgba(0,0,0,0.82)', borderRadius: 18,
-    borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.15)',
-    paddingVertical: 13, paddingHorizontal: 28,
-    alignItems: 'center', justifyContent: 'center', marginVertical: 6,
-    width: '100%',
-  },
-  modalButton2: {
-    backgroundColor: '#ADF14B', borderRadius: 18,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)',
-    paddingVertical: 13, paddingHorizontal: 28,
-    alignItems: 'center', justifyContent: 'center', marginVertical: 6,
-    width: '100%',
   },
 });
