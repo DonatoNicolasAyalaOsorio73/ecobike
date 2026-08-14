@@ -45,3 +45,6 @@ firebase-adminsdk*.json
 .idea/
 _bmad/
 _bmad-output/
+
+.vercel
+.env*

@@ -1,11 +1,11 @@
-// Dynamic config: use Metro bundler on CI/Vercel (Linux), webpack locally (Windows)
+// SDK 54: web is Metro-only (webpack support was removed in SDK 50).
 const appJson = require('./app.json');
 
 module.exports = {
   ...appJson.expo,
   web: {
     ...appJson.expo.web,
-    bundler: process.env.CI ? 'metro' : 'webpack',
+    bundler: 'metro',
   },
   extra: {
     ...appJson.expo.extra,

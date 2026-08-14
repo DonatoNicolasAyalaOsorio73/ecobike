@@ -66,8 +66,8 @@ presentación cuando hace falta.
 
 | Tecnología | Uso en el proyecto |
 |------------|--------------------|
-| **Expo 49** | Framework y tooling de React Native (build, export web, permisos, assets). |
-| **React Native 0.72 / React 18** | Base de la interfaz en móvil. |
+| **Expo 54** | Framework y tooling de React Native (build, export web, permisos, assets). |
+| **React Native 0.81 / React 19** | Base de la interfaz en móvil. |
 | **react-native-web** | Renderiza la misma app en el navegador (el clon web). |
 | **React Navigation** (native-stack + bottom-tabs) | Navegación: stack de autenticación y barra de pestañas inferior. |
 | **Firebase (cliente) 10** | `Auth` (registro/login), `Firestore` (usuarios, tiendas, cupones), `Storage` (foto de perfil). |
@@ -178,7 +178,7 @@ tiendas/{id}
 
 ## Requisitos previos
 
-- Node.js 18 o 20
+- Node.js 20 o superior
 - npm (o yarn)
 - Para móvil: la app **Expo Go** en el teléfono, o un emulador Android / simulador iOS
 - Un proyecto de Firebase con Auth, Firestore y Storage habilitados
