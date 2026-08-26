@@ -1,0 +1,140 @@
+.welcome-screen {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.welcome-container {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 500px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.welcome-logo {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.welcome-container h1 {
+  font-size: 36px;
+  color: #333;
+  margin: 0 0 10px 0;
+}
+
+.welcome-tagline {
+  font-size: 16px;
+  color: #999;
+  margin: 0 0 30px 0;
+}
+
+.welcome-features {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 30px;
+  text-align: left;
+}
+
+.feature {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+.feature-icon {
+  font-size: 24px;
+  min-width: 32px;
+  text-align: center;
+}
+
+.feature p {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.welcome-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.btn {
+  padding: 15px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  background-color: #64cd69;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #55b85a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(100, 205, 105, 0.4);
+}
+
+.btn-secondary {
+  background-color: #f0f0f0;
+  color: #333;
+  border: 2px solid #ddd;
+}
+
+.btn-secondary:hover {
+  background-color: #e0e0e0;
+  transform: translateY(-2px);
+  border-color: #999;
+}
+
+.welcome-footer {
+  font-size: 12px;
+  color: #999;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .welcome-container {
+    padding: 60px;
+  }
+
+  .welcome-container h1 {
+    font-size: 42px;
+  }
+
+  .welcome-features {
+    flex-direction: row;
+    gap: 10px;
+    margin-bottom: 40px;
+  }
+
+  .feature {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+
+  .welcome-actions {
+    flex-direction: row;
+    gap: 12px;
+  }
+
+  .btn {
+    flex: 1;
+  }
+}

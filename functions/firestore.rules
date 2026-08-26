@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{uid} {
+      // Lectura: solo el propio usuario autenticado
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      // Creacion: cliente puede crear su propio documento al registrarse
+      // SOLO si points inicia en 0 y los campos obligatorios estan presentes
+      allow create: if request.auth != null
+                    && request.auth.uid == uid
+                    && request.resource.data.points == 0
+                    && request.resource.data.email is string
+                    && request.resource.data.city is string;
+
+      // Actualizacion: cliente puede editar su perfil PERO NO el campo points
+      allow update: if request.auth != null
+                    && request.auth.uid == uid
+                    && !request.resource.data.diff(resource.data)
+                        .affectedKeys().hasAny(['points', 'streak', 'totalRoutes', 'badges']);
+
+      // Eliminacion: no permitida desde cliente (se maneja via Cloud Function en Epic 7)
+      allow delete: if false;
+    }
+
+    // Placeholder para colecciones de futuros epics — negar todo hasta implementacion
+    match /routes/{routeId} {
+      allow read: if request.auth != null
+                  && resource.data.userId == request.auth.uid;
+      allow write: if false; // solo Cloud Functions via Admin SDK
+    }
+
+    match /rewards/{rewardId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    match /redemptions/{redemptionId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Tiendas participantes — lectura publica autenticada
+    match /tiendas/{storeId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Canjes — usuario puede leer los suyos
+    match /canjes/{canjeId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // Perfil extendido original
+    match /usuarios/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // NPS: usuario puede crear el suyo, no leer
+    match /nps/{npsId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if false;
+    }
+
+    // Denegar todo lo demas por defecto
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

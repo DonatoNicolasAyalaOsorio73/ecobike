@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EcoBike — Direcciones de Diseno UX</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green-50: #e8f5e9;
+    --green-100: #c8e6c9;
+    --green-500: #64cd69;
+    --green-600: #55b85a;
+    --green-700: #2e7d32;
+    --green-900: #1B4D1E;
+    --amber-400: #FFCA28;
+    --amber-500: #F5A623;
+    --amber-600: #E8900A;
+    --neutral-50: #F8FBF9;
+    --neutral-100: #F0F4F1;
+    --neutral-200: #E0E8E2;
+    --neutral-500: #6B7E6E;
+    --neutral-700: #374D3A;
+    --neutral-900: #0D1F0E;
+    --error: #E53935;
+    --info: #1976D2;
+    --white: #ffffff;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    background: #1a1a2e;
+    color: #eee;
+    padding: 40px 20px;
+    min-height: 100vh;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  header h1 { font-size: 28px; font-weight: 700; color: var(--green-500); margin-bottom: 8px; }
+  header p { font-size: 14px; color: #aaa; max-width: 600px; margin: 0 auto; line-height: 1.6; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #666;
+    text-align: center;
+    margin-bottom: 32px;
+    margin-top: 56px;
+  }
+
+  .directions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .direction-card {
+    background: #16213e;
+    border-radius: 20px;
+    padding: 24px;
+    border: 1px solid #2a2a4a;
+  }
+
+  .direction-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--green-500);
+    margin-bottom: 4px;
+  }
+
+  .direction-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+
+  .direction-desc {
+    font-size: 13px;
+    color: #888;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  /* Phone mockup */
+  .phone {
+    width: 260px;
+    height: 520px;
+    border-radius: 36px;
+    border: 6px solid #333;
+    overflow: hidden;
+    margin: 0 auto;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    background: #111;
+  }
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%; transform: translateX(-50%);
+    width: 80px; height: 20px;
+    background: #1a1a1a;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    z-index: 10;
+  }
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .direction-tags {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-top: 16px;
+  }
+  .tag {
+    font-size: 11px; padding: 3px 8px; border-radius: 20px;
+    background: #1e2a3a; color: #7ca4c4; border: 1px solid #2a3a4a;
+  }
+
+  /* ===================== DIRECTION 1: Mapa Minimal ===================== */
+  .d1 {
+    background: #e8eaed;
+    height: 100%;
+    position: relative;
+    font-family: var(--font);
+  }
+  .d1-map {
+    position: absolute; inset: 0;
+    background: linear-gradient(160deg, #d4e8d4 0%, #b8d8b8 40%, #c8dac8 70%, #d0e0d0 100%);
+  }
+  .d1-map-lines {
+    position: absolute; inset: 0; overflow: hidden;
+  }
+  .d1-map-lines::before {
+    content: '';
+    position: absolute;
+    top: 30%; left: 10%; width: 80%; height: 1px;
+    background: rgba(255,255,255,0.6);
+    transform: rotate(-8deg);
+  }
+  .d1-map-lines::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 20%; width: 60%; height: 1px;
+    background: rgba(255,255,255,0.4);
+    transform: rotate(5deg);
+  }
+  .d1-topbar {
+    position: absolute;
+    top: 24px; left: 12px; right: 12px;
+    background: white;
+    border-radius: 50px;
+    padding: 8px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    z-index: 5;
+  }
+  .d1-points {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 13px; font-weight: 700; color: var(--neutral-700);
+  }
+  .d1-points-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber-500); }
+  .d1-streak { font-size: 11px; font-weight: 600; color: var(--neutral-500); }
+
+  .d1-reward-marker {
+    position: absolute;
+    z-index: 4;
+  }
+  .d1-marker-pill {
+    background: white;
+    border-radius: 20px;
+    padding: 5px 10px 5px 6px;
+    display: flex; align-items: center; gap: 5px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+    white-space: nowrap;
+  }
+  .d1-marker-icon {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--green-500);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: white; font-weight: 700;
+  }
+  .d1-marker-text { font-size: 10px; }
+  .d1-marker-name { font-weight: 700; color: var(--neutral-700); display: block; }
+  .d1-marker-pts { color: var(--amber-600); font-weight: 600; }
+
+  .d1-fab {
+    position: absolute;
+    bottom: 72px; left: 50%; transform: translateX(-50%);
+    background: var(--green-500);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 14px 28px;
+    font-size: 13px; font-weight: 700;
+    box-shadow: 0 6px 20px rgba(100,205,105,0.4);
+    white-space: nowrap;
+    z-index: 5;
+  }
+  .d1-tabbar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 60px;
+    background: white;
+    display: flex;
+    border-top: 1px solid #eee;
+    z-index: 5;
+  }
+  .d1-tab {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2px;
+  }
+  .d1-tab-dot { width: 20px; height: 3px; border-radius: 2px; background: #ddd; }
+  .d1-tab-dot.active { background: var(--green-500); }
+  .d1-tab-label { font-size: 9px; color: #bbb; }
+  .d1-tab-label.active { color: var(--green-500); font-weight: 600; }
+
+  /* ===================== DIRECTION 2: Dashboard Bold ===================== */
+  .d2 { background: var(--neutral-50); height: 100%; font-family: var(--font); }
+  .d2-header {
+    background: var(--neutral-900);
+    padding: 28px 16px 16px;
+    color: white;
+  }
+  .d2-greeting { font-size: 11px; color: #aaa; margin-bottom: 4px; }
+  .d2-stats-row { display: flex; gap: 12px; margin-top: 12px; }
+  .d2-stat { flex: 1; background: rgba(255,255,255,0.08); border-radius: 10px; padding: 8px; text-align: center; }
+  .d2-stat-val { font-size: 16px; font-weight: 700; color: var(--green-500); display: block; }
+  .d2-stat-lbl { font-size: 8px; color: #888; display: block; margin-top: 2px; }
+  .d2-map-mini {
+    height: 180px;
+    background: linear-gradient(160deg, #d4e8d4 0%, #b8d8b8 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .d2-map-mini::after {
+    content: 'INICIAR RUTA';
+    position: absolute;
+    bottom: 12px; left: 50%; transform: translateX(-50%);
+    background: var(--green-500);
+    color: white; font-size: 10px; font-weight: 700;
+    padding: 8px 20px; border-radius: 50px;
+    box-shadow: 0 4px 12px rgba(100,205,105,0.4);
+    white-space: nowrap;
+  }
+  .d2-section-title { font-size: 11px; font-weight: 700; color: var(--neutral-500); padding: 12px 14px 6px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .d2-reward-card {
+    margin: 0 12px 8px;
+    background: white;
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .d2-reward-icon { width: 36px; height: 36px; border-radius: 8px; background: var(--green-50); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .d2-reward-info { flex: 1; }
+  .d2-reward-name { font-size: 11px; font-weight: 700; color: var(--neutral-700); display: block; }
+  .d2-reward-detail { font-size: 10px; color: var(--neutral-500); }
+  .d2-reward-pts { font-size: 11px; font-weight: 700; color: var(--amber-500); }
+  .d2-tabbar { position: absolute; bottom: 0; left: 0; right: 0; height: 56px; background: white; display: flex; border-top: 1px solid #eee; }
+  .d2-tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .d2-tab-bar { width: 22px; height: 3px; border-radius: 2px; background: #e0e0e0; }
+  .d2-tab-bar.a { background: var(--green-500); }
+  .d2-tab-lbl { font-size: 8px; color: #ccc; }
+  .d2-tab-lbl.a { color: var(--green-500); font-weight: 600; }
+
+  /* ===================== DIRECTION 3: Card Scroll ===================== */
+  .d3 { background: var(--neutral-50); height: 100%; font-family: var(--font); }
+  .d3-header { padding: 28px 14px 12px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .d3-greeting { font-size: 16px; font-weight: 700; color: var(--neutral-700); }
+  .d3-sub { font-size: 10px; color: var(--neutral-500); }
+  .d3-pts-badge { background: var(--neutral-900); border-radius: 20px; padding: 6px 12px; text-align: center; }
+  .d3-pts-val { font-size: 14px; font-weight: 700; color: var(--green-500); display: block; }
+  .d3-pts-lbl { font-size: 8px; color: #777; }
+  .d3-map-card {
+    margin: 0 12px 14px;
+    border-radius: 16px; overflow: hidden;
+    height: 140px;
+    background: linear-gradient(160deg, #d4e8d4 0%, #c0dcba 100%);
+    position: relative;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  }
+  .d3-map-cta {
+    position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+    background: var(--green-500); color: white;
+    font-size: 10px; font-weight: 700;
+    padding: 7px 18px; border-radius: 50px;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(100,205,105,0.4);
+  }
+  .d3-section { padding: 0 12px; margin-bottom: 10px; }
+  .d3-section-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .d3-section-title { font-size: 12px; font-weight: 700; color: var(--neutral-700); }
+  .d3-section-link { font-size: 10px; color: var(--green-600); font-weight: 600; }
+  .d3-scroll { display: flex; gap: 8px; overflow: hidden; }
+  .d3-rcard {
+    min-width: 100px; background: white; border-radius: 12px;
+    padding: 10px 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .d3-rcard-img { width: 100%; height: 50px; border-radius: 8px; background: var(--green-100); margin-bottom: 6px; }
+  .d3-rcard-name { font-size: 10px; font-weight: 700; color: var(--neutral-700); margin-bottom: 2px; }
+  .d3-rcard-biz { font-size: 9px; color: var(--neutral-500); margin-bottom: 4px; }
+  .d3-rcard-bottom { display: flex; justify-content: space-between; align-items: center; }
+  .d3-rcard-pts { font-size: 10px; font-weight: 700; color: var(--amber-500); }
+  .d3-rcard-dist { font-size: 9px; color: var(--neutral-500); }
+  .d3-tabbar { position: absolute; bottom: 0; left: 0; right: 0; height: 56px; background: white; display: flex; border-top: 1px solid #eee; }
+  .d3-tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .d3-tab-ic { width: 20px; height: 3px; border-radius: 2px; background: #e8e8e8; }
+  .d3-tab-ic.a { background: var(--green-500); }
+  .d3-tab-lbl { font-size: 8px; color: #ccc; }
+  .d3-tab-lbl.a { color: var(--green-500); font-weight: 600; }
+
+  /* ===================== DIRECTION 4: Dark Adventure ===================== */
+  .d4 { background: var(--neutral-900); height: 100%; font-family: var(--font); }
+  .d4-header { padding: 28px 14px 16px; }
+  .d4-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .d4-greeting { font-size: 12px; color: rgba(255,255,255,0.6); }
+  .d4-pts { display: flex; align-items: center; gap: 6px; }
+  .d4-pts-val { font-size: 18px; font-weight: 700; color: var(--amber-400); }
+  .d4-pts-lbl { font-size: 9px; color: rgba(255,255,255,0.4); }
+  .d4-streak-bar {
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .d4-streak-dots { display: flex; gap: 4px; }
+  .d4-streak-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.15); }
+  .d4-streak-dot.done { background: var(--green-500); box-shadow: 0 0 6px rgba(100,205,105,0.6); }
+  .d4-streak-label { font-size: 10px; color: rgba(255,255,255,0.5); }
+  .d4-streak-days { font-size: 13px; font-weight: 700; color: var(--green-500); margin-left: auto; }
+  .d4-map {
+    margin: 0 12px;
+    border-radius: 16px; overflow: hidden; height: 200px;
+    background: linear-gradient(160deg, #1a2e1a 0%, #0f1f0f 100%);
+    position: relative;
+    border: 1px solid rgba(100,205,105,0.2);
+  }
+  .d4-map-glow {
+    position: absolute;
+    top: 40%; left: 50%; transform: translate(-50%,-50%);
+    width: 60px; height: 60px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(100,205,105,0.3) 0%, transparent 70%);
+  }
+  .d4-map-pin {
+    position: absolute;
+    top: 38%; left: 48%;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--green-500);
+    box-shadow: 0 0 12px rgba(100,205,105,0.8);
+  }
+  .d4-map-marker {
+    position: absolute;
+    top: 25%; left: 60%;
+    background: rgba(245,166,35,0.9); border-radius: 20px;
+    padding: 4px 8px;
+    font-size: 9px; font-weight: 700; color: white;
+    white-space: nowrap;
+  }
+  .d4-cta {
+    margin: 12px;
+    background: var(--green-500);
+    border-radius: 14px;
+    padding: 14px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(100,205,105,0.35);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .d4-cta-text { font-size: 13px; font-weight: 700; color: white; }
+  .d4-cta-sub { font-size: 9px; color: rgba(255,255,255,0.7); display: block; margin-top: 2px; }
+  .d4-tabbar {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 60px;
+    background: rgba(255,255,255,0.04);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+  }
+  .d4-tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .d4-tab-ic { width: 22px; height: 2px; border-radius: 2px; background: rgba(255,255,255,0.12); }
+  .d4-tab-ic.a { background: var(--green-500); box-shadow: 0 0 6px rgba(100,205,105,0.5); }
+  .d4-tab-lbl { font-size: 8px; color: rgba(255,255,255,0.3); }
+  .d4-tab-lbl.a { color: var(--green-500); font-weight: 600; }
+
+  /* ===================== DIRECTION 5: Rewards-First ===================== */
+  .d5 { background: var(--neutral-50); height: 100%; font-family: var(--font); }
+  .d5-hero {
+    background: linear-gradient(135deg, var(--green-700) 0%, var(--green-900) 100%);
+    padding: 28px 16px 20px;
+    color: white;
+  }
+  .d5-hero-title { font-size: 11px; color: rgba(255,255,255,0.6); margin-bottom: 4px; }
+  .d5-pts-display { font-size: 42px; font-weight: 700; color: var(--amber-400); line-height: 1; margin-bottom: 2px; }
+  .d5-pts-sub { font-size: 10px; color: rgba(255,255,255,0.5); margin-bottom: 12px; }
+  .d5-progress-wrap { background: rgba(255,255,255,0.15); border-radius: 6px; overflow: hidden; height: 6px; }
+  .d5-progress-bar { width: 67%; height: 100%; background: var(--amber-400); border-radius: 6px; }
+  .d5-progress-label { font-size: 9px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+
+  .d5-rewards-grid { padding: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .d5-rcard {
+    background: white; border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .d5-rcard-img { width: 100%; height: 44px; border-radius: 8px; margin-bottom: 6px; }
+  .d5-rcard-img.available { background: linear-gradient(135deg, var(--green-100), var(--green-50)); }
+  .d5-rcard-img.locked { background: linear-gradient(135deg, #f0f0f0, #e8e8e8); }
+  .d5-rcard-name { font-size: 10px; font-weight: 700; color: var(--neutral-700); margin-bottom: 1px; }
+  .d5-rcard-biz { font-size: 9px; color: var(--neutral-500); margin-bottom: 4px; }
+  .d5-rcard-pts-avail { font-size: 10px; font-weight: 700; color: var(--green-600); }
+  .d5-rcard-pts-lock { font-size: 9px; color: var(--neutral-500); }
+
+  .d5-map-btn {
+    margin: 0 12px 12px;
+    background: var(--green-500); border-radius: 14px;
+    padding: 13px; text-align: center;
+    color: white; font-size: 12px; font-weight: 700;
+    box-shadow: 0 4px 14px rgba(100,205,105,0.35);
+  }
+  .d5-tabbar { position: absolute; bottom: 0; left: 0; right: 0; height: 56px; background: white; display: flex; border-top: 1px solid #eee; }
+  .d5-tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .d5-tab-ic { width: 20px; height: 3px; border-radius: 2px; background: #e8e8e8; }
+  .d5-tab-ic.a { background: var(--amber-500); }
+  .d5-tab-lbl { font-size: 8px; color: #ccc; }
+  .d5-tab-lbl.a { color: var(--amber-500); font-weight: 600; }
+
+  /* ===================== DIRECTION 6: Split Map + Sheet ===================== */
+  .d6 { background: var(--neutral-50); height: 100%; font-family: var(--font); position: relative; }
+  .d6-map {
+    height: 60%;
+    background: linear-gradient(160deg, #d4e8d4 0%, #b8d8b8 50%, #c8dac8 100%);
+    position: relative;
+  }
+  .d6-topbar {
+    position: absolute; top: 20px; left: 10px; right: 10px;
+    display: flex; gap: 8px;
+  }
+  .d6-search {
+    flex: 1; background: white; border-radius: 20px;
+    padding: 7px 12px;
+    font-size: 10px; color: #aaa;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .d6-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--green-500);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    flex-shrink: 0;
+  }
+  .d6-map-pin {
+    position: absolute; top: 52%; left: 45%;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--info);
+    box-shadow: 0 0 0 4px rgba(25,118,210,0.25);
+  }
+  .d6-map-marker1 {
+    position: absolute; top: 35%; left: 55%;
+    background: var(--green-500); border-radius: 20px;
+    padding: 4px 8px;
+    font-size: 8px; font-weight: 700; color: white;
+    white-space: nowrap;
+  }
+  .d6-map-marker2 {
+    position: absolute; top: 65%; left: 25%;
+    background: var(--amber-500); border-radius: 20px;
+    padding: 4px 8px;
+    font-size: 8px; font-weight: 700; color: white;
+    white-space: nowrap;
+  }
+  .d6-fab {
+    position: absolute; bottom: -22px; right: 14px;
+    width: 46px; height: 46px; border-radius: 50%;
+    background: var(--green-500);
+    box-shadow: 0 4px 14px rgba(100,205,105,0.5);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10;
+  }
+  .d6-fab-icon { width: 16px; height: 3px; background: white; border-radius: 2px; position: relative; }
+  .d6-fab-icon::before, .d6-fab-icon::after {
+    content: ''; position: absolute; left: 0;
+    width: 16px; height: 3px; background: white; border-radius: 2px;
+  }
+  .d6-fab-icon::before { top: -5px; }
+  .d6-fab-icon::after { top: 5px; }
+
+  .d6-sheet {
+    height: 40%;
+    background: white;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    padding: 12px 12px 0;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+  }
+  .d6-sheet-handle {
+    width: 32px; height: 3px; border-radius: 3px;
+    background: #e0e0e0; margin: 0 auto 10px;
+  }
+  .d6-sheet-title { font-size: 12px; font-weight: 700; color: var(--neutral-700); margin-bottom: 8px; }
+  .d6-reward-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--neutral-100);
+  }
+  .d6-rew-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--green-50); flex-shrink: 0; }
+  .d6-rew-info { flex: 1; }
+  .d6-rew-name { font-size: 10px; font-weight: 700; color: var(--neutral-700); }
+  .d6-rew-biz { font-size: 9px; color: var(--neutral-500); }
+  .d6-rew-right { text-align: right; }
+  .d6-rew-pts { font-size: 10px; font-weight: 700; color: var(--amber-500); display: block; }
+  .d6-rew-dist { font-size: 9px; color: var(--neutral-500); }
+  .d6-tabbar { position: absolute; bottom: 0; left: 0; right: 0; height: 54px; background: white; display: flex; border-top: 1px solid #eee; }
+  .d6-tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .d6-tab-ic { width: 20px; height: 3px; border-radius: 2px; background: #e8e8e8; }
+  .d6-tab-ic.a { background: var(--green-500); }
+  .d6-tab-lbl { font-size: 8px; color: #ccc; }
+  .d6-tab-lbl.a { color: var(--green-500); font-weight: 600; }
+
+  /* ACTIVE ROUTE SCREEN (same for all) */
+  .route-screen {
+    background: var(--neutral-900);
+    height: 100%;
+    font-family: var(--font);
+    position: relative;
+  }
+  .route-map {
+    height: 55%;
+    background: linear-gradient(160deg, #0f1a10 0%, #162116 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .route-map-path {
+    position: absolute;
+    top: 30%; left: 20%; width: 60%; height: 40%;
+    border: 2px solid rgba(100,205,105,0.4);
+    border-radius: 50%;
+    transform: rotate(20deg) scaleX(1.5);
+  }
+  .route-pin {
+    position: absolute;
+    top: 48%; left: 55%;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--green-500);
+    box-shadow: 0 0 12px rgba(100,205,105,0.8), 0 0 0 3px rgba(100,205,105,0.2);
+  }
+  .route-gps-badge {
+    position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+    background: rgba(100,205,105,0.15);
+    border: 1px solid rgba(100,205,105,0.4);
+    border-radius: 20px; padding: 5px 12px;
+    font-size: 9px; font-weight: 600; color: var(--green-500);
+    white-space: nowrap;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .route-gps-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--green-500);
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+  .route-stats {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: rgba(255,255,255,0.06);
+    margin: 0;
+  }
+  .route-stat {
+    background: var(--neutral-900);
+    padding: 12px 8px; text-align: center;
+  }
+  .route-stat-val { font-size: 18px; font-weight: 700; color: white; display: block; }
+  .route-stat-lbl { font-size: 8px; color: rgba(255,255,255,0.4); display: block; margin-top: 2px; }
+  .route-stat-val.green { color: var(--green-500); }
+  .route-stat-val.amber { color: var(--amber-400); }
+
+  .route-pts-float {
+    margin: 12px;
+    background: rgba(100,205,105,0.12);
+    border: 1px solid rgba(100,205,105,0.25);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .route-pts-label { font-size: 10px; color: rgba(255,255,255,0.5); }
+  .route-pts-value { font-size: 20px; font-weight: 700; color: var(--amber-400); }
+  .route-pts-anim {
+    font-size: 13px; font-weight: 700; color: var(--green-500);
+    opacity: 0.8;
+  }
+
+  .route-next-reward {
+    margin: 0 12px;
+    background: rgba(245,166,35,0.1);
+    border: 1px solid rgba(245,166,35,0.25);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .route-reward-label { font-size: 9px; color: rgba(255,255,255,0.4); display: block; }
+  .route-reward-name { font-size: 11px; font-weight: 700; color: white; }
+  .route-reward-pts { font-size: 11px; font-weight: 700; color: var(--amber-400); }
+
+  .route-stop-btn {
+    margin: 12px;
+    background: rgba(229,57,53,0.15);
+    border: 1px solid rgba(229,57,53,0.3);
+    border-radius: 14px;
+    padding: 13px;
+    text-align: center;
+    font-size: 12px; font-weight: 700; color: #ef5350;
+  }
+
+  /* REWARD REDEEM SCREEN */
+  .redeem-screen {
+    background: var(--neutral-50);
+    height: 100%;
+    font-family: var(--font);
+  }
+  .redeem-header {
+    background: var(--green-700);
+    padding: 28px 16px 16px;
+    color: white;
+    text-align: center;
+  }
+  .redeem-success-icon {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    margin: 0 auto 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .redeem-checkmark { font-size: 22px; }
+  .redeem-title { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+  .redeem-sub { font-size: 11px; color: rgba(255,255,255,0.7); }
+  .redeem-qr-area {
+    margin: 16px 24px;
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  .redeem-qr {
+    width: 100px; height: 100px;
+    background:
+      repeating-linear-gradient(0deg, #333 0, #333 2px, transparent 2px, transparent 8px),
+      repeating-linear-gradient(90deg, #333 0, #333 2px, transparent 2px, transparent 8px);
+    margin: 0 auto 8px;
+    border-radius: 4px;
+  }
+  .redeem-qr-label { font-size: 10px; color: var(--neutral-500); }
+  .redeem-ttl { font-size: 11px; font-weight: 600; color: var(--error); margin-top: 6px; }
+
+  .redeem-biz-card {
+    margin: 0 16px;
+    background: white;
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .redeem-biz-avatar {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--green-100);
+    flex-shrink: 0;
+  }
+  .redeem-biz-name { font-size: 12px; font-weight: 700; color: var(--neutral-700); }
+  .redeem-biz-address { font-size: 10px; color: var(--neutral-500); }
+  .redeem-biz-pts { font-size: 11px; color: var(--amber-600); font-weight: 700; margin-top: 2px; }
+
+  .redeem-pts-deducted {
+    margin: 10px 16px;
+    background: var(--green-50);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .redeem-pts-label { font-size: 10px; color: var(--green-700); }
+  .redeem-pts-after { font-size: 14px; font-weight: 700; color: var(--green-700); }
+
+  /* color tokens reference */
+  .tokens-section { max-width: 900px; margin: 56px auto 0; }
+  .tokens-title { font-size: 16px; font-weight: 700; color: white; margin-bottom: 16px; text-align: center; }
+  .tokens-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; }
+  .token-chip { border-radius: 10px; overflow: hidden; }
+  .token-color { height: 48px; }
+  .token-info { background: #1a1a2e; padding: 6px; }
+  .token-name { font-size: 9px; color: #888; display: block; }
+  .token-hex { font-size: 9px; color: #bbb; font-weight: 600; font-family: monospace; }
+
+  footer { text-align: center; margin-top: 64px; color: #555; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>EcoBike — Direcciones de Diseno</h1>
+  <p>6 direcciones visuales para la pantalla principal. Cada una aplica los mismos design tokens pero con diferente jerarquia, densidad y enfoque.</p>
+</header>
+
+<p class="section-label">Pantalla Principal (Home)</p>
+
+<div class="directions-grid">
+
+  <!-- DIRECTION 1 -->
+  <div class="direction-card">
+    <div class="direction-label">Direccion 1</div>
+    <div class="direction-title">Mapa Minimal</div>
+    <div class="direction-desc">El mapa ocupa toda la pantalla. Un unico FAB "Iniciar Ruta" y un topbar flotante con puntos y racha. Maxima inmersion en el mapa.</div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="d1">
+          <div class="d1-map">
+            <div class="d1-map-lines"></div>
+          </div>
+          <div class="d1-topbar">
+            <div class="d1-points">
+              <div class="d1-points-dot"></div>
+              <span>1.240 pts</span>
+            </div>
+            <div class="d1-streak">Racha 7d</div>
+          </div>
+          <!-- Reward markers -->
+          <div class="d1-reward-marker" style="top:34%;left:55%;">
+            <div class="d1-marker-pill">
+              <div class="d1-marker-icon">C</div>
+              <div class="d1-marker-text">
+                <span class="d1-marker-name">CafeVerde</span>
+                <span class="d1-marker-pts">320pts · 0.8km</span>
+              </div>
+            </div>
+          </div>
+          <div class="d1-reward-marker" style="top:55%;left:22%;">
+            <div class="d1-marker-pill">
+              <div class="d1-marker-icon" style="background:var(--amber-500);">P</div>
+              <div class="d1-marker-text">
+                <span class="d1-marker-name">Panaderia Sol</span>
+                <span class="d1-marker-pts">180pts · 1.2km</span>
+              </div>
+            </div>
+          </div>
+          <button class="d1-fab">Iniciar Ruta</button>
+          <div class="d1-tabbar">
+            <div class="d1-tab">
+              <div class="d1-tab-dot active"></div>
+              <span class="d1-tab-label active">Mapa</span>
+            </div>
+            <div class="d1-tab">
+              <div class="d1-tab-dot"></div>
+              <span class="d1-tab-label">Puntos</span>
+            </div>
+            <div class="d1-tab">
+              <div class="d1-tab-dot"></div>
+              <span class="d1-tab-label">Perfil</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="direction-tags">
+      <span class="tag">Mapa completo</span>
+      <span class="tag">UI minima</span>
+      <span class="tag">Bottom sheet</span>
+    </div>
+  </div>
+
+  <!-- DIRECTION 2 -->
+  <div class="direction-card">
+    <div class="direction-label">Direccion 2</div>
+    <div class="direction-title">Dashboard Bold</div>
+    <div class="direction-desc">Header oscuro con stats (km, racha, puntos), mapa central, lista de recompensas cercanas debajo. Mas datos visibles a la vez.</div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="d2" style="position:relative;">
+          <div class="d2-header">
+            <div class="d2-greeting">Hola Mariana</div>
+            <div style="font-size:13px;font-weight:700;color:white;">Lunes · 7:45am</div>
+            <div class="d2-stats-row">
+              <div class="d2-stat">
+                <span class="d2-stat-val">1.240</span>
+                <span class="d2-stat-lbl">Puntos</span>
+              </div>
+              <div class="d2-stat">
+                <span class="d2-stat-val" style="color:var(--amber-400);">7</span>
+                <span class="d2-stat-lbl">Racha dias</span>
+              </div>
+              <div class="d2-stat">
+                <span class="d2-stat-val" style="color:#7eb8f7;">42.3</span>
+                <span class="d2-stat-lbl">km total</span>
+              </div>
+            </div>
+          </div>
+          <div class="d2-map-mini"></div>
+          <div class="d2-section-title">Cerca de ti</div>
+          <div class="d2-reward-card">
+            <div class="d2-reward-icon">&#9749;</div>
+            <div class="d2-reward-info">
+              <span class="d2-reward-name">Cafe americano</span>
+              <span class="d2-reward-detail">CafeVerde · 0.8km</span>
+            </div>
+            <span class="d2-reward-pts">320pts</span>
+          </div>
+          <div class="d2-reward-card">
+            <div class="d2-reward-icon">&#127822;</div>
+            <div class="d2-reward-info">
+              <span class="d2-reward-name">Jugo natural</span>
+              <span class="d2-reward-detail">Jugos Maria · 1.4km</span>
+            </div>
+            <span class="d2-reward-pts">180pts</span>
+          </div>
+          <div class="d2-tabbar" style="position:relative;">
+            <div class="d2-tab"><div class="d2-tab-bar a"></div><div class="d2-tab-lbl a">Inicio</div></div>
+            <div class="d2-tab"><div class="d2-tab-bar"></div><div class="d2-tab-lbl">Mapa</div></div>
+            <div class="d2-tab"><div class="d2-tab-bar"></div><div class="d2-tab-lbl">Perfil</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="direction-tags">
+      <span class="tag">Header oscuro</span>
+      <span class="tag">Stats prominentes</span>
+      <span class="tag">Lista de rewards</span>
+    </div>
+  </div>
+
+  <!-- DIRECTION 3 -->
+  <div class="direction-card">
+    <div class="direction-label">Direccion 3</div>
+    <div class="direction-title">Card Scroll</div>
+    <div class="direction-desc">Mapa compacto en la parte superior, recompensas cercanas en cards horizontales scrolleables. Enfasis en el catalogo de recompensas.</div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="d3" style="position:relative;">
+          <div class="d3-header">
+            <div>
+              <div class="d3-greeting">Buenos dias</div>
+              <div class="d3-sub">Mariana · Lunes 7:45am</div>
+            </div>
+            <div class="d3-pts-badge">
+              <span class="d3-pts-val">1.240</span>
+              <span class="d3-pts-lbl">puntos</span>
+            </div>
+          </div>
+          <div class="d3-map-card">
+            <div class="d3-map-cta">Iniciar Ruta</div>
+          </div>
+          <div class="d3-section">
+            <div class="d3-section-hdr">
+              <span class="d3-section-title">Recompensas cerca</span>
+              <span class="d3-section-link">Ver todas</span>
+            </div>
+            <div class="d3-scroll">
+              <div class="d3-rcard">
+                <div class="d3-rcard-img"></div>
+                <div class="d3-rcard-name">Cafe americano</div>
+                <div class="d3-rcard-biz">CafeVerde</div>
+                <div class="d3-rcard-bottom">
+                  <span class="d3-rcard-pts">320pts</span>
+                  <span class="d3-rcard-dist">0.8km</span>
+                </div>
+              </div>
+              <div class="d3-rcard">
+                <div class="d3-rcard-img" style="background:linear-gradient(135deg,#fff3e0,#ffe0b2);"></div>
+                <div class="d3-rcard-name">Jugo natural</div>
+                <div class="d3-rcard-biz">Jugos Maria</div>
+                <div class="d3-rcard-bottom">
+                  <span class="d3-rcard-pts">180pts</span>
+                  <span class="d3-rcard-dist">1.4km</span>
+                </div>
+              </div>
+              <div class="d3-rcard">
+                <div class="d3-rcard-img" style="background:linear-gradient(135deg,#f3e5f5,#e1bee7);"></div>
+                <div class="d3-rcard-name">Empanada</div>
+                <div class="d3-rcard-biz">La Panaderia</div>
+                <div class="d3-rcard-bottom">
+                  <span class="d3-rcard-pts">240pts</span>
+                  <span class="d3-rcard-dist">2.1km</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="d3-tabbar" style="position:relative;">
+            <div class="d3-tab"><div class="d3-tab-ic a"></div><div class="d3-tab-lbl a">Inicio</div></div>
+            <div class="d3-tab"><div class="d3-tab-ic"></div><div class="d3-tab-lbl">Mapa</div></div>
+            <div class="d3-tab"><div class="d3-tab-ic"></div><div class="d3-tab-lbl">Historial</div></div>
+            <div class="d3-tab"><div class="d3-tab-ic"></div><div class="d3-tab-lbl">Perfil</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="direction-tags">
+      <span class="tag">Cards horizontales</span>
+      <span class="tag">Catalogo de rewards</span>
+      <span class="tag">Mapa compacto</span>
+    </div>
+  </div>
+
+  <!-- DIRECTION 4 -->
+  <div class="direction-card">
+    <div class="direction-label">Direccion 4</div>
+    <div class="direction-title">Dark Adventure</div>
+    <div class="direction-desc">Modo oscuro como base. Acentos verdes brillantes con efecto glow. Racha como elemento central. Mas gamificado, sensacion de aventura.</div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="d4" style="position:relative;">
+          <div class="d4-header">
+            <div class="d4-row">
+              <div>
+                <div class="d4-greeting">Hola, Mariana</div>
+                <div style="font-size:14px;font-weight:700;color:white;margin-top:2px;">Lunes 7:45am</div>
+              </div>
+              <div class="d4-pts">
+                <div>
+                  <span class="d4-pts-val">1.240</span>
+                  <span class="d4-pts-lbl" style="display:block;">puntos</span>
+                </div>
+              </div>
+            </div>
+            <div class="d4-streak-bar">
+              <div class="d4-streak-dots">
+                <div class="d4-streak-dot done"></div>
+                <div class="d4-streak-dot done"></div>
+                <div class="d4-streak-dot done"></div>
+                <div class="d4-streak-dot done"></div>
+                <div class="d4-streak-dot done"></div>
+                <div class="d4-streak-dot done"></div>
+                <div class="d4-streak-dot done"></div>
+                <div class="d4-streak-dot"></div>
+                <div class="d4-streak-dot"></div>
+                <div class="d4-streak-dot"></div>
+              </div>
+              <span class="d4-streak-days">7 dias</span>
+            </div>
+          </div>
+          <div class="d4-map">
+            <div class="d4-map-glow"></div>
+            <div class="d4-map-pin"></div>
+            <div class="d4-map-marker">CafeVerde 320pts</div>
+          </div>
+          <div class="d4-cta">
+            <div>
+              <span class="d4-cta-text">Iniciar Ruta</span>
+              <span class="d4-cta-sub">GPS listo · 3 recompensas cerca</span>
+            </div>
+          </div>
+          <div class="d4-tabbar" style="position:relative;">
+            <div class="d4-tab"><div class="d4-tab-ic a"></div><div class="d4-tab-lbl a">Inicio</div></div>
+            <div class="d4-tab"><div class="d4-tab-ic"></div><div class="d4-tab-lbl">Mapa</div></div>
+            <div class="d4-tab"><div class="d4-tab-ic"></div><div class="d4-tab-lbl">Perfil</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="direction-tags">
+      <span class="tag">Dark mode</span>
+      <span class="tag">Glow effects</span>
+      <span class="tag">Racha prominente</span>
+    </div>
+  </div>
+
+  <!-- DIRECTION 5 -->
+  <div class="direction-card">
+    <div class="direction-label">Direccion 5</div>
+    <div class="direction-title">Rewards-First</div>
+    <div class="direction-desc">Hero section con el numero de puntos grande y progress bar hacia la proxima recompensa. Grid de recompensas disponibles/bloqueadas. El mapa es secundario.</div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="d5" style="position:relative;">
+          <div class="d5-hero">
+            <div class="d5-hero-title">Tus puntos</div>
+            <div class="d5-pts-display">1.240</div>
+            <div class="d5-pts-sub">te faltan 80pts para tu siguiente recompensa</div>
+            <div class="d5-progress-wrap">
+              <div class="d5-progress-bar"></div>
+            </div>
+            <div class="d5-progress-label">CafeVerde · Cafe americano · 1.320pts</div>
+          </div>
+          <div class="d5-rewards-grid">
+            <div class="d5-rcard">
+              <div class="d5-rcard-img available"></div>
+              <div class="d5-rcard-name">Jugo natural</div>
+              <div class="d5-rcard-biz">Jugos Maria</div>
+              <div class="d5-rcard-pts-avail">Disponible</div>
+            </div>
+            <div class="d5-rcard">
+              <div class="d5-rcard-img available"></div>
+              <div class="d5-rcard-name">Empanada</div>
+              <div class="d5-rcard-biz">La Panaderia</div>
+              <div class="d5-rcard-pts-avail">Disponible</div>
+            </div>
+            <div class="d5-rcard">
+              <div class="d5-rcard-img locked"></div>
+              <div class="d5-rcard-name">Cafe americano</div>
+              <div class="d5-rcard-biz">CafeVerde</div>
+              <div class="d5-rcard-pts-lock">Faltan 80pts</div>
+            </div>
+            <div class="d5-rcard">
+              <div class="d5-rcard-img locked"></div>
+              <div class="d5-rcard-name">Smoothie</div>
+              <div class="d5-rcard-biz">Vida Sana</div>
+              <div class="d5-rcard-pts-lock">Faltan 260pts</div>
+            </div>
+          </div>
+          <div class="d5-map-btn">Ver recompensas en el mapa</div>
+          <div class="d5-tabbar" style="position:relative;">
+            <div class="d5-tab"><div class="d5-tab-ic"></div><div class="d5-tab-lbl">Inicio</div></div>
+            <div class="d5-tab"><div class="d5-tab-ic a"></div><div class="d5-tab-lbl a">Puntos</div></div>
+            <div class="d5-tab"><div class="d5-tab-ic"></div><div class="d5-tab-lbl">Perfil</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="direction-tags">
+      <span class="tag">Puntos hero</span>
+      <span class="tag">Grid de rewards</span>
+      <span class="tag">Progress bar</span>
+    </div>
+  </div>
+
+  <!-- DIRECTION 6 -->
+  <div class="direction-card">
+    <div class="direction-label">Direccion 6</div>
+    <div class="direction-title">Split Map + Sheet</div>
+    <div class="direction-desc">Mapa en 60% superior de pantalla con FAB de ruta. Bottom sheet con lista de recompensas siempre visible. El contexto geografico y el catalogo coexisten.</div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="d6">
+          <div class="d6-map">
+            <div class="d6-topbar">
+              <div class="d6-search">Buscar recompensas...</div>
+              <div class="d6-avatar">M</div>
+            </div>
+            <div class="d6-map-pin"></div>
+            <div class="d6-map-marker1">CafeVerde 320pts</div>
+            <div class="d6-map-marker2">Jugos Maria 180pts</div>
+            <div class="d6-fab">
+              <div class="d6-fab-icon"></div>
+            </div>
+          </div>
+          <div class="d6-sheet">
+            <div class="d6-sheet-handle"></div>
+            <div class="d6-sheet-title">Recompensas cerca (3)</div>
+            <div class="d6-reward-row">
+              <div class="d6-rew-icon"></div>
+              <div class="d6-rew-info">
+                <div class="d6-rew-name">Cafe americano</div>
+                <div class="d6-rew-biz">CafeVerde</div>
+              </div>
+              <div class="d6-rew-right">
+                <span class="d6-rew-pts">320pts</span>
+                <span class="d6-rew-dist">0.8km</span>
+              </div>
+            </div>
+            <div class="d6-reward-row">
+              <div class="d6-rew-icon" style="background:var(--amber-400);opacity:0.3;"></div>
+              <div class="d6-rew-info">
+                <div class="d6-rew-name">Jugo natural</div>
+                <div class="d6-rew-biz">Jugos Maria</div>
+              </div>
+              <div class="d6-rew-right">
+                <span class="d6-rew-pts">180pts</span>
+                <span class="d6-rew-dist">1.4km</span>
+              </div>
+            </div>
+          </div>
+          <div class="d6-tabbar">
+            <div class="d6-tab"><div class="d6-tab-ic a"></div><div class="d6-tab-lbl a">Mapa</div></div>
+            <div class="d6-tab"><div class="d6-tab-ic"></div><div class="d6-tab-lbl">Rutas</div></div>
+            <div class="d6-tab"><div class="d6-tab-ic"></div><div class="d6-tab-lbl">Perfil</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="direction-tags">
+      <span class="tag">Split layout</span>
+      <span class="tag">Sheet persistente</span>
+      <span class="tag">Contexto geografico</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bonus: Ruta Activa -->
+<p class="section-label">Pantalla de Ruta Activa (compartida)</p>
+<div style="max-width:300px;margin:0 auto 48px;">
+  <div class="phone" style="width:240px;height:480px;margin:0 auto;">
+    <div class="phone-screen">
+      <div class="route-screen">
+        <div class="route-map">
+          <div class="route-map-path"></div>
+          <div class="route-pin"></div>
+          <div class="route-gps-badge">
+            <div class="route-gps-dot"></div>
+            GPS activo · guardando
+          </div>
+        </div>
+        <div class="route-stats">
+          <div class="route-stat">
+            <span class="route-stat-val green">3.2</span>
+            <span class="route-stat-lbl">km</span>
+          </div>
+          <div class="route-stat">
+            <span class="route-stat-val">18:42</span>
+            <span class="route-stat-lbl">tiempo</span>
+          </div>
+          <div class="route-stat">
+            <span class="route-stat-val amber">+128</span>
+            <span class="route-stat-lbl">pts acum.</span>
+          </div>
+        </div>
+        <div class="route-pts-float">
+          <div>
+            <div class="route-pts-label">Puntos totales</div>
+            <div class="route-pts-value">1.368</div>
+          </div>
+          <div class="route-pts-anim">+40</div>
+        </div>
+        <div class="route-next-reward">
+          <div>
+            <span class="route-reward-label">Siguiente recompensa</span>
+            <span class="route-reward-name">CafeVerde · Cafe</span>
+          </div>
+          <span class="route-reward-pts">-48pts</span>
+        </div>
+        <div class="route-stop-btn">Terminar ruta</div>
+      </div>
+    </div>
+  </div>
+  <p style="text-align:center;font-size:12px;color:#666;margin-top:12px;">La pantalla de ruta activa usa dark mode independientemente de la direccion elegida.</p>
+</div>
+
+<!-- Bonus: Canje -->
+<p class="section-label">Pantalla de Canje QR (compartida)</p>
+<div style="max-width:300px;margin:0 auto 48px;">
+  <div class="phone" style="width:240px;height:480px;margin:0 auto;">
+    <div class="phone-screen">
+      <div class="redeem-screen">
+        <div class="redeem-header">
+          <div class="redeem-success-icon">
+            <span class="redeem-checkmark">V</span>
+          </div>
+          <div class="redeem-title">Canjear recompensa</div>
+          <div class="redeem-sub">Muestra este QR al negocio</div>
+        </div>
+        <div class="redeem-qr-area">
+          <div class="redeem-qr"></div>
+          <div class="redeem-qr-label">Escanear con panel de partner</div>
+          <div class="redeem-ttl">Expira en 4:32</div>
+        </div>
+        <div class="redeem-biz-card">
+          <div class="redeem-biz-avatar"></div>
+          <div>
+            <div class="redeem-biz-name">Cafe americano</div>
+            <div class="redeem-biz-address">CafeVerde · Av. Insurgentes 45</div>
+            <div class="redeem-biz-pts">-320 puntos</div>
+          </div>
+        </div>
+        <div class="redeem-pts-deducted">
+          <span class="redeem-pts-label">Puntos tras canje</span>
+          <span class="redeem-pts-after">920 pts</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p style="text-align:center;font-size:12px;color:#666;margin-top:12px;">El flujo de canje QR es identico en todas las direcciones.</p>
+</div>
+
+<!-- DIRECTION SELECTED: Liquid Glass -->
+<p class="section-label" style="color:var(--green-500);">Direccion Seleccionada — iOS 27 Liquid Glass</p>
+<div style="max-width:700px;margin:0 auto 48px;">
+  <p style="text-align:center;font-size:14px;color:#aaa;margin-bottom:32px;line-height:1.7;">
+    Liquid Glass aplica superficies translucidas con blur que dejan ver el contenido debajo.
+    El mapa ES el fondo de toda la UI. Los elementos flotan sobre el sobre el, adaptando su tinte al contexto.
+  </p>
+  <div style="display:flex;gap:32px;justify-content:center;flex-wrap:wrap;">
+
+    <!-- Home Screen LG -->
+    <div style="text-align:center;">
+      <div class="phone" style="width:240px;height:480px;">
+        <div class="phone-screen" style="position:relative;">
+          <!-- Map background — always full screen -->
+          <div style="position:absolute;inset:0;background:linear-gradient(160deg,#c8e0c8 0%,#a8cca8 35%,#b8d4b8 70%,#c8dcc8 100%);z-index:0;"></div>
+          <!-- Map roads simulation -->
+          <div style="position:absolute;top:35%;left:0;right:0;height:2px;background:rgba(255,255,255,0.6);z-index:1;transform:rotate(-6deg);"></div>
+          <div style="position:absolute;top:55%;left:0;right:0;height:2px;background:rgba(255,255,255,0.4);z-index:1;transform:rotate(4deg);"></div>
+          <div style="position:absolute;top:0;bottom:0;left:40%;width:2px;background:rgba(255,255,255,0.5);z-index:1;transform:rotate(8deg);"></div>
+
+          <!-- Liquid Glass top pill — points + streak -->
+          <div style="position:absolute;top:22px;left:12px;right:12px;z-index:5;
+            background:rgba(255,255,255,0.22);
+            backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+            border:1px solid rgba(255,255,255,0.4);
+            border-radius:50px;
+            padding:9px 16px;
+            display:flex;align-items:center;justify-content:space-between;
+            box-shadow:0 4px 20px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.5);">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div style="width:8px;height:8px;border-radius:50%;background:var(--amber-500);box-shadow:0 0 6px rgba(245,166,35,0.6);"></div>
+              <span style="font-size:13px;font-weight:700;color:rgba(30,60,30,0.9);">1.240 pts</span>
+            </div>
+            <span style="font-size:11px;font-weight:600;color:rgba(40,70,40,0.7);">Racha 7d</span>
+          </div>
+
+          <!-- Reward marker 1 — LG pill -->
+          <div style="position:absolute;top:36%;left:52%;z-index:4;">
+            <div style="
+              background:rgba(255,255,255,0.28);
+              backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+              border:1px solid rgba(255,255,255,0.5);
+              border-radius:20px;
+              padding:5px 10px 5px 5px;
+              display:flex;align-items:center;gap:5px;
+              box-shadow:0 2px 12px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.6);
+              white-space:nowrap;">
+              <div style="width:20px;height:20px;border-radius:50%;background:var(--green-500);display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:700;">C</div>
+              <div>
+                <div style="font-size:9px;font-weight:700;color:rgba(20,50,20,0.9);">CafeVerde</div>
+                <div style="font-size:8px;color:var(--amber-600);font-weight:600;">320pts · 0.8km</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reward marker 2 -->
+          <div style="position:absolute;top:54%;left:18%;z-index:4;">
+            <div style="
+              background:rgba(255,255,255,0.22);
+              backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+              border:1px solid rgba(255,255,255,0.45);
+              border-radius:20px;
+              padding:5px 10px 5px 5px;
+              display:flex;align-items:center;gap:5px;
+              box-shadow:0 2px 12px rgba(0,0,0,0.08);
+              white-space:nowrap;">
+              <div style="width:20px;height:20px;border-radius:50%;background:var(--amber-500);display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:700;">P</div>
+              <div>
+                <div style="font-size:9px;font-weight:700;color:rgba(20,50,20,0.9);">Panaderia Sol</div>
+                <div style="font-size:8px;color:var(--amber-600);font-weight:600;">180pts · 1.2km</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- User location dot -->
+          <div style="position:absolute;top:50%;left:48%;z-index:4;">
+            <div style="width:12px;height:12px;border-radius:50%;background:var(--info);box-shadow:0 0 0 4px rgba(25,118,210,0.25),0 0 0 8px rgba(25,118,210,0.1);"></div>
+          </div>
+
+          <!-- LG FAB — Iniciar Ruta -->
+          <div style="position:absolute;bottom:78px;left:50%;transform:translateX(-50%);z-index:5;">
+            <div style="
+              background:rgba(100,205,105,0.75);
+              backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+              border:1px solid rgba(255,255,255,0.5);
+              border-radius:50px;
+              padding:13px 28px;
+              box-shadow:0 6px 24px rgba(100,205,105,0.35),inset 0 1px 0 rgba(255,255,255,0.5);
+              white-space:nowrap;">
+              <span style="font-size:13px;font-weight:700;color:white;">Iniciar Ruta</span>
+            </div>
+          </div>
+
+          <!-- LG Tab bar -->
+          <div style="position:absolute;bottom:0;left:0;right:0;z-index:5;
+            background:rgba(255,255,255,0.18);
+            backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+            border-top:1px solid rgba(255,255,255,0.35);
+            height:62px;
+            display:flex;
+            box-shadow:0 -4px 20px rgba(0,0,0,0.06);">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;">
+              <div style="width:24px;height:3px;border-radius:2px;background:var(--green-600);"></div>
+              <span style="font-size:8px;font-weight:600;color:var(--green-700);">Mapa</span>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;">
+              <div style="width:24px;height:3px;border-radius:2px;background:rgba(0,0,0,0.1);"></div>
+              <span style="font-size:8px;color:rgba(40,70,40,0.5);">Puntos</span>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;">
+              <div style="width:24px;height:3px;border-radius:2px;background:rgba(0,0,0,0.1);"></div>
+              <span style="font-size:8px;color:rgba(40,70,40,0.5);">Perfil</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:11px;color:#888;margin-top:8px;">Home · Light</p>
+    </div>
+
+    <!-- Ruta Activa LG Dark -->
+    <div style="text-align:center;">
+      <div class="phone" style="width:240px;height:480px;">
+        <div class="phone-screen" style="position:relative;">
+          <!-- Dark map bg -->
+          <div style="position:absolute;inset:0;background:linear-gradient(160deg,#0a1a0a 0%,#0f1f0f 60%,#122012 100%);z-index:0;"></div>
+          <!-- Map glow -->
+          <div style="position:absolute;top:35%;left:42%;width:80px;height:80px;border-radius:50%;background:radial-gradient(circle,rgba(100,205,105,0.2) 0%,transparent 70%);z-index:1;"></div>
+          <!-- Route path -->
+          <div style="position:absolute;top:28%;left:22%;width:55%;height:35%;border:1.5px solid rgba(100,205,105,0.3);border-radius:50%;transform:rotate(15deg) scaleX(1.4);z-index:1;"></div>
+          <!-- User pin -->
+          <div style="position:absolute;top:46%;left:50%;z-index:3;">
+            <div style="width:10px;height:10px;border-radius:50%;background:var(--green-500);box-shadow:0 0 12px rgba(100,205,105,0.8),0 0 0 3px rgba(100,205,105,0.2);"></div>
+          </div>
+
+          <!-- LG GPS badge -->
+          <div style="position:absolute;top:20px;left:50%;transform:translateX(-50%);z-index:5;
+            background:rgba(100,205,105,0.12);
+            backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+            border:1px solid rgba(100,205,105,0.35);
+            border-radius:20px;padding:5px 14px;
+            white-space:nowrap;
+            box-shadow:inset 0 1px 0 rgba(100,205,105,0.2);">
+            <span style="font-size:9px;font-weight:600;color:var(--green-500);">GPS activo · guardando</span>
+          </div>
+
+          <!-- LG Stats panel floating -->
+          <div style="position:absolute;bottom:150px;left:10px;right:10px;z-index:5;
+            background:rgba(15,25,15,0.5);
+            backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+            border:1px solid rgba(255,255,255,0.1);
+            border-radius:20px;
+            padding:14px;
+            box-shadow:0 4px 24px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.08);">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;margin-bottom:12px;">
+              <div><span style="font-size:18px;font-weight:700;color:var(--green-500);display:block;">3.2</span><span style="font-size:8px;color:rgba(255,255,255,0.4);">km</span></div>
+              <div><span style="font-size:18px;font-weight:700;color:white;display:block;">18:42</span><span style="font-size:8px;color:rgba(255,255,255,0.4);">tiempo</span></div>
+              <div><span style="font-size:18px;font-weight:700;color:var(--amber-400);display:block;">128</span><span style="font-size:8px;color:rgba(255,255,255,0.4);">pts</span></div>
+            </div>
+            <div style="background:rgba(100,205,105,0.08);border:1px solid rgba(100,205,105,0.2);border-radius:10px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:9px;color:rgba(255,255,255,0.5);">Siguiente: CafeVerde</span>
+              <span style="font-size:10px;font-weight:700;color:var(--amber-400);">-48pts</span>
+            </div>
+          </div>
+
+          <!-- LG Stop button -->
+          <div style="position:absolute;bottom:80px;left:50%;transform:translateX(-50%);z-index:5;">
+            <div style="
+              background:rgba(229,57,53,0.15);
+              backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+              border:1px solid rgba(229,57,53,0.3);
+              border-radius:50px;padding:11px 28px;
+              box-shadow:inset 0 1px 0 rgba(255,255,255,0.06);">
+              <span style="font-size:12px;font-weight:700;color:#ef5350;">Terminar ruta</span>
+            </div>
+          </div>
+
+          <!-- LG Dark tab bar -->
+          <div style="position:absolute;bottom:0;left:0;right:0;z-index:5;
+            background:rgba(10,20,10,0.45);
+            backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+            border-top:1px solid rgba(255,255,255,0.08);height:62px;display:flex;">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;">
+              <div style="width:24px;height:3px;border-radius:2px;background:var(--green-500);box-shadow:0 0 6px rgba(100,205,105,0.5);"></div>
+              <span style="font-size:8px;font-weight:600;color:var(--green-500);">Mapa</span>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;">
+              <div style="width:24px;height:3px;border-radius:2px;background:rgba(255,255,255,0.08);"></div>
+              <span style="font-size:8px;color:rgba(255,255,255,0.25);">Puntos</span>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;">
+              <div style="width:24px;height:3px;border-radius:2px;background:rgba(255,255,255,0.08);"></div>
+              <span style="font-size:8px;color:rgba(255,255,255,0.25);">Perfil</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:11px;color:#888;margin-top:8px;">Ruta Activa · Dark</p>
+    </div>
+
+  </div>
+
+  <!-- LG Principles -->
+  <div style="margin-top:32px;background:#16213e;border-radius:16px;padding:20px 24px;border:1px solid rgba(100,205,105,0.2);">
+    <div style="font-size:13px;font-weight:700;color:var(--green-500);margin-bottom:12px;">Principios Liquid Glass para EcoBike</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px;color:#aaa;line-height:1.6;">
+      <div><span style="color:white;font-weight:600;">El mapa nunca se oculta</span><br>Toda la UI flota sobre el mapa. No hay pantallas que lo tapen — el mapa es el lienzo permanente.</div>
+      <div><span style="color:white;font-weight:600;">Superficies adaptativas</span><br>El tinte de las superficies de vidrio cambia segun el contenido del mapa debajo (verde en zonas verdes, mas neutro en avenidas).</div>
+      <div><span style="color:white;font-weight:600;">Jerarquia por profundidad</span><br>Los elementos mas importantes tienen mas blur y menos transparencia. Los secundarios son mas translucidos.</div>
+      <div><span style="color:white;font-weight:600;">Implementacion: Expo Blur</span><br>expo-blur + BlurView para iOS/Android. backdrop-filter:blur() para web. Fallback opaco en dispositivos sin soporte.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Color tokens -->
+<div class="tokens-section">
+  <div class="tokens-title">Design Tokens — Paleta EcoBike</div>
+  <div class="tokens-grid">
+    <div class="token-chip">
+      <div class="token-color" style="background:#e8f5e9;"></div>
+      <div class="token-info"><span class="token-name">green.50</span><span class="token-hex">#e8f5e9</span></div>
+    </div>
+    <div class="token-chip">
+      <div class="token-color" style="background:#c8e6c9;"></div>
+      <div class="token-info"><span class="token-name">green.100</span><span class="token-hex">#c8e6c9</span></div>
+    </div>
+    <div class="token-chip">
+      <div class="token-color" style="background:#64cd69;"></div>
+      <div class="token-info"><span class="token-name">green.500</span><span class="token-hex">#64cd69</span></div>
+    </div>
+    <div class="token-chip">
+      <div class="token-color" style="background:#55b85a;"></div>
+      <div class="token-info"><span class="token-name">green.600</span><span class="token-hex">#55b85a</span></div>
+    </div>
+    <div class="token-chip">
+      <div class="token-color" style="background:#2e7d32;"></div>
+      <div class="token-info"><span class="token-name">green.700</span><span class="token-hex">#2e7d32</span></div>
+    </div>
+    <div class="token-chip">
+      <div class="token-color" style="background:#1B4D1E;"></div>
+      <div class="token-info"><span class="token-name">green.900</span><span class="token-hex">#1B4D1E</span></div>
+    </div>
+    <div class="token-chip">
+      <div class="token-color" style="background:#FFCA28;"></div>
+      <div class="token-info"><span class="token-name">amber.400</span><span class="token-hex">#FFCA28</span></div>
+    </div>
+    <div class="token-chip">
+      <div class="token-color" style="background:#F5A623;"></div>
+      <div class="token-info"><span class="token-name">amber.500</span><span class="token-hex">#F5A623</span></div>
+    </div>
+    <div class="token-chip">
+      <div class="token-color" style="background:#F8FBF9;border:1px solid #eee;"></div>
+      <div class="token-info"><span class="token-name">neutral.50</span><span class="token-hex">#F8FBF9</span></div>
+    </div>
+    <div class="token-chip">
+      <div class="token-color" style="background:#6B7E6E;"></div>
+      <div class="token-info"><span class="token-name">neutral.500</span><span class="token-hex">#6B7E6E</span></div>
+    </div>
+    <div class="token-chip">
+      <div class="token-color" style="background:#374D3A;"></div>
+      <div class="token-info"><span class="token-name">neutral.700</span><span class="token-hex">#374D3A</span></div>
+    </div>
+    <div class="token-chip">
+      <div class="token-color" style="background:#0D1F0E;"></div>
+      <div class="token-info"><span class="token-name">neutral.900</span><span class="token-hex">#0D1F0E</span></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  EcoBike UX Design Directions · DONA · 2026-08-21
+</footer>
+
+</body>
+</html>
