@@ -14,14 +14,18 @@ import PointsScreen from './screens/PointsScreen';
 import UserScreen from './screens/UserScreen';
 import FriendsScreen from './screens/FriendsScreen';
 import MapScreen from './screens/MapScreen';
+import AdminPanel from './screens/AdminPanel';
+
+const ADMIN_EMAILS = (import.meta as any).env.VITE_ADMIN_EMAILS?.split(',').map((e: string) => e.trim()) ?? [];
 
 // Componente para la navegación de pestañas
-function BottomNavigation({ currentTab, setCurrentTab }: any) {
+function BottomNavigation({ currentTab, setCurrentTab, isAdmin }: any) {
   const tabs = [
     { id: 'home', label: 'Inicio', icon: '🏠' },
     { id: 'map', label: 'Mapa', icon: '🗺️' },
     { id: 'friends', label: 'Amigos', icon: '👥' },
     { id: 'profile', label: 'Perfil', icon: '👤' },
+    ...(isAdmin ? [{ id: 'admin', label: 'Admin', icon: '⚙️' }] : []),
   ];
 
   return (
@@ -40,21 +44,18 @@ function BottomNavigation({ currentTab, setCurrentTab }: any) {
   );
 }
 
-function HomeTabs() {
+function HomeTabs({ userEmail }: { userEmail: string | null }) {
   const [currentTab, setCurrentTab] = useState('home');
+  const isAdmin = ADMIN_EMAILS.length > 0 && ADMIN_EMAILS.includes(userEmail);
 
   const renderTab = () => {
     switch(currentTab) {
-      case 'home':
-        return <PointsScreen />;
-      case 'map':
-        return <MapScreen />;
-      case 'friends':
-        return <FriendsScreen />;
-      case 'profile':
-        return <UserScreen />;
-      default:
-        return <PointsScreen />;
+      case 'home': return <PointsScreen />;
+      case 'map': return <MapScreen />;
+      case 'friends': return <FriendsScreen />;
+      case 'profile': return <UserScreen />;
+      case 'admin': return isAdmin ? <AdminPanel /> : <PointsScreen />;
+      default: return <PointsScreen />;
     }
   };
 
@@ -63,7 +64,7 @@ function HomeTabs() {
       <div className="tab-content">
         {renderTab()}
       </div>
-      <BottomNavigation currentTab={currentTab} setCurrentTab={setCurrentTab} />
+      <BottomNavigation currentTab={currentTab} setCurrentTab={setCurrentTab} isAdmin={isAdmin} />
     </div>
   );
 }
@@ -94,7 +95,7 @@ export default function MyNavigation() {
       <Routes>
         {user ? (
           <>
-            <Route path="/" element={<HomeTabs />} />
+            <Route path="/" element={<HomeTabs userEmail={user?.email ?? null} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </>
         ) : (

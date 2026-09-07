@@ -48,7 +48,10 @@ lerna-debug.log*
 
 # Build files
 *.js.map
-node_modules
-node_modules
-node_modules
-node_modules
+
+# Planning artifacts and IDE configs (not app code)
+ecobike-output/
+_bmad/
+.agent/
+.windsurf/
+.idea/

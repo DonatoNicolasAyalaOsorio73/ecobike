@@ -1,109 +1,113 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, collection, getDocs, doc, updateDoc } from "firebase/firestore";
-import { TextInput, Button, FlatList, View, Text } from 'react-native';
+import { getFirestore, collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 
 // ponytail: email allowlist — replace with Custom Claims isAdmin check when admin roles are defined
-const ADMIN_EMAILS = (import.meta as any).env.VITE_ADMIN_EMAILS?.split(',') ?? [];
+const ADMIN_EMAILS = (import.meta as any).env.VITE_ADMIN_EMAILS?.split(',').map((e: string) => e.trim()) ?? [];
 
-const AdminPanel = () => {
+type Store = { id: string; name: string; logo: string; pointsRequired: number };
+
+export default function AdminPanel() {
   const currentUser = getAuth().currentUser;
-  const [stores, setStores] = useState([]);
-  const [selectedStore, setSelectedStore] = useState(null);
-  const [updatedName, setUpdatedName] = useState('');
-  const [updatedLogo, setUpdatedLogo] = useState('');
-  const [updatedPointsRequired, setUpdatedPointsRequired] = useState('');
+  const [stores, setStores] = useState<Store[]>([]);
+  const [selected, setSelected] = useState<Store | null>(null);
+  const [name, setName] = useState('');
+  const [logo, setLogo] = useState('');
+  const [points, setPoints] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState('');
 
   useEffect(() => {
     if (!currentUser) return;
     if (ADMIN_EMAILS.length > 0 && !ADMIN_EMAILS.includes(currentUser.email)) return;
-
-    const fetchStoresData = async () => {
-      const db = getFirestore();
-      const storesCollection = collection(db, "tiendas");
-      try {
-        const querySnapshot = await getDocs(storesCollection);
-        const storesData = [];
-        querySnapshot.forEach((doc) => {
-          storesData.push({ id: doc.id, ...doc.data() });
-        });
-        setStores(storesData);
-      } catch (error) {
-        console.error("Error fetching stores data:", error);
-      }
-    };
-
-    fetchStoresData();
+    const db = getFirestore();
+    getDocs(collection(db, 'tiendas'))
+      .then(snap => setStores(snap.docs.map(d => ({ id: d.id, ...d.data() } as Store))))
+      .catch(err => console.error('Error cargando tiendas:', err));
   }, [currentUser?.uid]);
 
-  if (!currentUser) {
-    return <View><Text>Acceso denegado. Debes iniciar sesión.</Text></View>;
-  }
+  if (!currentUser) return <p style={{ padding: 16 }}>Acceso denegado. Debes iniciar sesion.</p>;
+  if (ADMIN_EMAILS.length > 0 && !ADMIN_EMAILS.includes(currentUser.email))
+    return <p style={{ padding: 16 }}>Acceso denegado. No tienes permisos de administrador.</p>;
 
-  if (ADMIN_EMAILS.length > 0 && !ADMIN_EMAILS.includes(currentUser.email)) {
-    return <View><Text>Acceso denegado. No tienes permisos de administrador.</Text></View>;
-  }
+  const handleSelect = (store: Store) => {
+    setSelected(store);
+    setName(store.name);
+    setLogo(store.logo);
+    setPoints(String(store.pointsRequired));
+    setMsg('');
+  };
 
-  const handleUpdateStore = async () => {
-    if (!selectedStore) return;
-    const db = getFirestore();
-    const storeDocRef = doc(db, "tiendas", selectedStore.id);
+  const handleSave = async () => {
+    if (!selected) return;
+    setSaving(true);
     try {
-      await updateDoc(storeDocRef, {
-        name: updatedName || selectedStore.name,
-        logo: updatedLogo || selectedStore.logo,
-        pointsRequired: updatedPointsRequired ? Number(updatedPointsRequired) : selectedStore.pointsRequired,
+      await updateDoc(doc(getFirestore(), 'tiendas', selected.id), {
+        name: name || selected.name,
+        logo: logo || selected.logo,
+        pointsRequired: points ? Number(points) : selected.pointsRequired,
       });
-      setStores(stores.map((store) =>
-        store.id === selectedStore.id
-          ? { ...store, name: updatedName, logo: updatedLogo, pointsRequired: Number(updatedPointsRequired) }
-          : store
+      setStores(prev => prev.map(s => s.id === selected.id
+        ? { ...s, name, logo, pointsRequired: Number(points) }
+        : s
       ));
-      setSelectedStore(null);
-      setUpdatedName('');
-      setUpdatedLogo('');
-      setUpdatedPointsRequired('');
-    } catch (error) {
-      console.error("Error updating store:", error);
+      setMsg('Tienda actualizada.');
+      setSelected(null);
+    } catch (err) {
+      setMsg('Error al guardar.');
+      console.error(err);
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <View>
-      <Text>Seleccione una tienda para editar:</Text>
-      <FlatList
-        data={stores}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View>
-            <Text onPress={() => setSelectedStore(item)}>{item.name}</Text>
-          </View>
-        )}
-      />
-      {selectedStore && (
-        <View>
-          <Text>Editar tienda: {selectedStore.name}</Text>
-          <TextInput
-            placeholder="Nuevo nombre"
-            value={updatedName}
-            onChangeText={(text) => setUpdatedName(text)}
-          />
-          <TextInput
-            placeholder="Nuevo logo"
-            value={updatedLogo}
-            onChangeText={(text) => setUpdatedLogo(text)}
-          />
-          <TextInput
-            placeholder="Nuevos puntos requeridos"
-            value={updatedPointsRequired}
-            keyboardType="numeric"
-            onChangeText={(text) => setUpdatedPointsRequired(text)}
-          />
-          <Button title="Actualizar Tienda" onPress={handleUpdateStore} />
-        </View>
-      )}
-    </View>
-  );
-};
+    <div style={{ padding: 16, maxWidth: 600, margin: '0 auto' }}>
+      <h1>Panel de Administracion</h1>
+      <h2>Tiendas</h2>
+      {stores.length === 0 && <p>No hay tiendas registradas.</p>}
+      <ul style={{ listStyle: 'none', padding: 0 }}>
+        {stores.map(s => (
+          <li key={s.id}
+            onClick={() => handleSelect(s)}
+            style={{
+              padding: '10px 14px', marginBottom: 8, cursor: 'pointer',
+              border: '1px solid #ccc', borderRadius: 8,
+              background: selected?.id === s.id ? '#e8f5e9' : '#fff',
+            }}>
+            <strong>{s.name}</strong> — {s.pointsRequired} pts requeridos
+          </li>
+        ))}
+      </ul>
 
-export default AdminPanel;
+      {selected && (
+        <div style={{ marginTop: 16, padding: 16, border: '1px solid #4caf50', borderRadius: 8 }}>
+          <h3>Editando: {selected.name}</h3>
+          <label>Nombre<br />
+            <input value={name} onChange={e => setName(e.target.value)}
+              style={{ width: '100%', padding: 8, marginBottom: 10, boxSizing: 'border-box' }} />
+          </label>
+          <label>Logo URL<br />
+            <input value={logo} onChange={e => setLogo(e.target.value)}
+              style={{ width: '100%', padding: 8, marginBottom: 10, boxSizing: 'border-box' }} />
+          </label>
+          <label>Puntos requeridos<br />
+            <input type="number" value={points} onChange={e => setPoints(e.target.value)}
+              style={{ width: '100%', padding: 8, marginBottom: 10, boxSizing: 'border-box' }} />
+          </label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={handleSave} disabled={saving}
+              style={{ padding: '8px 16px', background: '#4caf50', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+              {saving ? 'Guardando...' : 'Guardar'}
+            </button>
+            <button onClick={() => setSelected(null)}
+              style={{ padding: '8px 16px', background: '#eee', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+              Cancelar
+            </button>
+          </div>
+          {msg && <p style={{ marginTop: 8, color: msg.startsWith('Error') ? 'red' : 'green' }}>{msg}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
