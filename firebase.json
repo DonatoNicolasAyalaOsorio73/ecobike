@@ -1,9 +1,9 @@
 {
   "firestore": {
-    "rules": "functions/firestore.rules"
+    "rules": "backend/firestore.rules"
   },
   "functions": {
-    "source": "functions",
+    "source": "backend",
     "runtime": "nodejs20"
   },
   "emulators": {
