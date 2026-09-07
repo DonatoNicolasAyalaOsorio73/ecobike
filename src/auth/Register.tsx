@@ -5,11 +5,20 @@ import { useNavigate, Link } from 'react-router-dom';
 import { firebaseErrorToSpanish } from '../services/authService';
 import './Register.css';
 
+function getAgeGroup(birthDate: string): 'adult' | 'minor' | null {
+  if (!birthDate) return null;
+  const age = Math.floor((Date.now() - new Date(birthDate).getTime()) / (365.25 * 24 * 3600 * 1000));
+  if (age < 13) return null; // Under 13 not allowed
+  return age >= 18 ? 'adult' : 'minor';
+}
+
 export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [city, setCity] = useState('');
+  const [birthDate, setBirthDate] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -19,15 +28,20 @@ export default function Register() {
       setError('Por favor completa todos los campos');
       return;
     }
-
     if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
+      setError('Las contrasenas no coinciden');
       return;
     }
-
     if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
+      setError('La contrasena debe tener al menos 6 caracteres');
       return;
+    }
+    if (birthDate) {
+      const ageGroup = getAgeGroup(birthDate);
+      if (ageGroup === null) {
+        setError('Debes tener al menos 13 anos para registrarte.');
+        return;
+      }
     }
 
     setLoading(true);
@@ -36,18 +50,21 @@ export default function Register() {
     try {
       const auth = getAuth();
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Guardar información adicional en Firestore
+      const ageGroup = birthDate ? getAgeGroup(birthDate) : 'adult';
       const db = getFirestore();
       await setDoc(doc(db, 'users', userCredential.user.uid), {
         name,
         email,
+        city: city || '',
+        birthDate: birthDate || '',
+        ageGroup: ageGroup ?? 'adult',
         createdAt: new Date(),
         points: 0,
         rides: 0,
         kilometers: 0,
+        streak: 0,
+        badges: [],
       });
-
       navigate('/');
     } catch (err: any) {
       setError(firebaseErrorToSpanish(err));
@@ -109,8 +126,29 @@ export default function Register() {
             />
           </div>
 
-          <button 
-            type="submit" 
+          <div className="form-group">
+            <label>Ciudad</label>
+            <input
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="Tu ciudad"
+              disabled={loading}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Fecha de Nacimiento</label>
+            <input
+              type="date"
+              value={birthDate}
+              onChange={(e) => setBirthDate(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+
+          <button
+            type="submit"
             className="btn-register"
             disabled={loading}
           >

@@ -38,71 +38,39 @@
   font-family: 'Courier New', monospace;
 }
 
-.map-message {
-  background: #e8f5e9;
-  border-left: 4px solid #64cd69;
-  padding: 15px;
-  border-radius: 4px;
-  margin-bottom: 20px;
+.map-error {
+  background: #fff3e0; border-left: 4px solid #ff9800;
+  padding: 15px; border-radius: 4px; margin-bottom: 20px; color: #e65100;
 }
+.map-error p { margin: 6px 0; font-size: 14px; }
 
-.map-message p {
-  margin: 10px 0;
-  font-size: 14px;
-  color: #2e7d32;
-  line-height: 1.5;
+.location-card {
+  background: white; border-radius: 10px; padding: 16px;
+  margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
+.location-row {
+  display: flex; justify-content: space-between; padding: 8px 0;
+  font-size: 14px; border-bottom: 1px solid #f0f0f0;
+}
+.location-row:last-child { border-bottom: none; }
+.loc-label { font-weight: 600; color: #666; }
 
-.nearby-stations {
-  margin-top: 30px;
-}
+.stores-section { margin-top: 10px; }
+.stores-section h2 { font-size: 20px; color: #333; margin-bottom: 12px; }
+.no-stores { color: #999; font-size: 14px; }
 
-.nearby-stations h2 {
-  font-size: 20px;
-  color: #333;
-  margin-bottom: 15px;
+.store-row {
+  background: white; border-radius: 10px; padding: 14px;
+  margin-bottom: 10px; display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
-
-.station-card {
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  display: flex;
-  gap: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
-}
-
-.station-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.station-icon {
-  font-size: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 50px;
-}
-
-.station-info h3 {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  color: #333;
-}
-
-.station-info p {
-  margin: 4px 0;
-  font-size: 13px;
-  color: #666;
-}
-
-.station-status {
-  color: #64cd69 !important;
-  font-weight: 600;
-}
+.store-row-icon { font-size: 24px; flex-shrink: 0; }
+.store-row-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.store-row-info strong { font-size: 15px; color: #333; }
+.store-row-info span { font-size: 12px; color: #888; }
+.store-row-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.store-pts { font-size: 13px; font-weight: 700; color: #64cd69; }
+.store-dist { font-size: 11px; color: #aaa; }
 
 @media (min-width: 768px) {
   .map-screen {

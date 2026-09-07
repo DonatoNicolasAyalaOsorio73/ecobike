@@ -14,6 +14,7 @@ import PointsScreen from './screens/PointsScreen';
 import UserScreen from './screens/UserScreen';
 import FriendsScreen from './screens/FriendsScreen';
 import MapScreen from './screens/MapScreen';
+import RewardsScreen from './screens/RewardsScreen';
 import AdminPanel from './screens/AdminPanel';
 
 const ADMIN_EMAILS = (import.meta as any).env.VITE_ADMIN_EMAILS?.split(',').map((e: string) => e.trim()) ?? [];
@@ -23,6 +24,7 @@ function BottomNavigation({ currentTab, setCurrentTab, isAdmin }: any) {
   const tabs = [
     { id: 'home', label: 'Inicio', icon: '🏠' },
     { id: 'map', label: 'Mapa', icon: '🗺️' },
+    { id: 'rewards', label: 'Premios', icon: '🎁' },
     { id: 'friends', label: 'Amigos', icon: '👥' },
     { id: 'profile', label: 'Perfil', icon: '👤' },
     ...(isAdmin ? [{ id: 'admin', label: 'Admin', icon: '⚙️' }] : []),
@@ -52,6 +54,7 @@ function HomeTabs({ userEmail }: { userEmail: string | null }) {
     switch(currentTab) {
       case 'home': return <PointsScreen />;
       case 'map': return <MapScreen />;
+      case 'rewards': return <RewardsScreen />;
       case 'friends': return <FriendsScreen />;
       case 'profile': return <UserScreen />;
       case 'admin': return isAdmin ? <AdminPanel /> : <PointsScreen />;

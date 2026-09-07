@@ -34,7 +34,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 15px;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
 .stat-card {
@@ -115,6 +115,65 @@
   background-color: #e0e0e0;
   transform: translateY(-2px);
 }
+
+/* Route tracking */
+.route-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.route-hint { font-size: 13px; color: #999; margin-bottom: 14px; }
+.gps-error { color: #e53935; font-size: 13px; margin-bottom: 10px; }
+
+.live-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 16px;
+}
+.live-stat { display: flex; flex-direction: column; align-items: center; }
+.live-value { font-size: 32px; font-weight: 700; color: #64cd69; }
+.live-label { font-size: 12px; color: #999; }
+
+.gps-indicator {
+  display: inline-block;
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 14px;
+}
+.gps-indicator::before { content: '●  '; color: #64cd69; }
+
+.stop-btn { background: #e53935; color: white; }
+.stop-btn:hover { background: #c62828; }
+
+/* Route result */
+.route-result {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(100,205,105,0.2);
+  border: 2px solid #64cd69;
+}
+.bonus-badge {
+  background: #ffd54f;
+  color: #333;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+.route-result h2 { font-size: 20px; color: #333; margin-bottom: 4px; }
+.result-points { font-size: 36px; font-weight: 700; color: #64cd69; margin: 8px 0; }
 
 @media (min-width: 768px) {
   .points-screen {

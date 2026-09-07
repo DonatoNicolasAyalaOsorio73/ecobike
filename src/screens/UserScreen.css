@@ -136,6 +136,47 @@
   transform: scale(1.05);
 }
 
+.user-email { font-size: 14px; color: #999; margin: 4px 0 0; }
+.user-city { font-size: 13px; color: #64cd69; margin: 2px 0 0; }
+
+.edit-form { width: 100%; margin-top: 12px; }
+.edit-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 15px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+.edit-actions { display: flex; gap: 10px; }
+.btn-save {
+  flex: 1; padding: 10px; border: none; border-radius: 8px;
+  background: #64cd69; color: white; font-weight: 700; cursor: pointer;
+}
+.btn-cancel {
+  flex: 1; padding: 10px; border: none; border-radius: 8px;
+  background: #eee; color: #333; font-weight: 700; cursor: pointer;
+}
+
+.save-msg { font-size: 13px; color: #64cd69; margin: 4px 0 8px; }
+.save-msg.center { text-align: center; }
+
+.profile-section {
+  background: white; padding: 20px; border-radius: 8px;
+  margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.profile-section h2 { font-size: 18px; color: #333; margin: 0 0 12px; }
+.profile-info { background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.profile-info h2 { font-size: 18px; color: #333; margin: 0 0 12px; }
+
+.badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.badge {
+  background: linear-gradient(135deg, #64cd69, #55b85a);
+  color: white; padding: 6px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 700;
+}
+
 .profile-actions {
   display: flex;
   flex-direction: column;

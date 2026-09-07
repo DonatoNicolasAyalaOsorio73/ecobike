@@ -1,75 +1,105 @@
 import React, { useState, useEffect } from 'react';
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { haversineKm } from '../utils/routeTracking';
 import './MapScreen.css';
 
+type Store = { id: string; name: string; description: string; pointsRequired: number; distanceKm?: number };
+
 export default function MapScreen() {
-  const [location, setLocation] = useState<{ latitude: number; longitude: number; accuracy: number } | null>(null);
+  const [location, setLocation] = useState<{ lat: number; lon: number; accuracy: number } | null>(null);
   const [locationError, setLocationError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [stores, setStores] = useState<Store[]>([]);
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-        });
+      pos => {
+        const loc = { lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: pos.coords.accuracy };
+        setLocation(loc);
         setLoading(false);
+        // Load stores and compute distance once we have location
+        getDocs(collection(getFirestore(), 'tiendas'))
+          .then(snap => {
+            const list = snap.docs.map(d => {
+              const data = d.data() as Omit<Store, 'id' | 'distanceKm'>;
+              return {
+                id: d.id,
+                ...data,
+                distanceKm: haversineKm(loc.lat, loc.lon, (data as any).lat ?? 0, (data as any).lon ?? 0),
+              } as Store;
+            });
+            // Sort by distance, but skip stores without coords (distanceKm ~= 6371)
+            list.sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
+            setStores(list);
+          })
+          .catch(() => {});
       },
-      (error) => {
-        console.error('Error getting location:', error);
-        setLocationError(true);
-        setLoading(false);
-      }
+      () => { setLocationError(true); setLoading(false); },
     );
+    // Load stores even without location
+    getDocs(collection(getFirestore(), 'tiendas'))
+      .then(snap => {
+        if (!location) {
+          setStores(snap.docs.map(d => ({ id: d.id, ...d.data() } as Store)));
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  if (loading) {
-    return <div className="map-screen-loading">Obteniendo ubicación...</div>;
-  }
+  if (loading) return <div className="map-screen-loading">Obteniendo ubicacion...</div>;
 
   return (
     <div className="map-screen">
       <div className="map-header">
-        <h1>Mi Ubicación</h1>
+        <h1>Mapa y Tiendas</h1>
       </div>
 
       {locationError ? (
         <div className="map-error">
-          <p>No se pudo obtener tu ubicación.</p>
-          <p>Verifica que hayas otorgado permisos de ubicación al navegador.</p>
+          <p>No se pudo obtener tu ubicacion.</p>
+          <p>Verifica que hayas otorgado permisos de ubicacion al navegador.</p>
         </div>
-      ) : (
-        <div className="map-info">
-          <p>Latitud: {location?.latitude?.toFixed(4)}</p>
-          <p>Longitud: {location?.longitude?.toFixed(4)}</p>
-          <p>Precisión: ±{Math.round(location?.accuracy ?? 0)}m</p>
+      ) : location && (
+        <div className="location-card">
+          <div className="location-row">
+            <span className="loc-label">Latitud</span>
+            <span>{location.lat.toFixed(5)}</span>
+          </div>
+          <div className="location-row">
+            <span className="loc-label">Longitud</span>
+            <span>{location.lon.toFixed(5)}</span>
+          </div>
+          <div className="location-row">
+            <span className="loc-label">Precision</span>
+            <span>±{Math.round(location.accuracy)}m</span>
+          </div>
         </div>
       )}
 
-      <div className="map-message">
-        <p>Para ver el mapa interactivo, accede desde un dispositivo móvil o espera a que se cargue completamente.</p>
-        <p>Esta es una versión web simplificada de EcoBike. Los mapas interactivos se mostrarán en una versión mejorada.</p>
-      </div>
-
-      <div className="nearby-stations">
-        <h2>Estaciones Cercanas</h2>
-        <div className="station-card">
-          <div className="station-icon">🚲</div>
-          <div className="station-info">
-            <h3>Estación Central</h3>
-            <p>A ~500m de tu ubicación</p>
-            <p className="station-status">✓ Disponible</p>
-          </div>
-        </div>
-        <div className="station-card">
-          <div className="station-icon">🚲</div>
-          <div className="station-info">
-            <h3>Estación Norte</h3>
-            <p>A ~1.2km de tu ubicación</p>
-            <p className="station-status">✓ Disponible</p>
-          </div>
-        </div>
+      <div className="stores-section">
+        <h2>Tiendas Partner</h2>
+        {stores.length === 0 ? (
+          <p className="no-stores">No hay tiendas registradas aun.</p>
+        ) : (
+          stores.map(store => (
+            <div key={store.id} className="store-row">
+              <div className="store-row-icon">🏪</div>
+              <div className="store-row-info">
+                <strong>{store.name}</strong>
+                <span>{store.description}</span>
+              </div>
+              <div className="store-row-meta">
+                <span className="store-pts">{store.pointsRequired} pts</span>
+                {store.distanceKm !== undefined && store.distanceKm < 100 && (
+                  <span className="store-dist">{store.distanceKm < 1
+                    ? `${Math.round(store.distanceKm * 1000)}m`
+                    : `${store.distanceKm.toFixed(1)}km`}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
