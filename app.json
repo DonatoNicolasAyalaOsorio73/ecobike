@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "EcoBike",
+    "slug": "ecobike-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#F6FBF3"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.ecobike.app"
+    },
+    "android": {
+      "package": "com.ecobike.app"
+    },
+    "plugins": []
+  }
+}
