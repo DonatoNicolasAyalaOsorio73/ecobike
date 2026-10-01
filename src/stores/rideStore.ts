@@ -310,3 +310,8 @@ export const useRideStore = create<RideState>((set, get) => ({
     return null;
   },
 }));
+
+// Dev-only hook for manual QA / E2E on web (stripped from production builds).
+if (__DEV__ && Platform.OS === "web" && typeof window !== "undefined") {
+  (window as any).__ecobikeRideStore = useRideStore;
+}

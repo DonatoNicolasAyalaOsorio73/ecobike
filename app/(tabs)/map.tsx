@@ -13,7 +13,8 @@ import GlassIconButton from "@/components/ui/GlassIconButton";
 import ProgressRing from "@/components/ui/ProgressRing";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import PulseDot from "@/components/ui/PulseDot";
-import Confetti from "@/components/ui/Confetti";
+import RideCompleteOverlay from "@/components/RideCompleteOverlay";
+import Flame from "@/components/ui/Flame";
 import { useTheme } from "@/theme/useTheme";
 import { SPRING } from "@/theme/motion";
 import { useRideStore } from "@/stores/rideStore";
@@ -24,6 +25,8 @@ import { useAvailablePoints } from "@/hooks/useAvailablePoints";
 import { formatDistance, formatDuration, formatSpeed } from "@/utils/format";
 import { distanceThisWeek } from "@/utils/rideStats";
 import { goalLabel, goalProgress } from "@/utils/rideGoals";
+import { pointsToday } from "@/utils/streak";
+import { computeStreakDays } from "@/utils/gamification";
 
 type LatLng = { lat: number; lng: number };
 
@@ -96,6 +99,7 @@ export default function MapScreen() {
   const weekKm = distanceThisWeek(rides) / 1000;
   const weekProgress = weeklyGoalKm > 0 ? weekKm / weeklyGoalKm : 0;
   const riding = status === "ACTIVE" || status === "PAUSED";
+  const streak = computeStreakDays(rides.map((r) => new Date(r.startedAt)));
   const rideGoalProgress = goal && ride ? goalProgress(goal, ride) : 0;
 
   // The bottom card slides down and fades while the options menu is open,
@@ -196,43 +200,22 @@ export default function MapScreen() {
             </GlassCard>
           </Animated.View>
         )}
-
-        {status === "COMPLETED" && ride && (
-          <Animated.View entering={ZoomIn.springify().damping(14)}>
-            <GlassCard intensity={55}>
-              <View style={styles.doneHeader}>
-                <Ionicons name="checkmark-circle" size={30} color={colors.success} />
-                <Text style={[styles.title, { color: colors.ink }]}>¡Recorrido completado!</Text>
-              </View>
-              <View style={styles.statsRow}>
-                <Stat label="Distancia" value={formatDistance(ride.distanceMeters, units)} />
-                <Stat label="Duración" value={formatDuration(ride.durationSeconds)} />
-                <Stat label="Puntos" value={`+${ride.pointsEarned}`} accent />
-              </View>
-              {justUnlocked.length > 0 && (
-                <View style={[styles.achievementBanner, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
-                  <Ionicons name="trophy" size={16} color={colors.primaryDark} />
-                  <Text style={[styles.achievementText, { color: colors.primaryDark }]}>
-                    Nuevo logro: {justUnlocked.map((a) => a.title).join(", ")}
-                  </Text>
-                </View>
-              )}
-              <GlassButton
-                label="Listo"
-                icon="checkmark"
-                variant="primary"
-                onPress={() => {
-                  clearJustUnlocked();
-                  discardRide();
-                }}
-                style={{ marginTop: 12 }}
-              />
-            </GlassCard>
-          </Animated.View>
-        )}
       </Animated.View>
 
-      {status === "COMPLETED" && <Confetti />}
+      {status === "COMPLETED" && ride && (
+        <RideCompleteOverlay
+          ride={ride}
+          streak={streak}
+          pointsToday={pointsToday(rides)}
+          goal={goal}
+          goalReached={goalReached}
+          unlocked={justUnlocked}
+          onClose={() => {
+            clearJustUnlocked();
+            discardRide();
+          }}
+        />
+      )}
 
       {/* Layers: map < ride card < options menu (frosted) < top controls */}
       {menuOpen && <RideOptionsMenu onSelect={begin} onClose={() => setMenuOpen(false)} />}
@@ -247,6 +230,12 @@ export default function MapScreen() {
                 style={{ color: colors.ink, fontWeight: "800", fontSize: 13, marginLeft: 6 }}
                 format={(v) => `${v.toLocaleString("es-CO")} pts`}
               />
+            </GlassSurface>
+          </Animated.View>
+          <Animated.View entering={FadeIn.duration(400).delay(80)}>
+            <GlassSurface radius={999} intensity={55} backgroundColor={colors.glassFillStrong} style={styles.pointsPill}>
+              <Flame size={16} lit={streak > 0} />
+              <Text style={{ color: streak > 0 ? "#E08600" : colors.inkSoft, fontWeight: "900", fontSize: 13, marginLeft: 4 }}>{streak}</Text>
             </GlassSurface>
           </Animated.View>
           {riding && (

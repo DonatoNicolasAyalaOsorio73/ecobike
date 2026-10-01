@@ -19,6 +19,7 @@ import { exportMyData, getAccountPrefs, setNotificationPrefs, setSearchable, sig
 import { resetLocalCache } from "@/services/rides.service";
 import { resetDemoData } from "@/services/demo.service";
 import { DEFAULT_NOTIF_PREFS } from "@/types/user";
+import { DAILY_GOALS } from "@/utils/streak";
 
 const PROVIDER_LABEL: Record<string, string> = { password: "Correo y contraseña", "google.com": "Google", "apple.com": "Apple" };
 
@@ -110,6 +111,14 @@ export default function SettingsScreen() {
               min={5}
               max={500}
               format={(v) => `${v} km`}
+            />
+            <Divider />
+            <SettingsChoiceRow
+              icon="flame-outline"
+              label={`Meta diaria · ${DAILY_GOALS.find((g) => g.points === settings.dailyGoalPoints)?.label ?? "Personal"}`}
+              value={String(settings.dailyGoalPoints)}
+              onChange={(v) => settings.update({ dailyGoalPoints: Number(v) })}
+              options={DAILY_GOALS.map((g) => ({ label: `${g.points} pts`, value: String(g.points) }))}
             />
             <Divider />
             <SettingsStepperRow

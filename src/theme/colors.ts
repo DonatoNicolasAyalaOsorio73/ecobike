@@ -43,6 +43,23 @@ const lightColorTokens = {
 
 export const lightColors: Theme = lightColorTokens;
 
+/**
+ * Playful accent palette (Duolingo-like) for categories, icons and
+ * celebrations. Each has a soft tint for backgrounds and a darker "lip"
+ * for 3D elements. Brand green stays the primary.
+ */
+export const accents = {
+  green: { base: "#58CC02", soft: "#E5F8D2", lip: "#46A302" },
+  lime: { base: "#ADF14B", soft: "#EEFBD9", lip: "#7CB82F" },
+  blue: { base: "#1CB0F6", soft: "#DDF4FF", lip: "#1899D6" },
+  orange: { base: "#FF9600", soft: "#FFF1DB", lip: "#E08600" },
+  gold: { base: "#FFC800", soft: "#FFF7D6", lip: "#E5B400" },
+  purple: { base: "#CE82FF", soft: "#F5E9FF", lip: "#A568CC" },
+  red: { base: "#FF4B4B", soft: "#FFE3E3", lip: "#D33131" },
+  teal: { base: "#14C4B4", soft: "#D9F7F4", lip: "#0FA396" },
+} as const;
+export type AccentName = keyof typeof accents;
+
 
 export const radii = {
   pill: 999,

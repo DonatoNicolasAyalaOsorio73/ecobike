@@ -39,6 +39,8 @@ export interface UserSettings {
   /** Weekly distance target in kilometres, always stored metric regardless
    * of the display `units` setting so switching units never moves the goal. */
   weeklyGoalKm: number;
+  /** Daily points target for the streak card (Duolingo-style daily goal). */
+  dailyGoalPoints: number;
   /** Rider weight for calorie estimates. */
   weightKg: number;
   /** Pause automatically when stopped and resume when moving again. */
@@ -56,6 +58,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   biometricUnlockEnabled: false,
   notificationsEnabled: true,
   weeklyGoalKm: 30,
+  dailyGoalPoints: 100,
   weightKg: 70,
   autoPause: true,
   keepScreenOn: true,

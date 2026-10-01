@@ -14,6 +14,8 @@ import GlassIconButton from "@/components/ui/GlassIconButton";
 import ProgressRing from "@/components/ui/ProgressRing";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import EmailVerifyBanner from "@/components/EmailVerifyBanner";
+import StreakCard from "@/components/StreakCard";
+import DuoProgressBar from "@/components/ui/DuoProgressBar";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthStore } from "@/stores/authStore";
 import { useLocalProfileStore } from "@/stores/localProfileStore";
@@ -180,15 +182,16 @@ export default function ProfileScreen() {
             <Action icon="stats-chart-outline" label="Estadísticas" onPress={() => router.push("/(tabs)/stats")} delay={120} />
           </View>
 
-          <Text style={[styles.section, { color: colors.ink }]}>Esta semana</Text>
+          <Text style={[styles.section, { color: colors.ink }]}>Tu racha</Text>
+          <StreakCard rides={rides} />
+
+          <Text style={[styles.section, { color: colors.ink }]}>Meta semanal</Text>
           <GlassCard>
             <View style={styles.weekRow}>
               <AnimatedNumber value={Math.round(weekKm * 10)} style={[styles.weekValue, { color: colors.ink }]} format={(v) => `${(v / 10).toFixed(1)} km`} />
               <Text style={{ color: colors.inkSoft }}>de {weeklyGoalKm} km</Text>
             </View>
-            <View style={[styles.track, { backgroundColor: colors.divider }]}>
-              <View style={[styles.fill, { width: `${Math.min(1, weeklyGoalKm ? weekKm / weeklyGoalKm : 0) * 100}%`, backgroundColor: colors.primary }]} />
-            </View>
+            <DuoProgressBar value={weeklyGoalKm ? weekKm / weeklyGoalKm : 0} accent="green" />
           </GlassCard>
 
           {recentDefs.length > 0 && (

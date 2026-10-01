@@ -14,6 +14,7 @@ import AreaChart from "@/components/charts/AreaChart";
 import BarChart from "@/components/charts/BarChart";
 import DonutChart from "@/components/charts/DonutChart";
 import DeltaBadge from "@/components/charts/DeltaBadge";
+import StreakCard from "@/components/StreakCard";
 import { useTheme } from "@/theme/useTheme";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useRiderStats } from "@/hooks/useRiderStats";
@@ -119,6 +120,9 @@ export default function StatsScreen() {
               <Kpi label="Puntos" value={String(cur.points)} pct={comparison.change?.points} />
             </View>
           </GlassCard>
+
+          <Section title="Tu racha" />
+          <StreakCard rides={rides} entranceDelay={30} />
 
           <Section title="Tendencia" />
           <GlassCard entranceDelay={40}>
