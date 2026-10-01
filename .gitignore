@@ -35,3 +35,7 @@ yarn-error.*
 .vercel/
 
 .env*.local
+
+# playwright
+test-results/
+playwright-report/

@@ -14,6 +14,9 @@ export default function BackButton({ onPress }: { onPress?: () => void }) {
   return (
     <Animated.View style={[styles.wrap, animatedStyle]}>
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Volver"
+        hitSlop={8}
         // Deep links / reloads have no history: fall back to home.
         onPress={onPress ?? (() => (router.canGoBack() ? router.back() : router.replace("/")))}
         onPressIn={() => (scale.value = withSpring(0.9, { damping: 16, stiffness: 380 }))}

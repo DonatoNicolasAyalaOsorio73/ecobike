@@ -14,7 +14,8 @@
     "test": "node --import ./scripts/register-alias-loader.mjs --test src/utils/__tests__/*.test.ts api/*.test.mjs",
     "build:web": "expo export --platform web",
     "deploy:rules": "firebase deploy --only firestore,storage --project ecobike-9dedd",
-    "test:rules": "firebase emulators:exec --only firestore --project demo-ecobike-rules \"node --test tests/firestore.rules.test.mjs\""
+    "test:rules": "firebase emulators:exec --only firestore --project demo-ecobike-rules \"node --test tests/firestore.rules.test.mjs\"",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -78,6 +79,7 @@
   "devDependencies": {
     "@babel/core": "^7.24.0",
     "@firebase/rules-unit-testing": "^5.0.2",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.2",
     "@types/react-dom": "~19.2",
     "typescript": "~6.0.3"

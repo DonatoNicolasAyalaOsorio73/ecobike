@@ -37,3 +37,25 @@ jobs:
       - run: npm ci
       - name: Firestore rules tests (emulator)
         run: npx -y firebase-tools@latest emulators:exec --only firestore --project demo-ecobike-rules "node --test tests/firestore.rules.test.mjs"
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Build web
+        run: npx expo export --platform web
+      - name: E2E smoke tests (phone + desktop)
+        run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7

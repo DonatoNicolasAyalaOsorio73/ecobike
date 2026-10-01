@@ -6,3 +6,7 @@ ios
 .env
 .env.local
 .claude
+e2e
+test-results
+playwright-report
+tests
