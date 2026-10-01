@@ -26,7 +26,43 @@ const EMPTY = { id: "", name: "", description: "", logo: "", pointsRequired: "",
 // non-admins is only UX.
 export default function AdminScreen() {
   const { colors } = useTheme();
-  const isAdmin = useAuthStore((s) => s.profile?.role === "admin");
+  const role = useAuthStore((s) => s.profile?.role);
+  const isAdmin = role === "admin";
+  const isStaff = isAdmin || role === "partner";
+  const [code, setCode] = useState("");
+  const [check, setCheck] = useState<{ code: string; store: string; status: string } | null>(null);
+  const [codeMsg, setCodeMsg] = useState<string | null>(null);
+
+  const [roleUser, setRoleUser] = useState("");
+  const [roleMsg, setRoleMsg] = useState<string | null>(null);
+  const setRole = async (role: "user" | "partner") => {
+    setBusy(true);
+    setRoleMsg(null);
+    try {
+      const r = await api<{ username: string; role: string }>("roles", "POST", { username: roleUser, role });
+      setRoleMsg(`@${r.username} ahora es ${r.role === "partner" ? "tienda aliada" : "usuario normal"}.`);
+      setRoleUser("");
+    } catch (e: any) {
+      setRoleMsg(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const validate = async (confirm: boolean) => {
+    setBusy(true);
+    setCodeMsg(null);
+    try {
+      const r = await api<{ code: string; store: string; status: string }>("validate", "POST", { code, confirm });
+      setCheck(r);
+      if (confirm) setCodeMsg("Código marcado como usado.");
+    } catch (e: any) {
+      setCheck(null);
+      setCodeMsg(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
   const [stores, setStores] = useState<Store[]>([]);
   const [form, setForm] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
@@ -70,16 +106,54 @@ export default function AdminScreen() {
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <View style={styles.headerRow}>
           <BackButton />
-          <Text style={[styles.header, { color: colors.ink }]}>Administrar tiendas</Text>
+          <Text style={[styles.header, { color: colors.ink }]}>{isAdmin ? "Administración" : "Tienda aliada"}</Text>
           <View style={{ width: 44 }} />
         </View>
 
-        {!isAdmin ? (
+        {!isStaff ? (
           <GlassCard>
             <Text style={{ color: colors.inkSoft, textAlign: "center" }}>No tienes permisos de administrador.</Text>
           </GlassCard>
         ) : (
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+            <GlassCard style={{ marginBottom: 16 }}>
+              <Text style={[styles.section, { color: colors.ink }]}>Validar código de canje</Text>
+              <GlassInput
+                icon="qr-code-outline"
+                placeholder="Código del cliente"
+                value={code}
+                onChangeText={(v) => {
+                  setCode(v.toUpperCase());
+                  setCheck(null);
+                }}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                onSubmitEditing={() => validate(false)}
+              />
+              {check && (
+                <Text style={{ color: check.status === "used" ? colors.danger : colors.ink, marginBottom: 10, fontWeight: "700" }}>
+                  {check.store} · {check.status === "used" ? "YA USADO" : "Válido, sin usar"}
+                </Text>
+              )}
+              {codeMsg && <Text style={{ color: colors.inkSoft, marginBottom: 10 }}>{codeMsg}</Text>}
+              {check?.status === "active" ? (
+                <GlassButton label="Confirmar canje" icon="checkmark-circle-outline" onPress={() => validate(true)} loading={busy} />
+              ) : (
+                <GlassButton label="Verificar" icon="search" variant="secondary" onPress={() => validate(false)} loading={busy} />
+              )}
+            </GlassCard>
+
+            {isAdmin && (
+            <>
+            <GlassCard style={{ marginBottom: 16 }}>
+              <Text style={[styles.section, { color: colors.ink }]}>Tiendas aliadas (rol partner)</Text>
+              <GlassInput icon="person-outline" placeholder="@usuario" value={roleUser} onChangeText={setRoleUser} autoCapitalize="none" autoCorrect={false} />
+              {roleMsg && <Text style={{ color: colors.inkSoft, marginBottom: 10 }}>{roleMsg}</Text>}
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <GlassButton label="Hacer partner" icon="storefront-outline" onPress={() => setRole("partner")} loading={busy} style={{ flex: 1 }} />
+                <GlassButton label="Quitar" icon="close" variant="secondary" onPress={() => setRole("user")} style={{ flex: 1 }} />
+              </View>
+            </GlassCard>
             <GlassCard>
               <Text style={[styles.section, { color: colors.ink }]}>{form.id ? "Editar tienda" : "Nueva tienda"}</Text>
               <GlassInput icon="storefront-outline" placeholder="Nombre" value={form.name} onChangeText={set("name")} />
@@ -127,6 +201,8 @@ export default function AdminScreen() {
                 </GlassCard>
               </Pressable>
             ))}
+            </>
+            )}
           </ScrollView>
         )}
       </SafeAreaView>

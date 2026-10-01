@@ -12,6 +12,7 @@ import { useTheme } from "@/theme/useTheme";
 import { useAuthStore } from "@/stores/authStore";
 import { useLocalProfileStore } from "@/stores/localProfileStore";
 import { updateUserProfile } from "@/services/auth.service";
+import { api } from "@/services/api";
 
 const BIKE_TYPES = ["Urbana", "Montaña", "Ruta", "Eléctrica", "BMX"];
 
@@ -25,18 +26,25 @@ export default function EditProfileScreen() {
   const [displayName, setDisplayName] = useState(profile?.displayName ?? localProfile.displayName);
   const [city, setCity] = useState(profile?.city ?? localProfile.city ?? "");
   const [bikeType, setBikeType] = useState(profile?.bikeType ?? localProfile.bikeType ?? "");
+  const [username, setUsername] = useState(profile?.username ?? "");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const onSave = async () => {
     setSaving(true);
+    setError(null);
     try {
       if (firebaseUser) {
+        const wanted = username.trim().replace(/^@/, "").toLowerCase();
+        if (wanted && wanted !== profile?.username) await api("me", "POST", { username: wanted });
         await updateUserProfile(firebaseUser.uid, { displayName: displayName.trim(), city: city.trim(), bikeType });
         await refreshProfile();
       } else {
         await localProfile.update({ displayName: displayName.trim() || "Ciclista invitado", city: city.trim(), bikeType });
       }
       router.back();
+    } catch (err: any) {
+      setError(err?.message ?? "No se pudo guardar.");
     } finally {
       setSaving(false);
     }
@@ -56,6 +64,17 @@ export default function EditProfileScreen() {
           <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
             <GlassCard>
               <GlassInput icon="person-outline" placeholder="Nombre para mostrar" value={displayName} onChangeText={setDisplayName} autoCapitalize="words" />
+              {firebaseUser && (
+                <GlassInput
+                  icon="at-outline"
+                  placeholder="Nombre de usuario"
+                  value={username}
+                  onChangeText={setUsername}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  errorText={error}
+                />
+              )}
               <GlassInput icon="location-outline" placeholder="Ciudad" value={city} onChangeText={setCity} autoCapitalize="words" />
             </GlassCard>
 

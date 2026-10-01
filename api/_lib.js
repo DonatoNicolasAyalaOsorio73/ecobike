@@ -116,8 +116,30 @@ function validateRide(r, now = Date.now()) {
   return { points, startedAt, endedAt, distanceMeters, durationSeconds };
 }
 
+// Best-effort Expo push to users who registered a token (src/services/push.ts).
+// ponytail: one token per user (last device wins); store a token list if
+// people commonly use several phones.
+async function sendPush(uids, title, message) {
+  try {
+    const db = admin().firestore();
+    const snaps = await Promise.all(uids.map((u) => db.collection("usuarios").doc(u).get()));
+    const messages = snaps
+      .map((s) => s.data()?.pushToken)
+      .filter((t) => typeof t === "string" && t.startsWith("ExponentPushToken"))
+      .map((to) => ({ to, title, body: message, sound: "default" }));
+    if (!messages.length) return;
+    await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(messages),
+    });
+  } catch (e) {
+    console.error("push failed", e);
+  }
+}
+
 function redemptionCode() {
   return require("crypto").randomBytes(6).toString("hex").toUpperCase();
 }
 
-module.exports = { admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };
+module.exports = { sendPush, admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };

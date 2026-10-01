@@ -16,7 +16,10 @@ import OfflineBanner from "@/components/ui/OfflineBanner";
 import ToastHost from "@/components/ui/ToastHost";
 import Logo from "@/components/ui/Logo";
 import { initDb } from "@/services/db";
-import { syncPendingRides } from "@/services/rides.service";
+import { pullRemoteRides, syncPendingRides } from "@/services/rides.service";
+import { disablePush, enablePush } from "@/services/push";
+// Side effect: registers the background location task at startup.
+import "@/stores/rideStore";
 import NetInfo from "@react-native-community/netinfo";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -46,17 +49,33 @@ export default function RootLayout() {
   // unsynced in local storage (rideStore.ts) — this is the other half of
   // that best-effort sync: retry once connectivity actually comes back,
   // instead of leaving it unsynced forever with no later trigger.
+  // Push unsynced rides, then pull rides recorded on other devices.
+  // ponytail: re-reads all ride summaries each time; add a since-timestamp
+  // query if users accumulate thousands of rides.
+  const syncRides = (uid: string) =>
+    syncPendingRides(uid)
+      .then((n) => (n > 0 ? useAuthStore.getState().refreshProfile() : undefined))
+      .then(() => pullRemoteRides(uid))
+      .catch(() => {});
+
+  const signedInUid = useAuthStore((s) => s.firebaseUser?.uid);
+  useEffect(() => {
+    if (signedInUid) syncRides(signedInUid);
+  }, [signedInUid]);
+
+  const notificationsEnabled = useSettingsStore((s) => s.notificationsEnabled);
+  useEffect(() => {
+    if (!signedInUid || !hydrated) return;
+    (notificationsEnabled ? enablePush(signedInUid) : disablePush(signedInUid)).catch(() => {});
+  }, [signedInUid, notificationsEnabled, hydrated]);
+
   useEffect(() => {
     return NetInfo.addEventListener((state) => {
       const uid = useAuthStore.getState().firebaseUser?.uid;
       // Same conservative signal as useNetworkStatus — a retry that fails
       // because we were wrong about connectivity costs nothing (it stays
       // flagged unsynced), but never retrying does.
-      if (uid && state.isConnected !== false) {
-        syncPendingRides(uid)
-          .then((n) => (n > 0 ? useAuthStore.getState().refreshProfile() : undefined))
-          .catch(() => {});
-      }
+      if (uid && state.isConnected !== false) syncRides(uid);
     });
   }, []);
 
@@ -104,6 +123,7 @@ export default function RootLayout() {
                 <Stack.Screen name="points/my-codes" options={{ presentation: "card" }} />
                 <Stack.Screen name="settings" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
               </Stack.Protected>
+              <Stack.Screen name="legal/[doc]" options={{ presentation: "card" }} />
               <Stack.Screen name="+not-found" />
             </Stack>
             <OfflineBanner />

@@ -94,6 +94,18 @@ export default function RegisterScreen() {
                 style={{ marginTop: 4 }}
               />
 
+              <Text style={[styles.loginLine, { color: colors.inkFaint, fontSize: 12 }]}>
+                Al crear tu cuenta aceptas los{" "}
+                <Text style={{ color: colors.primaryDark, fontWeight: "700" }} onPress={() => router.push("/legal/terms")}>
+                  Términos de uso
+                </Text>{" "}
+                y la{" "}
+                <Text style={{ color: colors.primaryDark, fontWeight: "700" }} onPress={() => router.push("/legal/privacy")}>
+                  Política de privacidad
+                </Text>
+                .
+              </Text>
+
               <Text style={[styles.loginLine, { color: colors.inkSoft }]}>
                 ¿Ya tienes cuenta?{" "}
                 <Text style={[styles.loginLink, { color: colors.primaryDark }]} onPress={() => router.push("/(auth)/login")}>

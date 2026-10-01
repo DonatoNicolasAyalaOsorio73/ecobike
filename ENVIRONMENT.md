@@ -91,10 +91,19 @@ provision this for you.
 
 ## 5. Push notifications
 
-`expo-notifications` is installed and the Settings toggle persists a
-preference, but no notification is actually scheduled yet (see
-ARCHITECTURE.md's "not built yet" list) — there's nothing further to
-configure here until that's implemented.
+Implemented: when "Notificaciones push" is on (Ajustes), the app stores the
+device Expo push token in `usuarios/{uid}.pushToken` (`src/services/push.ts`)
+and the server notifies friend requests and acceptances (`api/_lib.js
+sendPush`). Needs a native build (not Expo Go, not web) plus credentials on EAS:
+
+- iOS: `npx eas-cli credentials` and let EAS create the APNs key.
+- Android: create a Firebase Android app with package `com.justdona.EcoBike`,
+  then upload the FCM V1 service account key in `eas credentials` (Android > Push Notifications).
+
+## 6. Support email (optional)
+
+`EXPO_PUBLIC_SUPPORT_EMAIL` in `.env.production` adds a contact line to
+the privacy policy (`/legal/privacy`).
 
 ## Summary: what needs what
 

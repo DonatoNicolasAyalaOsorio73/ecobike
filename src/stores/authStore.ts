@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { User } from "firebase/auth";
 import { fetchUserProfile, signOut as firebaseSignOut, subscribeToAuthState } from "@/services/auth.service";
 import { isFirebaseConfigured } from "@/services/firebase";
+import { api } from "@/services/api";
 import { initDb, wipeAllLocalData } from "@/services/db";
 import type { UserProfile } from "@/types/user";
 
@@ -41,6 +42,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       initDb();
       const profile = await fetchUserProfile(user.uid).catch(() => null);
+      // Keep the public mirror (search/ranking) in sync, incl. legacy accounts.
+      if (profile) api("me", "POST").catch(() => {});
       set({
         firebaseUser: user,
         profile,

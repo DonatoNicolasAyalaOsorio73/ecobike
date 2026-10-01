@@ -43,6 +43,9 @@ serverless functions in [`api/`](api) with the Firebase Admin SDK:
 | `POST /api/redeem` | Reads the price from `tiendas/{id}`, checks and deducts the balance, writes `codigos_canjeados`. |
 | `POST /api/friends` | request / accept / reject / remove, writing both users atomically. |
 | `GET/POST/PUT /api/stores` | Rewards catalog admin. Requires `role == "admin"` or legacy `isAdmin == true` on `usuarios/{uid}`, or an `admin` custom claim. |
+| `POST /api/validate` | Store staff (role `partner`) or admin looks up a redemption code and marks it used, once. |
+| `POST /api/roles` | Admin assigns `partner` / `user` / `admin` by username. |
+| `POST /api/me` | After sign-in: rebuilds the public mirror from the server copy (legacy accounts), dedupes auto usernames, and changes username with a uniqueness check. |
 | `DELETE /api/account` | Deletes Firestore data, public mirror, avatars, friend links and the Auth user. |
 
 Every call sends the user Firebase ID token (`Authorization: Bearer`),
@@ -53,7 +56,7 @@ anything of value:
 
 - `usuarios/{uid}`: owner read; owner may edit profile fields but never
   `puntosAcumulados`, `role`, `isAdmin`, `amigos`,
-  `solicitudesPendientes`, `cuentaActiva`. Sign-up must start at 0 points.
+  `solicitudesPendientes`, `cuentaActiva`, `username`. Sign-up must start at 0 points.
 - `usuarios/{uid}/rides`, `codigos_canjeados`: owner read, server write only.
 - `usuarios_public/{uid}`: readable by signed-in users (search, leaderboard);
   owner may sync name/photo, points and friends come from the server.

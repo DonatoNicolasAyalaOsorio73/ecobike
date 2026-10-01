@@ -1,5 +1,7 @@
-import React from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useState } from "react";
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect } from "expo-router";
+import QRCode from "react-native-qrcode-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
@@ -16,7 +18,10 @@ export default function MyCodesScreen() {
   const { colors } = useTheme();
   const userId = useCurrentUserId();
   const { isRealAccount } = useAvailablePoints(userId);
-  const { redemptions } = useRewards(userId, isRealAccount);
+  const { redemptions, refresh, loading } = useRewards(userId, isRealAccount);
+  const [openId, setOpenId] = useState<string | null>(null);
+  // Status changes when a store validates the code, so re-read on focus.
+  useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
 
   return (
     <View style={styles.screen}>
@@ -32,6 +37,14 @@ export default function MyCodesScreen() {
           data={redemptions}
           keyExtractor={(r) => r.id}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60, paddingTop: 8 }}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={colors.primary} />}
+          ListHeaderComponent={
+            redemptions.length > 0 ? (
+              <Text style={{ color: colors.inkSoft, fontSize: 12.5, textAlign: "center", marginBottom: 12 }}>
+                Toca un código para mostrar su QR en la tienda.
+              </Text>
+            ) : null
+          }
           ListEmptyComponent={
             <GlassCard>
               <Text style={{ color: colors.inkSoft, textAlign: "center" }}>
@@ -39,8 +52,17 @@ export default function MyCodesScreen() {
               </Text>
             </GlassCard>
           }
-          renderItem={({ item, index }) => (
-            <GlassCard style={{ marginBottom: 12 }} entranceDelay={Math.min(index, 8) * 40}>
+          renderItem={({ item, index }) => {
+            const used = item.status === "used";
+            const open = openId === item.id && !used;
+            return (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={used ? `${item.rewardTitle}, código usado` : `Mostrar QR de ${item.rewardTitle}`}
+              onPress={() => setOpenId(open ? null : item.id)}
+              disabled={used}
+            >
+            <GlassCard style={{ marginBottom: 12, opacity: used ? 0.55 : 1 }} entranceDelay={Math.min(index, 8) * 40}>
               <View style={styles.row}>
                 <View style={[styles.iconWrap, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
                   <Ionicons name="pricetag-outline" size={18} color={colors.primaryDark} />
@@ -52,11 +74,26 @@ export default function MyCodesScreen() {
                   </Text>
                 </View>
                 <View style={[styles.codePill, { backgroundColor: colors.glassFillStrong, borderColor: colors.glassBorder }]}>
-                  <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 13, letterSpacing: 1 }}>{item.code}</Text>
+                  <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 13, letterSpacing: 1, textDecorationLine: used ? "line-through" : "none" }}>
+                    {item.code}
+                  </Text>
                 </View>
               </View>
+              {used && <Text style={[styles.meta, { color: colors.inkSoft, marginTop: 8 }]}>Usado en tienda</Text>}
+              {open && (
+                <View style={styles.qrWrap}>
+                  <View style={styles.qrBox}>
+                    <QRCode value={item.code} size={180} />
+                  </View>
+                  <Text style={[styles.meta, { color: colors.inkSoft, marginTop: 10, textAlign: "center" }]}>
+                    Muestra este QR o el código en la caja. Solo se puede usar una vez.
+                  </Text>
+                </View>
+              )}
             </GlassCard>
-          )}
+            </Pressable>
+            );
+          }}
         />
       </SafeAreaView>
     </View>
@@ -72,5 +109,7 @@ const styles = StyleSheet.create({
   iconWrap: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", borderWidth: 1 },
   title: { fontSize: 14.5, fontWeight: "700" },
   meta: { fontSize: 12, marginTop: 2 },
+  qrWrap: { alignItems: "center", marginTop: 16 },
+  qrBox: { padding: 12, backgroundColor: "#fff", borderRadius: 16 },
   codePill: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1 },
 });

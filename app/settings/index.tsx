@@ -130,15 +130,22 @@ export default function SettingsScreen() {
             />
           </GlassCard>
 
+          <SectionLabel text="Legal" />
+          <GlassCard>
+            <SettingsNavRow icon="shield-checkmark-outline" label="Política de privacidad" onPress={() => router.push("/legal/privacy")} />
+            <Divider />
+            <SettingsNavRow icon="document-text-outline" label="Términos de uso" onPress={() => router.push("/legal/terms")} />
+          </GlassCard>
+
           <SectionLabel text="Cuenta" />
           <GlassCard>
             <SettingsNavRow icon="people-circle-outline" label="Amigos y solicitudes" onPress={() => router.push("/(tabs)/friends")} />
             {profile && (
               <>
-                {profile.role === "admin" && (
+                {(profile.role === "admin" || profile.role === "partner") && (
                   <>
                     <Divider />
-                    <SettingsNavRow icon="storefront-outline" label="Administrar tiendas" onPress={() => router.push("/settings/admin")} />
+                    <SettingsNavRow icon="storefront-outline" label={profile.role === "admin" ? "Administración" : "Validar códigos"} onPress={() => router.push("/settings/admin")} />
                   </>
                 )}
                 <Divider />

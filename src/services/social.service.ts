@@ -98,3 +98,28 @@ export async function listIncomingFriendRequests(uid: string): Promise<{ from: s
   const pending = (snap.data()?.solicitudesPendientes as string[] | undefined) ?? [];
   return pending.map((from) => ({ from }));
 }
+
+export interface PublicProfile {
+  uid: string;
+  displayName: string;
+  username: string;
+  photoURL: string | null;
+  points: number;
+}
+
+/** Names/photos for a list of uids, from the public mirror (missing docs fall back to the uid). */
+export async function fetchPublicProfiles(uids: string[]): Promise<PublicProfile[]> {
+  if (!isFirebaseConfigured || uids.length === 0) return [];
+  const snaps = await Promise.all(uids.map((u) => getDoc(doc(getDb(), PUBLIC_COLLECTION, u)).catch(() => null)));
+  return snaps.map((snap, i) => {
+    const d = snap?.data() ?? {};
+    const username = (d.username as string | undefined) ?? uids[i].slice(0, 8);
+    return {
+      uid: uids[i],
+      displayName: [d.nombre, d.apellido].filter(Boolean).join(" ") || username,
+      username,
+      photoURL: (d.profileImageUrl as string | undefined) ?? null,
+      points: (d.puntosAcumulados as number | undefined) ?? 0,
+    };
+  });
+}

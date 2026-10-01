@@ -37,13 +37,14 @@ npm run deploy:rules
 
 If Storage fails with "Failed to make request ... firebasestorage", open
 Firebase Console > Storage once to initialize it, then retry, or deploy
-Firestore only: `npx firebase deploy --only firestore:rules`.
+Firestore only (rules + the code index): `npx firebase deploy --only firestore`.
 
 ### 3. Admin user
 
 Set `role: "admin"` on your own `usuarios/{uid}` document in the Firebase
-Console (clients cannot set it). The "Administrar tiendas" entry then appears
-in Ajustes, on web and mobile.
+Console (clients cannot set it). "Administración" then appears in Ajustes, on
+web and mobile: edit stores, make store staff `partner` (they get "Validar
+códigos"), validate customer codes.
 
 ### 4. Mobile builds (EAS)
 
@@ -59,7 +60,8 @@ Firebase and the API URL without extra setup.
 
 ## Before submitting to the stores
 
-- Privacy policy URL (both stores require it; mention location and account deletion).
+- Privacy policy URL: `https://ecobike-demo.vercel.app/legal/privacy` (terms: `/legal/terms`). Both are public routes of the web app.
+- Push credentials (APNs, FCM V1) on EAS, see ENVIRONMENT.md section 5.
 - Play Console: Data safety form, background location justification video.
 - App Store: Sign in with Apple is enabled because Google sign-in may appear;
   set up the Apple Developer App ID with that capability.

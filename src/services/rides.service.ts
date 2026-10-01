@@ -1,7 +1,7 @@
-import { doc, getDoc } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { getDb, isFirebaseConfigured } from "./firebase";
 import { api } from "./api";
-import { getRide, listRides, markSynced, unsyncedRides } from "./db";
+import { getRide, listRides, markSynced, saveRide, unsyncedRides } from "./db";
 import type { Ride } from "@/types/ride";
 
 /**
@@ -61,17 +61,38 @@ export function getLocalRide(id: string) {
   return getRide(id);
 }
 
-// A friend's ride history lives only on their own device (or would require
-// Cloud Functions this project doesn't have — see ENVIRONMENT.md), so the
-// only real, cross-account signal we can rank friends by is the points
-// balance mirrored to `usuarios_public/{uid}` (see auth.service.ts).
-export async function fetchFriendsLeaderboard(friendUids: string[]) {
-  if (!isFirebaseConfigured || friendUids.length === 0) return [];
-  const snaps = await Promise.all(friendUids.map((uid) => getDoc(doc(getDb(), "usuarios_public", uid))));
-  const results = snaps.map((snap, i) => {
-    const data = snap.data();
-    const displayName = [data?.nombre, data?.apellido].filter(Boolean).join(" ") || data?.username || friendUids[i];
-    return { uid: friendUids[i], displayName, totalPoints: (data?.puntosAcumulados as number | undefined) ?? 0 };
-  });
-  return results.sort((a, b) => b.totalPoints - a.totalPoints);
+/**
+ * Pulls ride summaries already stored in `usuarios/{uid}/rides` that this
+ * device doesn't have (new phone, reinstall, web <-> mobile). GPS polylines
+ * are never uploaded, so pulled rides have no map trace. Returns how many
+ * were added.
+ */
+export async function pullRemoteRides(userId: string): Promise<number> {
+  if (!isFirebaseConfigured) return 0;
+  const snap = await getDocs(collection(getDb(), "usuarios", userId, "rides"));
+  let added = 0;
+  for (const d of snap.docs) {
+    if (getRide(d.id)) continue;
+    const r = d.data();
+    const num = (v: unknown) => (typeof v === "number" ? v : 0);
+    if (!num(r.startedAt)) continue; // legacy docs with another shape
+    saveRide({
+      id: d.id,
+      userId,
+      startedAt: num(r.startedAt),
+      endedAt: num(r.endedAt) || null,
+      distanceMeters: num(r.distanceMeters),
+      durationSeconds: num(r.durationSeconds),
+      avgSpeedKmh: num(r.avgSpeedKmh),
+      maxSpeedKmh: num(r.maxSpeedKmh),
+      elevationGainMeters: num(r.elevationGainMeters),
+      caloriesKcal: num(r.caloriesKcal),
+      points: [],
+      pointsEarned: num(r.pointsEarned),
+      synced: true,
+      error: null,
+    });
+    added++;
+  }
+  return added;
 }

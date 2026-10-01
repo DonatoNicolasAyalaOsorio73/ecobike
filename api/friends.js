@@ -1,7 +1,7 @@
 // POST /api/friends { action: "request" | "accept" | "reject" | "remove", uid }
 // Friendship touches two users' documents, which clients can't do under the
 // rules — so both sides are written here atomically.
-const { admin, httpError, requireUser, body, handler } = require("./_lib");
+const { admin, httpError, requireUser, body, handler, sendPush } = require("./_lib");
 
 module.exports = handler(["POST"], async (req) => {
   const me = (await requireUser(req)).uid;
@@ -16,7 +16,7 @@ module.exports = handler(["POST"], async (req) => {
   const meRef = users.doc(me);
   const otherRef = users.doc(other);
 
-  return db.runTransaction(async (tx) => {
+  const result = await db.runTransaction(async (tx) => {
     const [meSnap, otherSnap] = await Promise.all([tx.get(meRef), tx.get(otherRef)]);
     if (!meSnap.exists || !otherSnap.exists) throw httpError(404, "Usuario no encontrado.");
     const myFriends = meSnap.data().amigos ?? [];
@@ -54,4 +54,10 @@ module.exports = handler(["POST"], async (req) => {
     tx.set(pub.doc(other), { amigos: theirs }, { merge: true });
     return { status: "removed" };
   });
+
+  // Notify the other person (after commit, never blocks the response on failure).
+  const myName = (await pub.doc(me).get().catch(() => null))?.data()?.username ?? "Alguien";
+  if (result.status === "requested") await sendPush([other], "Nueva solicitud de amistad", `@${myName} quiere ser tu amigo en EcoBike.`);
+  if (result.status === "friends") await sendPush([other], "Solicitud aceptada", `@${myName} y tú ahora son amigos.`);
+  return result;
 });

@@ -55,6 +55,7 @@ export async function fetchRemoteRedemptions(userId: string): Promise<Redemption
       pointsSpent: data.pointsSpent ?? 0,
       code: data.code ?? "",
       redeemedAt: typeof data.createdAt?.toMillis === "function" ? data.createdAt.toMillis() : Date.now(),
+      status: data.status === "used" ? "used" : "active",
     };
   });
 }
@@ -76,7 +77,7 @@ export async function redeemReward(
       "POST",
       { rewardId: reward.id }
     );
-    return { id: r.id, rewardId: r.rewardId, rewardTitle: r.rewardTitle, pointsSpent: r.pointsSpent, code: r.code, redeemedAt: Date.now() };
+    return { id: r.id, rewardId: r.rewardId, rewardTitle: r.rewardTitle, pointsSpent: r.pointsSpent, code: r.code, redeemedAt: Date.now(), status: "active" };
   }
 
   if (availablePoints < reward.pointsCost) {

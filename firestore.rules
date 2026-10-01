@@ -14,7 +14,7 @@ service cloud.firestore {
 
     // Fields only the server may change on usuarios/{uid}.
     function serverOnlyUserFields() {
-      return ['puntosAcumulados', 'role', 'isAdmin', 'amigos', 'solicitudesPendientes', 'cuentaActiva'];
+      return ['puntosAcumulados', 'role', 'isAdmin', 'amigos', 'solicitudesPendientes', 'cuentaActiva', 'username'];
     }
 
     function changes() {
@@ -54,7 +54,7 @@ service cloud.firestore {
     }
 
     // ─── /usuarios_public/{uid} — minimal public mirror for search/leaderboard ───
-    // Owner may keep name/photo in sync; points and friends come from the server.
+    // Owner may keep name/photo in sync; points, friends and username (unique) come from the server.
     match /usuarios_public/{uid} {
       allow read: if isAuth();
       allow create: if isOwner(uid)
@@ -63,7 +63,7 @@ service cloud.firestore {
         && request.resource.data.get('amigos', []).size() == 0;
       allow update: if isOwner(uid)
         && request.resource.data.keys().hasOnly(publicFields())
-        && !changes().hasAny(['puntosAcumulados', 'amigos']);
+        && !changes().hasAny(['puntosAcumulados', 'amigos', 'username']);
       allow delete: if false;
     }
 

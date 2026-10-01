@@ -72,6 +72,7 @@ const config: ExpoConfig = {
     "expo-secure-store",
     "expo-apple-authentication",
     "expo-sqlite",
+    ["expo-notifications", { color: "#ADF14B" }],
     // Required peer of @expo/vector-icons / expo-symbols — without it icons
     // fail to load in a real (non-Expo-Go) native build.
     "expo-font",
@@ -98,6 +99,7 @@ const config: ExpoConfig = {
         locationAlwaysAndWhenInUsePermission:
           "EcoBike puede seguir registrando tu recorrido en segundo plano cuando bloqueas el teléfono.",
         isAndroidBackgroundLocationEnabled: true,
+        isAndroidForegroundServiceEnabled: true,
       },
     ],
     [

@@ -14,6 +14,8 @@ export interface Redemption {
   pointsSpent: number;
   code: string;
   redeemedAt: number;
+  /** "used" once a store validated it (api/validate.js). Local/guest codes have none. */
+  status?: "active" | "used";
 }
 
 // Works with zero backend configuration — a real Firestore-backed catalog
