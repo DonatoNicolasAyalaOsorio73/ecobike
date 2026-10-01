@@ -13,7 +13,7 @@ import { useTheme } from "@/theme/useTheme";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useRewards } from "@/hooks/useRewards";
 import GlassButton from "@/components/ui/GlassButton";
-import { accents, type AccentName } from "@/theme/colors";
+import { accents, elevation, type AccentName } from "@/theme/colors";
 import { useAvailablePoints } from "@/hooks/useAvailablePoints";
 
 export default function MyCodesScreen() {
@@ -120,7 +120,7 @@ export default function MyCodesScreen() {
 function SummaryPill({ accent, icon, value, label }: { accent: AccentName; icon: keyof typeof Ionicons.glyphMap; value: number; label: string }) {
   const a = accents[accent];
   return (
-    <View style={[styles.pill, { borderColor: a.base }]}>
+    <View style={[styles.pill, elevation("low")]}>
       <Ionicons name={icon} size={16} color={a.lip} />
       <Text style={styles.pillValue}>{value.toLocaleString("es-CO")}</Text>
       <Text style={styles.pillLabel} numberOfLines={1}>
@@ -132,9 +132,9 @@ function SummaryPill({ accent, icon, value, label }: { accent: AccentName; icon:
 
 const styles = StyleSheet.create({
   summary: { flexDirection: "row", gap: 8, marginBottom: 12 },
-  pill: { flex: 1, alignItems: "center", gap: 2, paddingVertical: 10, borderRadius: 16, borderWidth: 1, backgroundColor: "#fff" },
+  pill: { flex: 1, alignItems: "center", gap: 2, paddingVertical: 12, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.78)", borderWidth: 1, borderColor: "rgba(255,255,255,0.95)" },
   pillValue: { fontSize: 18, fontWeight: "700", color: "#1F2A22" },
-  pillLabel: { fontSize: 11, fontWeight: "700", color: "#6B776F" },
+  pillLabel: { fontSize: 11.5, fontWeight: "500", color: "#6B776F" },
   status: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, marginTop: 10 },
   emptyIcon: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", borderWidth: 3 },
   screen: { flex: 1 },

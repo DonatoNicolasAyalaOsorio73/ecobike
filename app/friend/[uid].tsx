@@ -10,7 +10,7 @@ import GlassCard from "@/components/ui/GlassCard";
 import GlassButton from "@/components/ui/GlassButton";
 import ProgressRing from "@/components/ui/ProgressRing";
 import { useTheme } from "@/theme/useTheme";
-import { accents, type AccentName } from "@/theme/colors";
+import { accents, elevation, type AccentName } from "@/theme/colors";
 import { useAuthStore } from "@/stores/authStore";
 import { useToastStore } from "@/stores/toastStore";
 import { fetchPublicProfiles, listFriendUids, removeFriend, type PublicProfile } from "@/services/social.service";
@@ -147,7 +147,7 @@ export default function FriendProfileScreen() {
 function Tile({ accent, icon, value, label, delay }: { accent: AccentName; icon: keyof typeof Ionicons.glyphMap; value: string; label: string; delay: number }) {
   const a = accents[accent];
   return (
-    <Animated.View entering={ZoomIn.delay(delay).springify().damping(16)} style={[styles.tile, { borderColor: a.base, backgroundColor: "#fff" }]}>
+    <Animated.View entering={ZoomIn.delay(delay).springify().damping(16)} style={[styles.tile, elevation("low")]}>
       <Ionicons name={icon} size={20} color={a.lip} />
       <Text style={styles.tileValue} numberOfLines={1} adjustsFontSizeToFit>
         {value}
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   avatar: { width: 108, height: 108, borderRadius: 54, borderWidth: 3, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   name: { fontSize: 24, fontWeight: "700", textAlign: "center", marginTop: 14 },
   tiles: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 22 },
-  tile: { flexBasis: "46%", flexGrow: 1, borderWidth: 1, borderRadius: 18, padding: 14, gap: 4 },
+  tile: { flexBasis: "46%", flexGrow: 1, borderRadius: 18, padding: 14, gap: 4, backgroundColor: "rgba(255,255,255,0.78)", borderWidth: 1, borderColor: "rgba(255,255,255,0.95)" },
   tileValue: { fontSize: 20, fontWeight: "700", color: "#1F2A22" },
   tileLabel: { fontSize: 12, color: "#6B776F", fontWeight: "700" },
 });

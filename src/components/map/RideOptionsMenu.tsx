@@ -40,7 +40,7 @@ export default function RideOptionsMenu({ onSelect, onClose }: Props) {
           {RIDE_GOAL_OPTIONS.map((o, i) => (
             <Animated.View
               key={o.id}
-              entering={FadeInDown.delay(60 + i * 45).springify().damping(16).mass(0.8)}
+              entering={FadeInDown.delay(40 + i * 40).duration(300)}
               exiting={FadeOutDown.duration(140)}
             >
               <Pressable
@@ -56,16 +56,16 @@ export default function RideOptionsMenu({ onSelect, onClose }: Props) {
                   <View
                     style={[
                       styles.icon,
-                      o.goal ? { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder } : { backgroundColor: colors.primary, borderColor: colors.primaryDark },
+                      { backgroundColor: o.goal ? "rgba(173,241,75,0.35)" : colors.primary },
                     ]}
                   >
-                    <Ionicons name={o.icon as any} size={20} color={o.goal ? colors.primaryDark : colors.onPrimary} />
+                    <Ionicons name={o.icon as any} size={19} color={colors.primaryDark} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 15 }}>{o.label}</Text>
+                    <Text style={{ color: colors.ink, fontWeight: "600", fontSize: 16, letterSpacing: -0.2 }}>{o.label}</Text>
                     <Text style={{ color: colors.inkSoft, fontSize: 12.5, marginTop: 2 }}>{o.subtitle}</Text>
                   </View>
-                  <Ionicons name="play-circle" size={26} color={colors.primaryDark} />
+                  <Ionicons name="chevron-forward" size={18} color={colors.inkFaint} />
                 </GlassSurface>
               </Pressable>
             </Animated.View>
@@ -79,6 +79,6 @@ export default function RideOptionsMenu({ onSelect, onClose }: Props) {
 const styles = StyleSheet.create({
   sheet: { position: "absolute", left: 16, right: 82, bottom: 110, top: 90 }, // right: room for the control rail
   title: { fontSize: 22, fontWeight: "700", marginBottom: 14, letterSpacing: -0.3 },
-  option: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
-  icon: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", borderWidth: 1 },
+  option: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, paddingHorizontal: 14 },
+  icon: { width: 38, height: 38, borderRadius: 11, alignItems: "center", justifyContent: "center" },
 });

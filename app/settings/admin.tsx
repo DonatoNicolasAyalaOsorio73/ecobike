@@ -11,7 +11,7 @@ import { useTheme } from "@/theme/useTheme";
 import { useAuthStore } from "@/stores/authStore";
 import { api } from "@/services/api";
 import SegmentedControl from "@/components/ui/SegmentedControl";
-import { accents, type AccentName } from "@/theme/colors";
+import { accents, elevation, type AccentName } from "@/theme/colors";
 import QrScanner from "@/components/QrScanner";
 
 interface Store {
@@ -36,7 +36,7 @@ interface Kpis {
 function Kpi({ accent, icon, value, label }: { accent: AccentName; icon: keyof typeof Ionicons.glyphMap; value: number | undefined; label: string }) {
   const a = accents[accent];
   return (
-    <View style={[styles.kpi, { borderColor: a.base }]}>
+    <View style={[styles.kpi, elevation("low")]}>
       <Ionicons name={icon} size={16} color={a.lip} />
       <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit>
         {value === undefined ? "…" : value.toLocaleString("es-CO")}
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   section: { fontSize: 16, fontWeight: "700", marginBottom: 12 },
   row: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   kpis: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
-  kpi: { flexBasis: "31%", flexGrow: 1, backgroundColor: "#fff", borderWidth: 1, borderRadius: 16, padding: 10, gap: 2 },
+  kpi: { flexBasis: "31%", flexGrow: 1, borderRadius: 16, padding: 10, gap: 2, backgroundColor: "rgba(255,255,255,0.78)", borderWidth: 1, borderColor: "rgba(255,255,255,0.95)" },
   kpiValue: { fontSize: 18, fontWeight: "700", color: "#1F2A22" },
   kpiLabel: { fontSize: 10.5, fontWeight: "700", color: "#6B776F" },
   storeRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#fff", borderWidth: 2, borderColor: "#EDF1EA", borderRadius: 18, padding: 12, marginTop: 10 },
