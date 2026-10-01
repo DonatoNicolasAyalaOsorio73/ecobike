@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ReduceMotion, ReducedMotionConfig } from "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -19,7 +19,7 @@ import ToastHost from "@/components/ui/ToastHost";
 import Logo from "@/components/ui/Logo";
 import { initDb } from "@/services/db";
 import { pullRemoteRides, syncPendingRides } from "@/services/rides.service";
-import { disablePush, enablePush } from "@/services/push";
+import { disablePush, enablePush, listenForPushTaps } from "@/services/push";
 import { setWeeklyReminder } from "@/services/reminders";
 import { withMonitoring } from "@/services/monitoring";
 // Side effect: registers the background location task at startup.
@@ -73,6 +73,12 @@ function RootLayout() {
   useEffect(() => {
     if (hydrated) setWeeklyReminder(weeklyReminder).catch(() => {});
   }, [hydrated, weeklyReminder]);
+
+  // Tapping a push opens its screen (chat, friend requests) once signed in.
+  useEffect(() => {
+    if (!signedInUid) return;
+    return listenForPushTaps((path) => router.push(path as any));
+  }, [signedInUid]);
 
   const notificationsEnabled = useSettingsStore((s) => s.notificationsEnabled);
   useEffect(() => {

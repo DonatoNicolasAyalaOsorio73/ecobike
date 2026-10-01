@@ -61,7 +61,7 @@ module.exports = handler(["POST"], async (req) => {
 
   // Notify the other person (after commit, never blocks the response on failure).
   const myName = (await pub.doc(me).get().catch(() => null))?.data()?.username ?? "Alguien";
-  if (result.status === "requested") await sendPush([other], "Nueva solicitud de amistad", `@${myName} quiere ser tu amigo en EcoBike.`);
-  if (result.status === "friends") await sendPush([other], "Solicitud aceptada", `@${myName} y tú ahora son amigos.`);
+  if (result.status === "requested") await sendPush([other], "Nueva solicitud de amistad", `@${myName} quiere ser tu amigo en EcoBike.`, "friends", { url: "/friends" });
+  if (result.status === "friends") await sendPush([other], "Solicitud aceptada", `@${myName} y tú ahora son amigos.`, "friends", { url: "/friends" });
   return result;
 });

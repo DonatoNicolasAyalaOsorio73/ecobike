@@ -126,7 +126,12 @@ export default function StatsScreen() {
 
           <Section title="Tendencia" />
           <GlassCard entranceDelay={40}>
-            <AreaChart values={trend.values.map(toUnit)} labels={trend.labels} accessibilityLabel={`Distancia por periodo en ${unit}`} />
+            {/* Days (week/month) read best as bars; months (year/all) as a trend line. */}
+            {period === "week" || period === "month" ? (
+              <BarChart values={trend.values.map(toUnit)} labels={trend.labels} formatMax={(v) => `${v.toFixed(1)} ${unit}`} accessibilityLabel={`Distancia por día en ${unit}`} />
+            ) : (
+              <AreaChart values={trend.values.map(toUnit)} labels={trend.labels} accessibilityLabel={`Distancia por mes en ${unit}`} />
+            )}
           </GlassCard>
 
           <View style={styles.grid}>

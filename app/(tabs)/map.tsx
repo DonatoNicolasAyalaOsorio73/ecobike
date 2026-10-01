@@ -15,6 +15,7 @@ import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import PulseDot from "@/components/ui/PulseDot";
 import RideCompleteOverlay from "@/components/RideCompleteOverlay";
 import Flame from "@/components/ui/Flame";
+import DuoProgressBar from "@/components/ui/DuoProgressBar";
 import { useTheme } from "@/theme/useTheme";
 import { SPRING } from "@/theme/motion";
 import { useRideStore } from "@/stores/rideStore";
@@ -107,6 +108,8 @@ export default function MapScreen() {
   const weekProgress = weeklyGoalKm > 0 ? weekKm / weeklyGoalKm : 0;
   const riding = status === "ACTIVE" || status === "PAUSED";
   const streak = computeStreakDays(rides.map((r) => new Date(r.startedAt)));
+  const todayPts = pointsToday(rides);
+  const dailyGoal = useSettingsStore((s) => s.dailyGoalPoints);
   const rideGoalProgress = goal && ride ? goalProgress(goal, ride) : 0;
 
   // The bottom card slides down and fades while the options menu is open,
@@ -142,6 +145,14 @@ export default function MapScreen() {
                 </Text>
               </View>
             </View>
+            <View style={styles.dailyRow}>
+              <Ionicons name="ribbon" size={15} color="#E5B400" />
+              <Text style={{ color: colors.inkSoft, fontSize: 12.5, fontWeight: "700", flex: 1 }}>
+                Hoy {Math.min(todayPts, dailyGoal)} / {dailyGoal} pts
+              </Text>
+              {todayPts >= dailyGoal && <Text style={{ color: "#46A302", fontSize: 12, fontWeight: "900" }}>¡Meta del día!</Text>}
+            </View>
+            <DuoProgressBar value={todayPts / dailyGoal} accent="gold" height={10} />
             <View style={styles.controlsRow}>
               <GlassButton label="Iniciar" icon="play" variant="primary" onPress={() => begin(null)} disabled={!userId} style={{ flex: 1 }} />
               <GlassButton label="Con meta" icon="flag-outline" variant="secondary" onPress={() => setMenuOpen(true)} style={{ flex: 1 }} />
@@ -296,6 +307,7 @@ const styles = StyleSheet.create({
   bottom: { position: "absolute", left: 14, right: 14, bottom: 104 },
   title: { fontSize: 17, fontWeight: "800" },
   subtitle: { fontSize: 13, marginTop: 6, lineHeight: 18 },
+  dailyRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 14, marginBottom: 6 },
   idleRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   goalRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
   statsRow: { flexDirection: "row", justifyContent: "space-between" },
