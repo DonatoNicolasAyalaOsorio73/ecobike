@@ -20,6 +20,10 @@ jobs:
       - run: npm test
       - name: Web build
         run: npx expo export --platform web
+      - name: Native bundles (iOS + Android, same code as web)
+        run: npx expo export --platform ios --platform android --output-dir dist-native
+      - name: Expo doctor
+        run: npx expo-doctor
 
   rules:
     runs-on: ubuntu-latest

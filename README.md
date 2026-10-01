@@ -1,38 +1,43 @@
 # EcoBike — Next Generation
 
-A modern, Apple-first cycling companion app: track rides with GPS, see your
-stats and streaks, earn achievements, and compare progress with friends —
-built with Expo, TypeScript, and a "Liquid Glass" visual language on top of
-the original EcoBike brand (`#ADF14B`, leaf + bicycle mark).
+EcoBike turns urban cycling into a game: record rides with GPS, keep a daily
+streak, complete daily missions, climb the weekly league with friends and
+redeem points at partner stores. One Expo Router codebase ships the **iOS and
+Android apps** and the **web version** (same account, same Firebase data, same
+features). Visual language: Apple-style light UI with Duolingo-style motion
+(3D buttons, bouncy feedback, celebrations).
 
-This is a full rebuild of an earlier 4-screen visual mockup into a real,
-working app. See [ARCHITECTURE.md](ARCHITECTURE.md) for what changed and why.
+On desktop browsers the app is shown inside an iPhone frame; on phones (native
+or mobile browser) it runs full screen.
 
-## Status
+## Features
 
-Works fully offline today, in **local demo mode**, with no account required
-("Explorar sin cuenta" on the welcome screen):
+- **Home / Map:** full-screen map, glass control rail, ride options (free or
+  distance/time goals), daily points goal, streak, background tracking,
+  auto-pause, keep-screen-on, live stats, lesson-complete style celebration
+  with level-ups and new achievements
+- **Streaks and missions:** daily streak with week dots and best streak,
+  daily points goal, three daily missions, weekly league with friends
+- **Stats:** period comparison, trend, habits by day/hour, ride types,
+  environmental impact, heatmap, records, level, achievements with progress
+- **Ride detail:** framed route map, speed/altitude profile, km splits, CO₂
+- **Rewards:** image carousel (scroll-snap + arrows on web), confirmation,
+  QR codes, store validation with camera scanner (partner/admin roles)
+- **Friends:** search, requests, real-time 1:1 chat with push, friend
+  profiles, league/total ranking with podium
+- **Profile and settings:** full edit profile (validation, username
+  availability, birth date, bike, level, goals), notification types, privacy,
+  biometric unlock, sign out everywhere, data export, resync, help, legal
+- **Onboarding** for new accounts; **guest mode** with realistic example data
 
-- Ride tracking (start/pause/resume/finish) with live GPS distance, speed,
-  duration, elevation
-- Ride history, stats dashboard, gamification (points/levels/streaks/achievements)
-- Settings: theme, units, privacy toggles, biometric unlock
+## Quality
 
-Gated behind **your own Firebase project** (see [ENVIRONMENT.md](ENVIRONMENT.md)):
-email/password + Google + Apple sign-in, cloud sync, friends/leaderboard.
-
-Gated behind **a native build** (EAS or `expo prebuild`, not Expo Go): Sign
-in with Apple, and native Apple/Google Maps via `expo-maps`. Everything else
-runs in Expo Go.
-
-## Features (iOS, Android and web, same account and data)
-
-- Map: full-screen live map, ride options menu (free ride or distance/time goals), background tracking, auto-pause, keep-screen-on, recording indicator
-- Stats: period comparison, trends, habits by day/hour, ride types, environmental impact, heatmap, records, levels, achievements with progress
-- Rewards: image carousel, confirmation, QR codes, store validation with camera scanner (partner/admin)
-- Friends: search, requests, real-time 1:1 chat with push, podium ranking
-- Profile and settings: account, notifications per type, privacy (search visibility), security (biometric unlock, sign out everywhere), data export, help center, legal pages
-- Guest mode ("Explorar sin cuenta"): example data on every screen, nothing leaves the device
+- 80 unit tests (pure logic) + Firestore rules tests (emulator) + Playwright
+  E2E on phone and desktop viewports, all in CI with iOS/Android bundle and
+  expo-doctor checks
+- Server-authoritative points, redemptions, friendships, chat and weekly
+  league (Vercel functions + Firebase Admin); locked-down Firestore rules
+- Accessibility labels, reduced-motion support, light theme only
 
 ## Quick start
 
@@ -82,7 +87,9 @@ npm run ios          # expo start --ios
 npm run android      # expo start --android
 npm run web          # expo start --web
 npm run typecheck    # tsc --noEmit
-npm test             # utils + api/_lib.js ride validation (node:test)
+npm test             # unit tests: utils + api (node:test)
+npm run test:rules   # Firestore rules on the emulator (needs Java)
+npm run test:e2e     # Playwright E2E against dist/ (run build:web first)
 npm run build:web    # expo export --platform web -> dist/
 npm run deploy:rules # firestore rules + indexes + storage rules to ecobike-9dedd
 ```

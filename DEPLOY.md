@@ -11,6 +11,11 @@ One codebase, one database:
 Mobile apps call the same `/api` on Vercel (`EXPO_PUBLIC_API_URL` in
 `.env.production`), so web and mobile share points, codes and friends.
 
+## Every release
+
+The API (`api/`) and the rules/indexes change together with the app. After
+pulling new code, redeploy both, in this order.
+
 ## Order matters
 
 The new `firestore.rules` block clients from writing points, codes and

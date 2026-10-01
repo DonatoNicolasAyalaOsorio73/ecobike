@@ -39,3 +39,4 @@ yarn-error.*
 # playwright
 test-results/
 playwright-report/
+dist-native/
