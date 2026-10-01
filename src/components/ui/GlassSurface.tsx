@@ -47,8 +47,11 @@ export default function GlassSurface({
         { borderRadius: cornerRadius, overflow: "hidden", borderWidth: 1, borderColor: border },
         isWeb && ({
           backgroundColor: backgroundColor ?? colors.glassFill,
-          backdropFilter: `blur(${Math.round(intensity / 1.6)}px) saturate(180%)`,
-          WebkitBackdropFilter: `blur(${Math.round(intensity / 1.6)}px) saturate(180%)`,
+          backdropFilter: `blur(${Math.round(intensity / 1.4)}px) saturate(190%) brightness(1.04)`,
+          WebkitBackdropFilter: `blur(${Math.round(intensity / 1.4)}px) saturate(190%) brightness(1.04)`,
+          // Specular rim: a bright inner top edge and a faint bottom edge, the
+          // detail that makes iOS 26 glass read as a lens rather than a tint.
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.3)",
         } as ViewStyle),
         style,
       ]}

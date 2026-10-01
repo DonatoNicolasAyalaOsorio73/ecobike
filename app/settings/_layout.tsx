@@ -8,6 +8,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="delete-account" />
       <Stack.Screen name="admin" />
       <Stack.Screen name="help" />
+      <Stack.Screen name="maintenance" />
     </Stack>
   );
 }

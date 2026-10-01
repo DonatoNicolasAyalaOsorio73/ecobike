@@ -25,8 +25,8 @@ const lightColorTokens = {
   surface: "#FFFFFF",
   surfaceRaised: "#FFFFFF",
 
-  glassFill: "rgba(255,255,255,0.45)",
-  glassFillStrong: "rgba(255,255,255,0.68)",
+  glassFill: "rgba(255,255,255,0.38)",
+  glassFillStrong: "rgba(255,255,255,0.56)",
   glassBorder: "rgba(255,255,255,0.9)",
   glassBorderSoft: "rgba(255,255,255,0.55)",
   glassGreenFill: "rgba(173,241,75,0.28)",

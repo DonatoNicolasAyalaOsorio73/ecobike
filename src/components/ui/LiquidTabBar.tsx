@@ -10,8 +10,8 @@ import { useTheme } from "@/theme/useTheme";
 import { SPRING } from "@/theme/motion";
 import { elevation } from "@/theme/colors";
 
-const BAR_RADIUS = 34;
-const INSET = 6; // gap between capsule edge and the active pill (concentric corners)
+const BAR_RADIUS = 30;
+const INSET = 5; // gap between capsule edge and the active pill (concentric corners)
 
 /** Icon that lifts slightly when its tab becomes active — critically damped,
  * no wiggle: the moving pill already carries the "something changed" signal. */
@@ -23,7 +23,7 @@ function TabIcon({ name, focused, color }: { name: keyof typeof Ionicons.glyphMa
   const style = useAnimatedStyle(() => ({ transform: [{ translateY: -1.5 * lift.value }, { scale: 1 + 0.1 * lift.value }] }));
   return (
     <Animated.View style={style}>
-      <Ionicons name={name} size={22} color={color} />
+      <Ionicons name={name} size={21} color={color} />
     </Animated.View>
   );
 }
@@ -83,15 +83,15 @@ export default function LiquidTabBar({ state, descriptors, navigation }: TabBarP
       entering={FadeInDown.duration(420).springify().damping(18)}
       style={[styles.wrap, { bottom: Math.max(insets.bottom - 6, 12) }]}
     >
-      <View style={[styles.shadow, elevation("high")]}>
-        <GlassSurface intensity={70} radius={BAR_RADIUS} backgroundColor="rgba(255,255,255,0.62)" borderColor="rgba(255,255,255,0.95)">
+      <View style={[styles.shadow, elevation("mid")]}>
+        <GlassSurface intensity={85} radius={BAR_RADIUS} backgroundColor="rgba(255,255,255,0.42)" borderColor="rgba(255,255,255,0.8)">
           <View style={styles.row} role="tablist">
             <Animated.View pointerEvents="none" style={[styles.indicatorSlot, { width: `${100 / tabCount}%` }, indicatorStyle]}>
               <LinearGradient
-                colors={["rgba(255,255,255,0.95)", colors.primaryLight]}
+                colors={["rgba(173,241,75,0.62)", "rgba(173,241,75,0.38)"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
-                style={[styles.indicator, elevation("low")]}
+                style={styles.indicator}
               />
             </Animated.View>
             {state.routes.map((route, index) => {
@@ -120,7 +120,7 @@ export default function LiquidTabBar({ state, descriptors, navigation }: TabBarP
                   accessibilityLabel={label}
                 >
                   <TabIcon name={(isFocused ? ICONS_ACTIVE[route.name] : ICONS[route.name]) ?? "ellipse-outline"} focused={isFocused} color={tint} />
-                  <Text style={[styles.label, { color: tint, fontWeight: isFocused ? "800" : "600" }]} numberOfLines={1}>
+                  <Text style={[styles.label, { color: tint, fontWeight: isFocused ? "700" : "500" }]} numberOfLines={1}>
                     {label}
                   </Text>
                 </Pressable>
@@ -134,12 +134,12 @@ export default function LiquidTabBar({ state, descriptors, navigation }: TabBarP
 }
 
 const styles = StyleSheet.create({
-  wrap: { position: "absolute", left: 14, right: 14, pointerEvents: "box-none" },
+  wrap: { position: "absolute", left: 18, right: 18, pointerEvents: "box-none" },
   shadow: { borderRadius: BAR_RADIUS },
-  row: { flexDirection: "row", margin: INSET, height: 56 },
+  row: { flexDirection: "row", margin: INSET, height: 50 },
   indicatorSlot: { position: "absolute", top: 0, bottom: 0, left: 0, paddingHorizontal: 2 },
-  indicator: { flex: 1, borderRadius: BAR_RADIUS - INSET, borderWidth: 1, borderColor: "rgba(255,255,255,0.9)" },
+  indicator: { flex: 1, borderRadius: BAR_RADIUS - INSET, borderWidth: 1, borderColor: "rgba(255,255,255,0.7)" },
   item: { flex: 1, alignItems: "center", justifyContent: "center", gap: 2, borderRadius: BAR_RADIUS - INSET },
   focusRing: { outlineWidth: 2, outlineColor: "#ADF14B", outlineStyle: "solid", outlineOffset: -2 } as any,
-  label: { fontSize: 10.5, letterSpacing: -0.1 },
+  label: { fontSize: 10, letterSpacing: -0.1 },
 });

@@ -61,6 +61,8 @@ export interface UserSettings {
   weeklyReminder: boolean;
   /** First-run personalization finished (or skipped) on this device. */
   onboardingDone: boolean;
+  /** Bike maintenance: part id -> lifetime km when it was last serviced. */
+  maintenance: Record<string, number>;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -75,6 +77,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   gpsAccuracy: "high",
   weeklyReminder: false,
   onboardingDone: false,
+  maintenance: {},
 };
 
 /** Account-level preferences stored on the server (usuarios/{uid}), shared by all devices. */

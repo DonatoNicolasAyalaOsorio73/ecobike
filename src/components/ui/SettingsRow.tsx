@@ -9,7 +9,7 @@ import { accents, type AccentName } from "@/theme/colors";
 
 // iOS Settings-style colored squircles: the color follows the icon's meaning.
 const ICON_COLOR: [RegExp, AccentName][] = [
-  [/notif|chatbubble|mail/, "red"],
+  [/notif|chatbubble|mail/, "lime"],
   [/flag|flame|trophy|ribbon|star/, "orange"],
   [/speedometer|navigate|location|map|compass/, "blue"],
   [/finger|key|lock|shield|phone-portrait/, "purple"],
@@ -27,7 +27,7 @@ function IconBadge({ icon, danger }: { icon: keyof typeof Ionicons.glyphMap; dan
   const a = accents[danger ? "red" : iconAccent(String(icon))];
   return (
     <View style={[styles.badge, { backgroundColor: a.base }]}>
-      <Ionicons name={icon} size={16} color="#FFFFFF" />
+      <Ionicons name={icon} size={16} color={danger ? "#FFFFFF" : a.lip} />
     </View>
   );
 }

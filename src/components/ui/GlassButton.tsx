@@ -1,5 +1,5 @@
 import React from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
@@ -22,10 +22,13 @@ interface Props {
 // Same props as before, so every button in the app picks up the new feel.
 const PALETTE = {
   primary: { fill: ["#B9F45F", "#9EE23C"] as const, border: "rgba(255,255,255,0.55)", text: "#15240A" },
-  secondary: { fill: ["rgba(255,255,255,0.92)", "rgba(255,255,255,0.78)"] as const, border: "rgba(20,40,25,0.08)", text: "#1C2420" },
+  secondary: { fill: ["rgba(255,255,255,0.62)", "rgba(255,255,255,0.42)"] as const, border: "rgba(255,255,255,0.85)", text: "#1C2420" },
   danger: { fill: ["#FFFFFF", "#FFF6F6"] as const, border: "rgba(229,72,77,0.25)", text: "#D93036" },
   disabled: { fill: ["#EEF1EC", "#EEF1EC"] as const, border: "transparent", text: "#A2ACA4" },
 } as const;
+
+// Real backdrop blur for the glass variants on web (native gets it from the translucent fill over BlurView-backed screens).
+const WEB_GLASS = Platform.OS === "web" ? ({ backdropFilter: "blur(18px) saturate(180%)", WebkitBackdropFilter: "blur(18px) saturate(180%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" } as object) : null;
 
 export default function GlassButton({ label, icon, onPress, variant = "primary", disabled = false, loading = false, style }: Props) {
   const p = disabled ? PALETTE.disabled : PALETTE[variant];
@@ -46,7 +49,7 @@ export default function GlassButton({ label, icon, onPress, variant = "primary",
           }}
           onPressOut={() => (press.value = withSpring(0, SPRING.default))}
           onPress={onPress}
-          style={({ hovered }: any) => [styles.face, { borderColor: p.border, opacity: hovered ? 0.94 : 1 }]}
+          style={({ hovered }: any) => [styles.face, variant !== "primary" && WEB_GLASS, { borderColor: p.border, opacity: hovered ? 0.94 : 1 }]}
         >
           <LinearGradient colors={p.fill} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFill} />
           {variant === "primary" && !disabled && (
@@ -70,8 +73,8 @@ export default function GlassButton({ label, icon, onPress, variant = "primary",
 
 const styles = StyleSheet.create({
   shadow: { borderRadius: 999 },
-  face: { borderRadius: 999, borderWidth: 1, minHeight: 52, paddingHorizontal: 20, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  face: { borderRadius: 999, borderWidth: 1, minHeight: 48, paddingHorizontal: 20, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   sheen: { position: "absolute", top: 0, left: 0, right: 0, height: "55%" },
   row: { flexDirection: "row", alignItems: "center", gap: 8 },
-  label: { fontSize: 16.5, fontWeight: "600", letterSpacing: -0.2 },
+  label: { fontSize: 16, fontWeight: "600", letterSpacing: -0.2 },
 });

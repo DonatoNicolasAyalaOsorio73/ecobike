@@ -159,6 +159,13 @@ export default function SettingsScreen() {
                 { label: "Ahorro de batería", value: "balanced" },
               ]}
             />
+            <Divider />
+            <SettingsNavRow
+              icon="construct-outline"
+              label="Mantenimiento de la bici"
+              sublabel="Cadena, llantas, frenos y más"
+              onPress={() => router.push("/settings/maintenance")}
+            />
           </GlassCard>
 
           <SectionLabel text="Notificaciones" />
