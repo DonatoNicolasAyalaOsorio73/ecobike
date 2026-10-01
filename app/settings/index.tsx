@@ -135,6 +135,12 @@ export default function SettingsScreen() {
             <SettingsNavRow icon="people-circle-outline" label="Amigos y solicitudes" onPress={() => router.push("/(tabs)/friends")} />
             {profile && (
               <>
+                {profile.role === "admin" && (
+                  <>
+                    <Divider />
+                    <SettingsNavRow icon="storefront-outline" label="Administrar tiendas" onPress={() => router.push("/settings/admin")} />
+                  </>
+                )}
                 <Divider />
                 <SettingsNavRow icon="log-out-outline" label="Cerrar sesión" onPress={signOut} />
                 <Divider />

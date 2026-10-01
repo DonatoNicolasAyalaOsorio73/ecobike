@@ -1,5 +1,6 @@
-import { collection, doc, getDoc, getDocs, limit, orderBy, query, setDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { getDb, isFirebaseConfigured } from "./firebase";
+import { api } from "./api";
 import { getRide, listRides, markSynced, unsyncedRides } from "./db";
 import type { Ride } from "@/types/ride";
 
@@ -12,37 +13,44 @@ import type { Ride } from "@/types/ride";
  */
 export async function queueRideForSync(ride: Ride) {
   if (!isFirebaseConfigured) return;
-  // Real `usuarios/{uid}/rides` subcollection (see firestore.rules) — the
-  // earlier `users/{uid}/rides` target was the unimplemented aspirational
-  // schema and could never write successfully under the deployed rules.
-  await setDoc(doc(getDb(), "usuarios", ride.userId, "rides", ride.id), {
-    userId: ride.userId,
-    startedAt: ride.startedAt,
-    endedAt: ride.endedAt,
-    distanceMeters: ride.distanceMeters,
-    durationSeconds: ride.durationSeconds,
-    avgSpeedKmh: ride.avgSpeedKmh,
-    maxSpeedKmh: ride.maxSpeedKmh,
-    elevationGainMeters: ride.elevationGainMeters,
-    caloriesKcal: ride.caloriesKcal,
-    pointsEarned: ride.pointsEarned,
-    // Full GPS polyline stays local-only for now to keep Firestore docs small
-    // and avoid shipping precise routes to the cloud without an explicit
-    // "share route" opt-in (see rule 21, privacy).
-  });
+  // The server (api/rides.js) validates the ride, computes the points and
+  // writes `usuarios/{uid}/rides/{id}` + `puntosAcumulados` atomically.
+  // Clients can no longer write either (firestore.rules). Idempotent by id,
+  // so retries never double-award.
+  try {
+    await api("rides", "POST", {
+      id: ride.id,
+      startedAt: ride.startedAt,
+      endedAt: ride.endedAt,
+      distanceMeters: ride.distanceMeters,
+      durationSeconds: ride.durationSeconds,
+      avgSpeedKmh: ride.avgSpeedKmh,
+      maxSpeedKmh: ride.maxSpeedKmh,
+      elevationGainMeters: ride.elevationGainMeters,
+      caloriesKcal: ride.caloriesKcal,
+      // Full GPS polyline stays local-only (privacy, small docs).
+    });
+  } catch (e: any) {
+    // 4xx = the server rejected this ride for good (implausible data);
+    // stop retrying it. Network/5xx errors stay unsynced and retry later.
+    if (!(e?.status >= 400 && e?.status < 500 && e?.status !== 401)) throw e;
+  }
   markSynced(ride.id);
 }
 
-export async function syncPendingRides(userId: string) {
-  if (!isFirebaseConfigured) return;
-  const pending = unsyncedRides(userId);
-  for (const ride of pending) {
+/** Returns how many rides were synced, so callers know whether to refresh the balance. */
+export async function syncPendingRides(userId: string): Promise<number> {
+  if (!isFirebaseConfigured) return 0;
+  let synced = 0;
+  for (const ride of unsyncedRides(userId)) {
     try {
       await queueRideForSync(ride);
+      synced++;
     } catch {
       // leave it unsynced, retry next time syncPendingRides runs
     }
   }
+  return synced;
 }
 
 export function getLocalRides(userId: string) {

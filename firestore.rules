@@ -1,227 +1,81 @@
 rules_version = '2';
+
+// EcoBike — one Firestore (ecobike-9dedd) shared by web, iOS and Android.
+//
+// Anything with value (points, redemption codes, ride records, friendships,
+// roles) is written ONLY by the server functions in /api (Firebase Admin
+// SDK, which bypasses these rules). Clients can read their own data and edit
+// harmless profile fields; everything else is denied.
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ─── helpers ────────────────────────────────────────────────────────────────
-    function isAuth() {
-      return request.auth != null;
+    function isAuth() { return request.auth != null; }
+    function isOwner(uid) { return isAuth() && request.auth.uid == uid; }
+
+    // Fields only the server may change on usuarios/{uid}.
+    function serverOnlyUserFields() {
+      return ['puntosAcumulados', 'role', 'isAdmin', 'amigos', 'solicitudesPendientes', 'cuentaActiva'];
     }
 
-    function isOwner(uid) {
-      return isAuth() && request.auth.uid == uid;
+    function changes() {
+      return request.resource.data.diff(resource.data).affectedKeys();
     }
 
-    // Reads the caller's role — costs 1 read, cached within the same request
-    function callerDoc() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    function publicFields() {
+      return ['username', 'nombre', 'apellido', 'profileImageUrl', 'puntosAcumulados', 'amigos'];
     }
 
-    function isAdmin() {
-      return isAuth() && callerDoc().role == 'admin';
-    }
-
-    function isPartnerOrAdmin() {
-      return isAuth() && callerDoc().role in ['admin', 'partner'];
-    }
-
-    // Campos que NUNCA puede modificar el cliente directamente.
-    // Solo Cloud Functions con Admin SDK pueden tocarlos.
-    function protectedFields() {
-      return ['points', 'totalPoints', 'streak', 'lastActivityDate',
-              'badges', 'role', 'isActive', 'totalRoutes'];
-    }
-
-    function noProtectedFieldsChanged() {
-      return !request.resource.data.diff(resource.data)
-                .affectedKeys()
-                .hasAny(protectedFields());
-    }
-
-    // Valida que un campo sea string no vacio
-    function nonEmpty(field) {
-      return request.resource.data[field] is string
-          && request.resource.data[field].size() > 0;
-    }
-
-    // ─── /users/{uid} ───────────────────────────────────────────────────────────
-    // Modelo:
-    //   email: string
-    //   displayName: string
-    //   city: string
-    //   birthDate: string (YYYY-MM-DD, opcional)
-    //   ageGroup: 'adult' | 'minor' | null
-    //   points: number             ← solo Cloud Functions
-    //   totalPoints: number        ← solo Cloud Functions
-    //   totalRoutes: number        ← solo Cloud Functions
-    //   streak: number             ← solo Cloud Functions
-    //   lastActivityDate: string   ← solo Cloud Functions
-    //   badges: string[]           ← solo Cloud Functions
-    //   role: 'user'|'admin'|'partner'  ← solo Cloud Functions
-    //   isActive: bool             ← solo Cloud Functions
-    //   pushToken: string | null
-    //   createdAt: Timestamp
-    //   updatedAt: Timestamp
-    // NOTA: esta coleccion (`/users`) es el esquema NUEVO planeado, respaldado
-    // por Cloud Functions que todavia no existen en este proyecto (verificado:
-    // Cloud Functions API nunca se ha habilitado en ecobike-9dedd). La app en
-    // produccion real usa `/usuarios` (ver mas abajo) — no migrar clientes a
-    // `/users` hasta que ese backend exista de verdad.
-    match /users/{uid} {
-      allow read: if isOwner(uid) || isAdmin();
-
-      allow create: if isOwner(uid)
-        && nonEmpty('email')
-        && nonEmpty('city')
-        && request.resource.data.points == 0
-        && request.resource.data.totalPoints == 0
-        && request.resource.data.totalRoutes == 0
-        && request.resource.data.streak == 0
-        && request.resource.data.badges is list
-        && request.resource.data.badges.size() == 0
-        && request.resource.data.role == 'user'
-        && request.resource.data.isActive == true;
-
-      // El usuario puede editar displayName, city, birthDate, pushToken — nada mas
-      allow update: if isOwner(uid) && noProtectedFieldsChanged();
-
-      // Baja logica: solo admin via Cloud Function puede desactivar
-      allow delete: if false;
-    }
-
-    // ─── /routes/{routeId} ──────────────────────────────────────────────────────
-    match /routes/{routeId} {
-      allow read: if isAuth()
-        && (resource.data.userId == request.auth.uid || isAdmin());
-
-      // Solo Admin SDK (Cloud Functions) escribe rutas — integridad garantizada
-      allow write: if false;
-    }
-
-    // ─── /tiendas/{storeId} (catalogo REAL en produccion) ───────────────────────
-    // Modelo real (documentos existentes, creados antes de este `isActive`):
-    //   name: string
-    //   description: string
-    //   logo: string (URL de Storage)
-    //   pointsRequired: string  (si, string — dato legado, no numero)
-    // Modelo nuevo (aspiracional, no migrado): agrega address/city/location/
-    // category/logoUrl/isActive/partnerUid — mismo caso que /users arriba.
-    //
-    // FIX: los documentos reales no tienen `isActive`, asi que la condicion
-    // original (`resource.data.isActive == true`) los denegaba SIEMPRE para
-    // cualquier usuario no-admin — el catalogo de recompensas era ilegible en
-    // produccion. Tratamos "isActive ausente" como activo (compatible con los
-    // datos legados) y solo lo tratamos como inactivo si es EXPLICITAMENTE
-    // false, sin abrir nada que no estuviera ya destinado a ser publico.
-    match /tiendas/{storeId} {
-      allow read: if isAuth() && resource.data.get('isActive', true) != false;
-
-      allow create: if isAdmin() && nonEmpty('name') && nonEmpty('city');
-      allow update: if isAdmin();
-      allow delete: if false; // baja logica: isActive = false
-    }
-
-    // ─── /rewards/{rewardId} ────────────────────────────────────────────────────
-    match /rewards/{rewardId} {
-      allow read: if isAuth()
-        && (resource == null || resource.data.isActive == true || isAdmin());
-
-      allow create: if isAdmin()
-        && nonEmpty('title')
-        && request.resource.data.pointsCost is int
-        && request.resource.data.pointsCost > 0;
-
-      allow update: if isAdmin();
-      allow delete: if false;
-    }
-
-    // ─── /redemptions/{redemptionId} ────────────────────────────────────────────
-    match /redemptions/{redemptionId} {
-      allow read: if isAuth() && (
-        resource.data.userId == request.auth.uid
-        || isPartnerOrAdmin()
-      );
-
-      // Solo Admin SDK escribe — garantiza atomicidad con deduccion de puntos
-      allow write: if false;
-    }
-
-    // ─── /badges/{badgeId} ──────────────────────────────────────────────────────
-    match /badges/{badgeId} {
-      allow read: if isAuth();
-      allow write: if isAdmin();
-    }
-
-    // ─── /nps/{npsId} ───────────────────────────────────────────────────────────
-    match /nps/{npsId} {
-      allow create: if isAuth()
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.score is int
-        && request.resource.data.score >= 1
-        && request.resource.data.score <= 10;
-
-      allow read, update, delete: if isAdmin();
-    }
-
-    // ─── /usuarios/{uid} (LEGACY — el perfil real que usa la app en produccion) ──
-    // Mantener mientras profile.tsx y rewards.tsx (mobile y web) lean de esta
-    // coleccion. Solo el dueno puede leer/editar su propio documento — esto
-    // es intencional (email, identificacion, fechaNacimiento viven aqui), NO
-    // es un bug. Busqueda de usuarios / leaderboard de amigos usan el espejo
-    // publico `usuarios_public` de abajo en vez de abrir este documento.
+    // ─── /usuarios/{uid} — private profile (email, fechaNacimiento, ...) ───
     match /usuarios/{uid} {
       allow read: if isOwner(uid);
-      allow create: if isOwner(uid);
-      allow update: if isOwner(uid);
-      allow delete: if false;
 
-      // FIX: esta subcoleccion tiene datos reales (codigos de canje ya
-      // emitidos) pero no tenia ninguna regla — caia en el deny-all final,
-      // asi que ni mobile ni web podian leerla ni crear codigos nuevos.
+      // Sign-up (auth.service.ts createUserProfileDoc) starts from zero.
+      allow create: if isOwner(uid)
+        && request.resource.data.get('puntosAcumulados', 0) == 0
+        && request.resource.data.get('role', 'user') == 'user'
+        && request.resource.data.get('isAdmin', false) == false
+        && request.resource.data.get('amigos', []).size() == 0
+        && request.resource.data.get('solicitudesPendientes', []).size() == 0;
+
+      allow update: if isOwner(uid) && !changes().hasAny(serverOnlyUserFields());
+      allow delete: if false; // api/account.js
+
+      // Redemption codes — created by api/redeem.js.
       match /codigos_canjeados/{codeId} {
         allow read: if isOwner(uid);
-        allow create: if isOwner(uid) && request.resource.data.userId == uid;
-        allow update, delete: if false;
+        allow write: if false;
       }
 
-      // FIX: rides.service.ts intentaba respaldar el resumen de cada
-      // recorrido en `users/{uid}/rides` (el esquema NUEVO, aspiracional,
-      // sin datos reales) — esa escritura caia siempre en el deny-all, sin
-      // importar la conexion de red. Backup real de resumenes de recorrido
-      // (nunca la polilinea GPS completa) vive aqui en cambio, mismo dueno.
+      // Ride summaries — created by api/rides.js together with the points.
       match /rides/{rideId} {
         allow read: if isOwner(uid);
-        allow create: if isOwner(uid) && request.resource.data.userId == uid;
-        allow update, delete: if false;
+        allow write: if false;
       }
     }
 
-    // ─── /usuarios_public/{uid} (NUEVO — espejo publico minimo) ─────────────────
-    // Solo campos no sensibles (username, nombre, apellido, foto, puntos,
-    // amigos) para que buscar usuarios y comparar progreso con amigos
-    // funcione sin exponer email/identificacion/fechaNacimiento de nadie.
-    // Escrito por el dueno junto con su `usuarios/{uid}` (ver
-    // auth.service.ts) — nunca contiene mas que estos campos.
+    // ─── /usuarios_public/{uid} — minimal public mirror for search/leaderboard ───
+    // Owner may keep name/photo in sync; points and friends come from the server.
     match /usuarios_public/{uid} {
       allow read: if isAuth();
-      allow create, update: if isOwner(uid) &&
-        request.resource.data.keys().hasOnly(['username', 'nombre', 'apellido', 'profileImageUrl', 'puntosAcumulados', 'amigos']);
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(publicFields())
+        && request.resource.data.get('puntosAcumulados', 0) == 0
+        && request.resource.data.get('amigos', []).size() == 0;
+      allow update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(publicFields())
+        && !changes().hasAny(['puntosAcumulados', 'amigos']);
       allow delete: if false;
     }
 
-    // ─── /canjes/{canjeId} (legacy — historial de canjes, coleccion alterna) ────
-    match /canjes/{canjeId} {
-      allow read: if isAuth() && resource.data.userId == request.auth.uid;
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
-      allow update: if false;
-      allow delete: if false;
+    // ─── /tiendas/{storeId} — rewards catalog. Admin edits via api/stores.js ───
+    // Not sensitive; inactive stores (isActive == false) are filtered client-side
+    // because rules can't filter an unconstrained list query.
+    match /tiendas/{storeId} {
+      allow read: if isAuth();
+      allow write: if false;
     }
 
-    // ─── deny-all catch-all ──────────────────────────────────────────────────────
-    // NOTA: challenges/, chats/, streakChallenges/ tienen datos reales en
-    // produccion pero NINGUNA regla explicita — hoy caen aqui y estan
-    // completamente bloqueadas para cualquier cliente. No las tocamos en este
-    // cambio (esta app no implementa esas pantallas todavia); si se
-    // implementan, necesitan sus propias reglas antes de funcionar.
+    // Everything else (including legacy canjes/, challenges/, chats/) is closed.
     match /{document=**} {
       allow read, write: if false;
     }

@@ -13,10 +13,9 @@ include anything that grants access on its own:
   embedded in every app that uses them); the corresponding **client
   secrets** are never used by this app (native/PKCE flows don't need them)
   and must never be added here.
-- A Firebase **service account key** / Admin SDK credential is a real
-  secret. This app never needs one — it only uses the client SDK. If a
-  Cloud Function or admin script is added later, that key belongs in that
-  service's own environment, never in this repo.
+- The Firebase **service account key** is the only real secret. It lives
+  ONLY in the Vercel env var `FIREBASE_SERVICE_ACCOUNT_KEY` and is used by
+  the server functions in [`api/`](api). Never in `.env*`, never in git.
 
 ## Authentication
 
@@ -34,46 +33,36 @@ include anything that grants access on its own:
 
 ## Data model & authorization
 
-The real, deployed project (`ecobike-9dedd`) has **never had Cloud
-Functions enabled** (confirmed via `firebase functions:list`), so anything
-in `firestore.rules` marked "solo Cloud Functions" (`/users`, `/routes`,
-`/rewards`, `/redemptions`, `/badges`) is an aspirational schema this app
-does not write to. The schema this app actually reads/writes is the legacy
-one already live in production:
+One Firestore (`ecobike-9dedd`) serves web, iOS and Android. The project
+has no Cloud Functions (Spark plan), so privileged logic runs as Vercel
+serverless functions in [`api/`](api) with the Firebase Admin SDK:
 
-- `usuarios/{uid}` — the real user profile (email, nombre, apellido,
-  identificación, fechaNacimiento, amigos, puntosAcumulados, role, ...).
-  **Owner-read-only** by design, because it holds those sensitive fields —
-  this is not a bug, see below.
-- `usuarios/{uid}/codigos_canjeados/{codeId}` — reward redemption codes.
-  Owner can read/create; never update/delete client-side.
-- `usuarios_public/{uid}` — a minimal public mirror of `usuarios/{uid}`
-  (`username`, `nombre`, `apellido`, `profileImageUrl`, `puntosAcumulados`,
-  `amigos` — nothing else, enforced by the rule's `hasOnly([...])`). Added
-  because there's no Cloud Function to broker cross-user reads: friend
-  search (`social.service.ts`) and the friends leaderboard
-  (`rides.service.ts`) read this instead of `usuarios/{uid}` directly. Kept
-  in sync by the owner's own client on profile edits, ride-point gains, and
-  friend list changes (`auth.service.ts`'s `syncPublicMirror`).
-- `tiendas/{storeId}` — the real rewards catalog. Fixed in this pass: the
-  rule used to require `isActive == true`, but the live documents predate
-  that field, so the catalog was unreadable for every non-admin user. It
-  now treats a missing `isActive` as active (`resource.data.get('isActive',
-  true) != false`).
-- `canjes/{canjeId}` — a second, older redemption-history collection; owner
-  read/create only.
+| Endpoint | What it does |
+|---|---|
+| `POST /api/rides` | Validates a ride summary (speed <= 45 km/h, <= 200 km, <= 30 days old, max 20 rewarded rides/24h), computes points server-side, writes `usuarios/{uid}/rides/{id}` and `puntosAcumulados` in one transaction. Idempotent by ride id. |
+| `POST /api/redeem` | Reads the price from `tiendas/{id}`, checks and deducts the balance, writes `codigos_canjeados`. |
+| `POST /api/friends` | request / accept / reject / remove, writing both users atomically. |
+| `GET/POST/PUT /api/stores` | Rewards catalog admin. Requires `role == "admin"` or legacy `isAdmin == true` on `usuarios/{uid}`, or an `admin` custom claim. |
+| `DELETE /api/account` | Deletes Firestore data, public mirror, avatars, friend links and the Auth user. |
 
-**Known gap:** friend requests are one-directional under the real rules —
-`sendFriendRequest` writes to the *recipient's* `solicitudesPendientes`,
-which a plain client can't do under `allow update: if isOwner(uid)`. This
-needs a Cloud Function (or a rule change accepting a narrower, validated
-cross-user write) to actually deliver a request; today it will surface as
-"Esta función social necesita permisos adicionales..." until that exists.
-Likewise, per-friend ride history/distance isn't in the real schema at all,
-so the leaderboard only ranks by the real `puntosAcumulados` balance, not
-distance.
+Every call sends the user Firebase ID token (`Authorization: Bearer`),
+verified server-side.
 
-Deploy rules with `firebase deploy --only firestore:rules,storage`.
+[`firestore.rules`](firestore.rules) make the client unable to change
+anything of value:
+
+- `usuarios/{uid}`: owner read; owner may edit profile fields but never
+  `puntosAcumulados`, `role`, `isAdmin`, `amigos`,
+  `solicitudesPendientes`, `cuentaActiva`. Sign-up must start at 0 points.
+- `usuarios/{uid}/rides`, `codigos_canjeados`: owner read, server write only.
+- `usuarios_public/{uid}`: readable by signed-in users (search, leaderboard);
+  owner may sync name/photo, points and friends come from the server.
+- `tiendas`: readable by signed-in users, server write only.
+- Everything else is denied.
+
+Known ceiling: ride points are checked for plausibility, not re-measured
+from GPS (the polyline stays on the device for privacy). If cheating shows
+up, upload the polyline and re-measure it in `api/rides.js`.
 
 ## Local storage
 
@@ -82,11 +71,8 @@ Deploy rules with `firebase deploy --only firestore:rules,storage`.
   id (`useCurrentUserId`), never anything identifying.
 - Settings (`useSettingsStore`) persist via `expo-secure-store` on
   native and `localStorage` on web.
-- "Eliminar cuenta" (`app/settings/delete-account.tsx`) wipes local ride/
-  achievement data for that user **and** calls Firebase's `deleteUser`. If
-  Firebase requires a recent login (its own replay-attack protection), the
-  screen surfaces that and asks the person to re-authenticate rather than
-  silently failing.
+- "Eliminar cuenta" calls `DELETE /api/account` (server deletes all cloud
+  data and the Auth user), then wipes local data for that user.
 
 ## Location & privacy
 
@@ -100,13 +86,8 @@ Deploy rules with `firebase deploy --only firestore:rules,storage`.
   uninterrupted tracking while the phone is locked, but is requested through
   the standard OS prompts, never silently escalated from foreground access.
 
-## Things a real production rollout still needs
+## Still recommended before scaling
 
-- A security review of `firestore.rules` against your actual final data
-  model once social features grow beyond what's here.
-- Rate limiting / abuse protection on friend requests and username search
-  (Firestore rules alone don't prevent enumeration at scale — consider App
-  Check).
-- An actual privacy policy + account-deletion confirmation email if you
-  ship this to real users, which is a legal/product requirement this repo
-  doesn't attempt to satisfy on its own.
+- Firebase App Check (blocks API abuse from non-app clients).
+- Rate limiting on `/api/friends` and username search.
+- A published privacy policy URL (required by both stores).

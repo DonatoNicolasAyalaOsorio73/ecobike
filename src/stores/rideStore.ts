@@ -6,7 +6,7 @@ import { pointsForRide, computeStreakDays, evaluateAchievements } from "@/utils/
 import type { AchievementDef, RiderStats } from "@/types/achievement";
 import * as db from "@/services/db";
 import { queueRideForSync } from "@/services/rides.service";
-import { addPointsToProfile } from "@/services/auth.service";
+import { useAuthStore } from "@/stores/authStore";
 import { isFirebaseConfigured } from "@/services/firebase";
 
 interface RideState {
@@ -155,18 +155,16 @@ export const useRideStore = create<RideState>((set, get) => ({
     const newlyUnlocked = evaluateAchievements(stats, alreadyUnlocked);
     newlyUnlocked.forEach((a) => db.unlockAchievement(ride.userId, a.code));
 
-    // Real accounts (not a local guest id) get their points written to the
-    // same `puntosAcumulados` field the mobile app reads — a ride tracked
-    // on web shows up in the mobile app's balance, and vice versa. Guests
-    // have no Firebase Auth session, so `usuarios/{uid}` writes would always
-    // be permission-denied for them anyway — skip the pointless round trip.
+    // Real accounts: the server awards the points on sync (api/rides.js) to
+    // the shared `puntosAcumulados`, so web and mobile see the same balance.
+    // Guests have no account — their points stay local.
     if (isFirebaseConfigured && !ride.userId.startsWith("guest_")) {
-      queueRideForSync(finished).catch(() => {
-        // Sync is best-effort; the ride is already safe on-device (rule:
-        // never lose a completed ride because the network isn't available).
-        // A reconnect listener (app/_layout.tsx) retries unsynced rides.
-      });
-      addPointsToProfile(ride.userId, finished.pointsEarned).catch(() => {});
+      queueRideForSync(finished)
+        .then(() => useAuthStore.getState().refreshProfile())
+        .catch(() => {
+          // Ride is already safe on-device; the reconnect listener
+          // (app/_layout.tsx) retries unsynced rides.
+        });
     }
 
     set({ status: "COMPLETED", ride: finished, justUnlocked: newlyUnlocked });

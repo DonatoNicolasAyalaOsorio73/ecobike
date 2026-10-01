@@ -1,6 +1,6 @@
-import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, limit, query, updateDoc, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, limit, query, where } from "firebase/firestore";
 import { getDb, isFirebaseConfigured } from "./firebase";
-import { syncPublicMirror } from "./auth.service";
+import { api } from "./api";
 import type { UserProfile } from "@/types/user";
 
 // Real, live collection — see types/user.ts and auth.service.ts for the
@@ -63,47 +63,27 @@ export async function searchUserByUsername(username: string): Promise<UserProfil
   });
 }
 
+// Friendship writes touch two users, so they go through the server
+// (api/friends.js); firestore.rules block clients from editing amigos /
+// solicitudesPendientes directly.
 export async function sendFriendRequest(_fromUid: string, toUid: string) {
   requireFirebase();
-  return tryOrExplain(async () => {
-    // Only the recipient can normally write their own doc, so a request has
-    // to land as a self-write the recipient's client makes after seeing it
-    // through some out-of-band channel (e.g. a Cloud Function) — a plain
-    // client can't append to *another* user's `solicitudesPendientes` under
-    // the real rules. Attempting the direct write anyway surfaces that
-    // clearly rather than pretending this works.
-    await updateDoc(doc(getDb(), USERS_COLLECTION, toUid), {
-      solicitudesPendientes: arrayUnion(_fromUid),
-    });
-  });
+  return api<{ status: string }>("friends", "POST", { action: "request", uid: toUid });
 }
 
-export async function acceptFriendRequest(uid: string, requesterUid: string) {
+export async function acceptFriendRequest(_uid: string, requesterUid: string) {
   requireFirebase();
-  return tryOrExplain(async () => {
-    const db = getDb();
-    await updateDoc(doc(db, USERS_COLLECTION, uid), {
-      amigos: arrayUnion(requesterUid),
-      solicitudesPendientes: arrayRemove(requesterUid),
-    });
-    // Mutual linking on the OTHER user's doc requires write access this
-    // client doesn't have under `allow update: if isOwner(uid)` — that side
-    // needs a Cloud Function with Admin privileges (not deployed on this
-    // project yet; see ENVIRONMENT.md). The accepting user's own side above
-    // still succeeds and is what makes "amigos" show up for them.
-    const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
-    await syncPublicMirror(uid, { amigos: (snap.data()?.amigos as string[] | undefined) ?? [] });
-  });
+  await api("friends", "POST", { action: "accept", uid: requesterUid });
 }
 
-export async function removeFriend(uid: string, friendUid: string) {
+export async function rejectFriendRequest(_uid: string, requesterUid: string) {
   requireFirebase();
-  return tryOrExplain(async () => {
-    const db = getDb();
-    await updateDoc(doc(db, USERS_COLLECTION, uid), { amigos: arrayRemove(friendUid) });
-    const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
-    await syncPublicMirror(uid, { amigos: (snap.data()?.amigos as string[] | undefined) ?? [] });
-  });
+  await api("friends", "POST", { action: "reject", uid: requesterUid });
+}
+
+export async function removeFriend(_uid: string, friendUid: string) {
+  requireFirebase();
+  await api("friends", "POST", { action: "remove", uid: friendUid });
 }
 
 export async function listFriendUids(uid: string): Promise<string[]> {

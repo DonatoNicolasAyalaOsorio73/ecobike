@@ -56,6 +56,10 @@ src/
   types/, utils/          domain types, geo math, gamification rules
 ```
 
+Server functions (points, redemptions, friends, admin, account deletion)
+live in `api/` and run on Vercel next to the web app; mobile calls the same
+endpoints. See [DEPLOY.md](DEPLOY.md) to ship web, API, rules and the stores.
+
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the reasoning behind these choices,
 [SECURITY.md](SECURITY.md) for the security/privacy model, and
 [DEVELOPMENT.md](DEVELOPMENT.md) for day-to-day scripts and testing on each
@@ -69,5 +73,7 @@ npm run ios          # expo start --ios
 npm run android      # expo start --android
 npm run web          # expo start --web
 npm run typecheck    # tsc --noEmit
-npm test             # runs geo.ts / gamification.ts self-checks (node:test)
+npm test             # utils + api/_lib.js ride validation (node:test)
+npm run build:web    # expo export --platform web -> dist/
+npm run deploy:rules # firestore + storage rules to ecobike-9dedd
 ```

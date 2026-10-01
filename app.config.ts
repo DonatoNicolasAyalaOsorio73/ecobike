@@ -8,7 +8,9 @@ const googleMapsAndroidApiKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY;
 
 const config: ExpoConfig = {
   name: "EcoBike",
-  slug: "ecobike-app",
+  // Existing EAS project @justdona/EcoBike (keeps the stored Android keystore).
+  slug: "EcoBike",
+  owner: "justdona",
   version: "2.0.0",
   scheme: "ecobike",
   orientation: "portrait",
@@ -20,7 +22,7 @@ const config: ExpoConfig = {
   assetBundlePatterns: ["**/*"],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: "com.ecobike.app",
+    bundleIdentifier: "com.justdona.EcoBike",
     config: {
       usesNonExemptEncryption: false,
     },
@@ -35,7 +37,7 @@ const config: ExpoConfig = {
     },
   },
   android: {
-    package: "com.ecobike.app",
+    package: "com.justdona.EcoBike",
     adaptiveIcon: {
       backgroundColor: "#F6FBF3",
       foregroundImage: "./assets/adaptive-icon.png",
@@ -116,6 +118,7 @@ const config: ExpoConfig = {
   },
   extra: {
     router: {},
+    eas: { projectId: "5ff23fdc-9237-4044-9dca-962f9aa11970" },
   },
 };
 

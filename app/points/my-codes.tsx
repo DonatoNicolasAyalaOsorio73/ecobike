@@ -9,13 +9,14 @@ import BackButton from "@/components/ui/BackButton";
 import GlassCard from "@/components/ui/GlassCard";
 import { useTheme } from "@/theme/useTheme";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
-import { getLocalRedemptions } from "@/services/rewards.service";
-import type { Redemption } from "@/types/reward";
+import { useRewards } from "@/hooks/useRewards";
+import { useAvailablePoints } from "@/hooks/useAvailablePoints";
 
 export default function MyCodesScreen() {
   const { colors } = useTheme();
   const userId = useCurrentUserId();
-  const redemptions: Redemption[] = userId ? getLocalRedemptions(userId) : [];
+  const { isRealAccount } = useAvailablePoints(userId);
+  const { redemptions } = useRewards(userId, isRealAccount);
 
   return (
     <View style={styles.screen}>

@@ -53,7 +53,9 @@ export default function RootLayout() {
       // because we were wrong about connectivity costs nothing (it stays
       // flagged unsynced), but never retrying does.
       if (uid && state.isConnected !== false) {
-        syncPendingRides(uid).catch(() => {});
+        syncPendingRides(uid)
+          .then((n) => (n > 0 ? useAuthStore.getState().refreshProfile() : undefined))
+          .catch(() => {});
       }
     });
   }, []);

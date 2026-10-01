@@ -1,6 +1,7 @@
-import { collection, doc, getDocs, increment, runTransaction, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import * as Crypto from "expo-crypto";
 import { getDb, isFirebaseConfigured } from "./firebase";
+import { api } from "./api";
 import { listRedemptions as listLocalRedemptions, saveRedemption as saveLocalRedemption } from "./db";
 import { mapStoreDoc } from "@/utils/rewardsMapping";
 import { DEFAULT_REWARDS, type Redemption, type Reward } from "@/types/reward";
@@ -24,8 +25,9 @@ export async function fetchRewardsCatalog(): Promise<{ rewards: Reward[]; usingR
   if (!isFirebaseConfigured) return { rewards: DEFAULT_REWARDS, usingRealCatalog: false };
   try {
     const snap = await getDocs(collection(getDb(), STORES_COLLECTION));
-    if (snap.empty) return { rewards: DEFAULT_REWARDS, usingRealCatalog: false };
-    return { rewards: snap.docs.map((d) => mapStoreDoc(d.id, d.data())), usingRealCatalog: true };
+    const active = snap.docs.filter((d) => d.data().isActive !== false);
+    if (active.length === 0) return { rewards: DEFAULT_REWARDS, usingRealCatalog: false };
+    return { rewards: active.map((d) => mapStoreDoc(d.id, d.data())), usingRealCatalog: true };
   } catch {
     return { rewards: DEFAULT_REWARDS, usingRealCatalog: false };
   }
@@ -39,13 +41,28 @@ function generateCode(): string {
   return Crypto.randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase();
 }
 
+/** A real account's codes, from any device (owner-readable per firestore.rules). */
+export async function fetchRemoteRedemptions(userId: string): Promise<Redemption[]> {
+  const snap = await getDocs(
+    query(collection(getDb(), USERS_COLLECTION, userId, REDEMPTIONS_SUBCOLLECTION), orderBy("createdAt", "desc"))
+  );
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      rewardId: data.rewardId ?? "",
+      rewardTitle: data.store ?? "Recompensa",
+      pointsSpent: data.pointsSpent ?? 0,
+      code: data.code ?? "",
+      redeemedAt: typeof data.createdAt?.toMillis === "function" ? data.createdAt.toMillis() : Date.now(),
+    };
+  });
+}
+
 /**
- * Redeems against the REAL points balance (`usuarios/{uid}.puntosAcumulados`)
- * with a transaction so a double-tap can't spend points twice, and writes
- * the real `codigos_canjeados` subcollection shape the mobile app uses. If
- * that fails (e.g. rules don't yet cover this subcollection — see
- * SECURITY.md) it still records the redemption locally so the points spend
- * isn't silently lost from the person's own device.
+ * Real accounts redeem on the server (api/redeem.js): it reads the price
+ * from `tiendas`, checks and deducts `puntosAcumulados` and writes the
+ * `codigos_canjeados` doc in one transaction. Guests redeem locally.
  */
 export async function redeemReward(
   userId: string,
@@ -53,42 +70,26 @@ export async function redeemReward(
   availablePoints: number,
   isRealAccount: boolean
 ): Promise<Redemption> {
-  if (!isRealAccount && availablePoints < reward.pointsCost) {
-    // Real accounts get this same check inside the transaction below, read
-    // fresh from the server — this branch only covers the local/guest path,
-    // which has no server to re-validate against.
+  if (isRealAccount && isFirebaseConfigured) {
+    const r = await api<{ id: string; code: string; rewardId: string; rewardTitle: string; pointsSpent: number }>(
+      "redeem",
+      "POST",
+      { rewardId: reward.id }
+    );
+    return { id: r.id, rewardId: r.rewardId, rewardTitle: r.rewardTitle, pointsSpent: r.pointsSpent, code: r.code, redeemedAt: Date.now() };
+  }
+
+  if (availablePoints < reward.pointsCost) {
     throw new Error("No tienes suficientes puntos para este canje.");
   }
-  const code = generateCode();
   const redemption: Redemption = {
     id: `${userId}_${Date.now()}`,
     rewardId: reward.id,
     rewardTitle: reward.title,
     pointsSpent: reward.pointsCost,
-    code,
+    code: generateCode(),
     redeemedAt: Date.now(),
   };
-
-  if (isRealAccount && isFirebaseConfigured) {
-    const db = getDb();
-    const userRef = doc(db, USERS_COLLECTION, userId);
-    await runTransaction(db, async (tx) => {
-      const snap = await tx.get(userRef);
-      const balance = (snap.data()?.puntosAcumulados as number | undefined) ?? 0;
-      if (balance < reward.pointsCost) {
-        throw new Error("No tienes suficientes puntos para este canje.");
-      }
-      tx.update(userRef, { puntosAcumulados: increment(-reward.pointsCost) });
-      tx.set(doc(collection(userRef, REDEMPTIONS_SUBCOLLECTION)), {
-        code,
-        store: reward.title,
-        status: "active",
-        userId,
-        createdAt: serverTimestamp(),
-      });
-    });
-  }
-
   saveLocalRedemption(userId, redemption);
   return redemption;
 }

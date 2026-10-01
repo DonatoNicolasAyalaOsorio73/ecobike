@@ -11,7 +11,7 @@ import {
   OAuthProvider,
   type User,
 } from "firebase/auth";
-import { doc, getDoc, increment, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as Crypto from "expo-crypto";
@@ -210,20 +210,6 @@ export async function updateUserProfile(
   }
 }
 
-/** Called when a ride completes — the real, shared points balance lives on
- * the user document (`puntosAcumulados`), same field the mobile app reads,
- * so a ride tracked on web shows up in the mobile app's points immediately. */
-export async function addPointsToProfile(uid: string, points: number) {
-  requireFirebase();
-  const docRef = doc(getDb(), USERS_COLLECTION, uid);
-  await updateDoc(docRef, {
-    puntosAcumulados: increment(points),
-    updatedAt: serverTimestamp(),
-  });
-  const snap = await getDoc(docRef);
-  await syncPublicMirror(uid, { puntosAcumulados: (snap.data()?.puntosAcumulados as number | undefined) ?? 0 });
-}
-
 export async function uploadProfilePhoto(uid: string, localUri: string): Promise<string> {
   requireFirebase();
   const response = await fetch(localUri);
@@ -257,7 +243,7 @@ export async function fetchUserProfile(uid: string): Promise<UserProfile | null>
     bikeType: data.bikeType ?? null,
     friends: data.amigos ?? [],
     puntosAcumulados: data.puntosAcumulados ?? 0,
-    role: data.role ?? "user",
+    role: data.isAdmin === true ? "admin" : data.role ?? "user", // legacy docs use isAdmin
     createdAt: typeof data.createdAt?.toMillis === "function" ? data.createdAt.toMillis() : Date.now(),
     providers: data.providers ?? ["password"],
     emailVerified: data.emailVerified ?? false,

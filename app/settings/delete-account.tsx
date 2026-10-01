@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { deleteUser } from "firebase/auth";
 import { router } from "expo-router";
+import { api } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import BackButton from "@/components/ui/BackButton";
@@ -15,6 +15,7 @@ export default function DeleteAccountScreen() {
   const { colors } = useTheme();
   const firebaseUser = useAuthStore((s) => s.firebaseUser);
   const deleteLocalDataOnly = useAuthStore((s) => s.deleteLocalDataOnly);
+  const signOut = useAuthStore((s) => s.signOut);
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,15 +25,14 @@ export default function DeleteAccountScreen() {
     setLoading(true);
     setError(null);
     try {
+      // Server deletes Firestore data, avatar, friend links and the Auth
+      // user (api/account.js). Local data is wiped only after that succeeds.
+      await api("account", "DELETE");
       deleteLocalDataOnly();
-      await deleteUser(firebaseUser);
+      await signOut().catch(() => {});
       router.replace("/(auth)/welcome");
     } catch (e: any) {
-      if (e?.code === "auth/requires-recent-login") {
-        setError("Por seguridad, cierra sesión y vuelve a iniciar sesión antes de eliminar tu cuenta.");
-      } else {
-        setError("No se pudo eliminar la cuenta. Inténtalo de nuevo.");
-      }
+      setError(e?.message ?? "No se pudo eliminar la cuenta. Inténtalo de nuevo.");
     } finally {
       setLoading(false);
     }

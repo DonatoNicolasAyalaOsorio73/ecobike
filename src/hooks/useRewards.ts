@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchRewardsCatalog, getLocalRedemptions, redeemReward } from "@/services/rewards.service";
+import { fetchRemoteRedemptions, fetchRewardsCatalog, getLocalRedemptions, redeemReward } from "@/services/rewards.service";
+import { useAuthStore } from "@/stores/authStore";
 import type { Redemption, Reward } from "@/types/reward";
 
 export function useRewards(userId: string | null, isRealAccount: boolean) {
@@ -13,9 +14,16 @@ export function useRewards(userId: string | null, isRealAccount: boolean) {
     const { rewards: catalog, usingRealCatalog: real } = await fetchRewardsCatalog();
     setRewards(catalog);
     setUsingRealCatalog(real);
-    if (userId) setRedemptions(getLocalRedemptions(userId));
+    if (userId) {
+      // Real accounts: codes live in Firestore, so they show on every device.
+      setRedemptions(
+        isRealAccount
+          ? await fetchRemoteRedemptions(userId).catch(() => getLocalRedemptions(userId))
+          : getLocalRedemptions(userId)
+      );
+    }
     setLoading(false);
-  }, [userId]);
+  }, [userId, isRealAccount]);
 
   useEffect(() => {
     refresh();
@@ -26,6 +34,7 @@ export function useRewards(userId: string | null, isRealAccount: boolean) {
       if (!userId) throw new Error("Necesitas una sesión para canjear recompensas.");
       const redemption = await redeemReward(userId, reward, availablePoints, isRealAccount);
       setRedemptions((prev) => [redemption, ...prev]);
+      if (isRealAccount) useAuthStore.getState().refreshProfile().catch(() => {});
       return redemption;
     },
     [userId, isRealAccount]

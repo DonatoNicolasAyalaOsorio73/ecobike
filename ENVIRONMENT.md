@@ -45,8 +45,8 @@ time).
    Firebase project: **APIs & Services > Credentials > Create OAuth client
    ID**, once per platform you need:
    - **Web application** → `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`
-   - **iOS** (bundle id `com.ecobike.app`) → `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
-   - **Android** (package `com.ecobike.app`, needs your build's SHA-1) →
+   - **iOS** (bundle id `com.justdona.EcoBike`) → `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
+   - **Android** (package `com.justdona.EcoBike`, needs your build's SHA-1) →
      `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`
 2. In Firebase Console, Authentication > Sign-in method > Google, enable it
    and paste the Web client ID as the "Web SDK configuration" client ID.
@@ -60,7 +60,7 @@ Requires an Apple Developer Program membership ($99/yr) — this repo cannot
 provision this for you.
 
 1. In your Apple Developer account, enable "Sign in with Apple" capability
-   for the `com.ecobike.app` App ID.
+   for the `com.justdona.EcoBike` App ID.
 2. In Firebase Console, Authentication > Sign-in method > Apple, enable it
    (Firebase needs your Services ID / team ID / key for server-side
    verification — follow Firebase's own Apple setup screen, it walks
