@@ -5,6 +5,32 @@ import * as Haptics from "expo-haptics";
 import LiquidToggle from "./LiquidToggle";
 import SegmentedControl from "./SegmentedControl";
 import { useTheme } from "@/theme/useTheme";
+import { accents, type AccentName } from "@/theme/colors";
+
+// iOS Settings-style colored squircles: the color follows the icon's meaning.
+const ICON_COLOR: [RegExp, AccentName][] = [
+  [/notif|chatbubble|mail/, "red"],
+  [/flag|flame|trophy|ribbon|star/, "orange"],
+  [/speedometer|navigate|location|map|compass/, "blue"],
+  [/finger|key|lock|shield|phone-portrait/, "purple"],
+  [/body|heart|pause|sunny/, "teal"],
+  [/search|people|person|link/, "blue"],
+  [/download|refresh|cloud/, "green"],
+  [/help|document|calendar/, "gold"],
+  [/storefront|log-out/, "teal"],
+];
+function iconAccent(icon: string): AccentName {
+  return ICON_COLOR.find(([re]) => re.test(icon))?.[1] ?? "green";
+}
+
+function IconBadge({ icon, danger }: { icon: keyof typeof Ionicons.glyphMap; danger?: boolean }) {
+  const a = accents[danger ? "red" : iconAccent(String(icon))];
+  return (
+    <View style={[styles.badge, { backgroundColor: a.base }]}>
+      <Ionicons name={icon} size={16} color="#FFFFFF" />
+    </View>
+  );
+}
 
 interface BaseProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -16,7 +42,7 @@ export function SettingsSwitchRow({ icon, label, sublabel, value, onValueChange 
   const { colors } = useTheme();
   return (
     <View style={styles.row}>
-      <Ionicons name={icon} size={18} color={colors.ink} />
+      <IconBadge icon={icon} />
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text style={[styles.label, { color: colors.ink }]}>{label}</Text>
         {sublabel && <Text style={[styles.sublabel, { color: colors.inkSoft }]}>{sublabel}</Text>}
@@ -36,8 +62,13 @@ export function SettingsNavRow({
 }: BaseProps & { onPress: () => void; danger?: boolean; showChevron?: boolean }) {
   const { colors } = useTheme();
   return (
-    <Pressable onPress={onPress} style={styles.row}>
-      <Ionicons name={icon} size={18} color={danger ? colors.danger : colors.ink} />
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={sublabel ? `${label}. ${sublabel}` : label}
+      style={({ pressed }) => [styles.row, pressed && { opacity: 0.55 }]}
+    >
+      <IconBadge icon={icon} danger={danger} />
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text style={[styles.label, { color: danger ? colors.danger : colors.ink }]} numberOfLines={1}>
           {label}
@@ -60,7 +91,7 @@ export function SettingsChoiceRow<T extends string>({
   return (
     <View style={styles.choiceRow}>
       <View style={styles.choiceLabelRow}>
-        <Ionicons name={icon} size={18} color={colors.ink} />
+        <IconBadge icon={icon} />
         <Text style={[styles.label, { color: colors.ink, marginLeft: 12 }]}>{label}</Text>
       </View>
       {/* Same sliding-pill control the Stats period picker uses — one
@@ -101,18 +132,18 @@ export function SettingsStepperRow({
 
   return (
     <View style={styles.row}>
-      <Ionicons name={icon} size={18} color={colors.ink} />
+      <IconBadge icon={icon} />
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text style={[styles.label, { color: colors.ink }]}>{label}</Text>
         {sublabel && <Text style={[styles.sublabel, { color: colors.inkSoft }]}>{sublabel}</Text>}
       </View>
 
       <View style={[styles.stepper, { borderColor: colors.glassBorder, backgroundColor: colors.glassFillStrong }]}>
-        <Pressable onPress={() => nudge(-step)} disabled={value <= min} hitSlop={6} style={styles.stepperButton}>
+        <Pressable onPress={() => nudge(-step)} disabled={value <= min} hitSlop={6} style={styles.stepperButton} accessibilityRole="button" accessibilityLabel={`Disminuir ${label}`}>
           <Ionicons name="remove" size={16} color={value <= min ? colors.inkFaint : colors.ink} />
         </Pressable>
         <Text style={[styles.stepperValue, { color: colors.ink }]}>{format ? format(value) : value}</Text>
-        <Pressable onPress={() => nudge(step)} disabled={value >= max} hitSlop={6} style={styles.stepperButton}>
+        <Pressable onPress={() => nudge(step)} disabled={value >= max} hitSlop={6} style={styles.stepperButton} accessibilityRole="button" accessibilityLabel={`Aumentar ${label}`}>
           <Ionicons name="add" size={16} color={value >= max ? colors.inkFaint : colors.ink} />
         </Pressable>
       </View>
@@ -122,6 +153,7 @@ export function SettingsStepperRow({
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", paddingVertical: 10 },
+  badge: { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   label: { fontSize: 14.5, fontWeight: "600" },
   sublabel: { fontSize: 12, marginTop: 2 },
   choiceRow: { paddingVertical: 10 },
