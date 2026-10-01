@@ -20,6 +20,10 @@ import { formatDistance, formatDuration, formatSpeed } from "@/utils/format";
 import { environmentalImpact } from "@/utils/rideStats";
 import { kmSplits, rideProfile } from "@/utils/rideAnalysis";
 import type { Ride } from "@/types/ride";
+import GlassButton from "@/components/ui/GlassButton";
+import { shareText } from "@/services/share";
+import { rideShareText } from "@/utils/shareText";
+import { useToastStore } from "@/stores/toastStore";
 
 export default function RideDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,6 +31,7 @@ export default function RideDetailScreen() {
   const units = useSettingsStore((s) => s.units);
   const [ride, setRide] = useState<Ride | null | undefined>(undefined);
   const [chart, setChart] = useState<"speed" | "altitude">("speed");
+  const toast = useToastStore((s) => s.show);
 
   useEffect(() => {
     if (id) setRide(getRide(id));
@@ -155,6 +160,17 @@ export default function RideDetailScreen() {
             </GlassCard>
           </>
         )}
+
+        <GlassButton
+          label="Compartir recorrido"
+          icon="share-social-outline"
+          variant="secondary"
+          onPress={async () => {
+            const r = await shareText(rideShareText(ride, units));
+            if (r === "copied") toast("Resumen copiado al portapapeles.", "success");
+          }}
+          style={{ marginTop: 22 }}
+        />
 
         <View style={{ height: 50 }} />
       </ScrollView>

@@ -16,6 +16,8 @@ import { goalLabel, type RideGoal } from "@/utils/rideGoals";
 import type { Ride } from "@/types/ride";
 import type { AchievementDef } from "@/types/achievement";
 import { levelForPoints } from "@/utils/gamification";
+import { shareText } from "@/services/share";
+import { rideShareText } from "@/utils/shareText";
 
 interface Props {
   ride: Ride;
@@ -117,17 +119,26 @@ export default function RideCompleteOverlay({ ride, streak, pointsToday, goal, g
         </ScrollView>
 
         <View style={styles.footer}>
-          <GlassButton
-            label="Ver detalle"
-            variant="secondary"
-            icon="map-outline"
-            onPress={() => {
-              onClose();
-              router.push(`/ride/${ride.id}`);
-            }}
-            style={{ flex: 1 }}
-          />
-          <GlassButton label="Continuar" onPress={onClose} style={{ flex: 1 }} />
+          <GlassButton label="Continuar" onPress={onClose} />
+          <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
+            <GlassButton
+              label="Compartir"
+              variant="secondary"
+              icon="share-social-outline"
+              onPress={() => shareText(rideShareText(ride, units)).catch(() => {})}
+              style={{ flex: 1 }}
+            />
+            <GlassButton
+              label="Ver detalle"
+              variant="secondary"
+              icon="map-outline"
+              onPress={() => {
+                onClose();
+                router.push(`/ride/${ride.id}`);
+              }}
+              style={{ flex: 1 }}
+            />
+          </View>
         </View>
         <Confetti count={36} />
       </View>
@@ -161,5 +172,5 @@ const styles = StyleSheet.create({
   achievementKicker: { color: accents.green.base, fontWeight: "900", fontSize: 11, letterSpacing: 0.6 },
   achievementTitle: { color: "#1F2A22", fontWeight: "800", fontSize: 15.5, marginTop: 2 },
   achievementDesc: { color: "#6B776F", fontSize: 12.5, marginTop: 1 },
-  footer: { flexDirection: "row", gap: 12, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 34, borderTopWidth: 2, borderTopColor: "#EEF1EC", backgroundColor: "#fff" },
+  footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 34, borderTopWidth: 2, borderTopColor: "#EEF1EC", backgroundColor: "#fff" },
 });
