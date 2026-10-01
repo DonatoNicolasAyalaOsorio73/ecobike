@@ -2,29 +2,28 @@ import React from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from "react-native-reanimated";
+import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import GlassSurface from "./GlassSurface";
 import { useTheme } from "@/theme/useTheme";
 import { SPRING } from "@/theme/motion";
-import { accents, type AccentName } from "@/theme/colors";
+import { elevation } from "@/theme/colors";
 
-// Each tab owns a color (Duolingo-style): the icon and indicator take it when selected.
-const TAB_ACCENT: Record<string, AccentName> = { map: "green", points: "gold", friends: "blue", stats: "purple", profile: "orange" };
+const BAR_RADIUS = 34;
+const INSET = 6; // gap between capsule edge and the active pill (concentric corners)
 
-/** Icon that pops (scale overshoot + tiny wiggle) whenever its tab becomes active. */
+/** Icon that lifts slightly when its tab becomes active — critically damped,
+ * no wiggle: the moving pill already carries the "something changed" signal. */
 function TabIcon({ name, focused, color }: { name: keyof typeof Ionicons.glyphMap; focused: boolean; color: string }) {
-  const scale = useSharedValue(1);
-  const rotate = useSharedValue(0);
+  const lift = useSharedValue(focused ? 1 : 0);
   React.useEffect(() => {
-    if (!focused) return;
-    scale.value = withSequence(withSpring(1.3, SPRING.press), withSpring(1, SPRING.bouncy));
-    rotate.value = withSequence(withTiming(-10, { duration: 90 }), withTiming(8, { duration: 110 }), withSpring(0, SPRING.bouncy));
-  }, [focused, scale, rotate]);
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }, { rotate: `${rotate.value}deg` }] }));
+    lift.value = withSpring(focused ? 1 : 0, SPRING.momentum);
+  }, [focused, lift]);
+  const style = useAnimatedStyle(() => ({ transform: [{ translateY: -1.5 * lift.value }, { scale: 1 + 0.1 * lift.value }] }));
   return (
     <Animated.View style={style}>
-      <Ionicons name={name} size={23} color={color} />
+      <Ionicons name={name} size={22} color={color} />
     </Animated.View>
   );
 }
@@ -35,9 +34,6 @@ function TabIcon({ name, focused, color }: { name: keyof typeof Ionicons.glyphMa
 interface TabBarProps {
   state: { routes: { key: string; name: string }[]; index: number };
   descriptors: Record<string, { options: { title?: string } }>;
-  // react-navigation's real `navigation.emit`/`navigate` types are generic
-  // over a route-specific event map that this shim intentionally doesn't
-  // model — only the two calls below are ever made against it.
   navigation: {
     emit: (e: any) => any;
     navigate: (name: any) => void;
@@ -59,20 +55,20 @@ const ICONS_ACTIVE: Record<string, keyof typeof Ionicons.glyphMap> = {
   profile: "person",
 };
 
-/** Floating Liquid Glass tab bar with a sliding pill indicator (iOS 26
- * style) that springs between tabs, instead of each tab drawing its own
- * static highlight.
+/** Floating Liquid Glass capsule (iOS 26 tab bar).
  *
- * Every tab is flex:1, so the indicator's geometry is pure percentages —
- * one tab wide, translated by whole multiples of its own width. The
- * previous measured version rendered at width 0 in production web builds,
- * where `onLayout` never fired (see SegmentedControl for the same fix). */
+ * Clipping fix: the shadow lives on an outer wrapper with no overflow, the
+ * glass (which must clip its blur and sheen) lives inside it, and the active
+ * pill sits INSET px inside the capsule with radius BAR_RADIUS - INSET, so
+ * it can never touch — and get cut by — the capsule's rounded ends.
+ *
+ * Tabs are flex:1 inside the inset row, so the pill's geometry is pure
+ * percentages of that row (onLayout never fired in production web builds). */
 export default function LiquidTabBar({ state, descriptors, navigation }: TabBarProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const tabCount = state.routes.length;
   const progress = useSharedValue(state.index);
-  const activeAccent = accents[TAB_ACCENT[state.routes[state.index]?.name] ?? "green"];
 
   const indicatorStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: `${progress.value * 100}%` }],
@@ -83,61 +79,67 @@ export default function LiquidTabBar({ state, descriptors, navigation }: TabBarP
   }, [state.index, progress]);
 
   return (
-    <View style={[styles.wrap, { bottom: Math.max(insets.bottom, 16) }]}>
-      <GlassSurface intensity={60} radius={30} backgroundColor={colors.glassFillStrong} borderColor={colors.glassBorder} style={styles.bar}>
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.indicator,
-            { width: `${100 / tabCount}%`, backgroundColor: activeAccent.soft, borderColor: activeAccent.base },
-            indicatorStyle,
-          ]}
-        />
-        {state.routes.map((route, index) => {
-          const { options } = descriptors[route.key];
-          const isFocused = state.index === index;
-          const label = (options.title ?? route.name) as string;
+    <Animated.View
+      entering={FadeInDown.duration(420).springify().damping(18)}
+      style={[styles.wrap, { bottom: Math.max(insets.bottom - 6, 12) }]}
+    >
+      <View style={[styles.shadow, elevation("high")]}>
+        <GlassSurface intensity={70} radius={BAR_RADIUS} backgroundColor="rgba(255,255,255,0.62)" borderColor="rgba(255,255,255,0.95)">
+          <View style={styles.row} role="tablist">
+            <Animated.View pointerEvents="none" style={[styles.indicatorSlot, { width: `${100 / tabCount}%` }, indicatorStyle]}>
+              <LinearGradient
+                colors={["rgba(255,255,255,0.95)", colors.primaryLight]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={[styles.indicator, elevation("low")]}
+              />
+            </Animated.View>
+            {state.routes.map((route, index) => {
+              const { options } = descriptors[route.key];
+              const isFocused = state.index === index;
+              const label = (options.title ?? route.name) as string;
+              const tint = isFocused ? colors.primaryDark : colors.inkSoft;
 
-          const onPress = () => {
-            if (Platform.OS !== "web") Haptics.selectionAsync();
-            const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
-            if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
-          };
+              const onPress = () => {
+                if (Platform.OS !== "web") Haptics.selectionAsync();
+                const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
+                if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
+              };
 
-          const iconName = (isFocused ? ICONS_ACTIVE[route.name] : ICONS[route.name]) ?? "ellipse-outline";
-
-          return (
-            <Pressable
-              key={route.key}
-              onPress={onPress}
-              style={styles.item}
-              hitSlop={8}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isFocused }}
-              accessibilityLabel={label}
-            >
-              <TabIcon name={iconName} focused={isFocused} color={isFocused ? accents[TAB_ACCENT[route.name] ?? "green"].lip : colors.inkSoft} />
-              <Text style={[styles.label, { color: isFocused ? accents[TAB_ACCENT[route.name] ?? "green"].lip : colors.inkSoft }]} numberOfLines={1}>
-                {label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </GlassSurface>
-    </View>
+              return (
+                <Pressable
+                  key={route.key}
+                  onPress={onPress}
+                  style={({ pressed, hovered, focused }: any) => [
+                    styles.item,
+                    { opacity: pressed ? 0.6 : hovered && !isFocused ? 0.85 : 1 },
+                    focused && Platform.OS === "web" && styles.focusRing,
+                  ]}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: isFocused }}
+                  accessibilityLabel={label}
+                >
+                  <TabIcon name={(isFocused ? ICONS_ACTIVE[route.name] : ICONS[route.name]) ?? "ellipse-outline"} focused={isFocused} color={tint} />
+                  <Text style={[styles.label, { color: tint, fontWeight: isFocused ? "800" : "600" }]} numberOfLines={1}>
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </GlassSurface>
+      </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { position: "absolute", left: 16, right: 16, alignItems: "center", pointerEvents: "box-none" },
-  // No horizontal padding: the indicator's percentage width must resolve
-  // against the same box the equal-width tabs are laid out in.
-  bar: {
-    flexDirection: "row",
-    paddingVertical: 10,
-    width: "100%",
-  },
-  item: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 4, borderRadius: 18, gap: 2, zIndex: 2 },
-  indicator: { position: "absolute", top: 4, bottom: 4, left: 0, borderRadius: 20, borderWidth: 2 },
-  label: { fontSize: 10.5, fontWeight: "700" },
+  wrap: { position: "absolute", left: 14, right: 14, pointerEvents: "box-none" },
+  shadow: { borderRadius: BAR_RADIUS },
+  row: { flexDirection: "row", margin: INSET, height: 56 },
+  indicatorSlot: { position: "absolute", top: 0, bottom: 0, left: 0, paddingHorizontal: 2 },
+  indicator: { flex: 1, borderRadius: BAR_RADIUS - INSET, borderWidth: 1, borderColor: "rgba(255,255,255,0.9)" },
+  item: { flex: 1, alignItems: "center", justifyContent: "center", gap: 2, borderRadius: BAR_RADIUS - INSET },
+  focusRing: { outlineWidth: 2, outlineColor: "#34C759", outlineStyle: "solid", outlineOffset: -2 } as any,
+  label: { fontSize: 10.5, letterSpacing: -0.1 },
 });

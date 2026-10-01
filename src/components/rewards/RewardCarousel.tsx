@@ -13,6 +13,7 @@ import Animated, {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/theme/useTheme";
+import { elevation } from "@/theme/colors";
 import type { Reward } from "@/types/reward";
 
 // Art for rewards without a logo: each card gets its own gradient.
@@ -68,8 +69,8 @@ function Card({ reward, index, cardWidth, scrollX, affordable, missing, onPress 
 
   // Focused card full size; neighbours shrink and dim (Wallet/App Store style).
   const cardStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(scrollX.value, range, [0.9, 1, 0.9], Extrapolation.CLAMP) }],
-    opacity: interpolate(scrollX.value, range, [0.6, 1, 0.6], Extrapolation.CLAMP),
+    transform: [{ scale: interpolate(scrollX.value, range, [0.92, 1, 0.92], Extrapolation.CLAMP) }],
+    opacity: interpolate(scrollX.value, range, [0.7, 1, 0.7], Extrapolation.CLAMP),
   }));
   // Parallax: the art drifts slower than the card.
   const artStyle = useAnimatedStyle(() => ({
@@ -79,12 +80,12 @@ function Card({ reward, index, cardWidth, scrollX, affordable, missing, onPress 
   const [from, to] = GRADIENTS[index % GRADIENTS.length];
 
   return (
-    <Animated.View style={[{ width: cardWidth, marginRight: SPACING }, WEB_SNAP_ITEM, cardStyle]}>
+    <Animated.View style={[{ width: cardWidth, marginRight: SPACING, borderRadius: 30 }, elevation("mid"), WEB_SNAP_ITEM, cardStyle]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${reward.title}, ${reward.subtitle}, ${reward.pointsCost} puntos`}
         onPress={onPress}
-        style={({ pressed }) => [styles.card, { backgroundColor: colors.surface, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
+        style={({ pressed, hovered }: any) => [styles.card, { backgroundColor: colors.surface, transform: [{ scale: pressed ? 0.97 : hovered ? 1.01 : 1 }] }]}
       >
         <View style={styles.hero}>
           <Animated.View style={[StyleSheet.absoluteFill, artStyle]}>
@@ -96,7 +97,8 @@ function Card({ reward, index, cardWidth, scrollX, affordable, missing, onPress 
               </LinearGradient>
             )}
           </Animated.View>
-          <LinearGradient colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.65)"]} style={styles.scrim} />
+          <LinearGradient colors={["rgba(0,0,0,0)", "rgba(10,40,20,0.7)"]} style={styles.scrim} />
+          <LinearGradient pointerEvents="none" colors={["rgba(255,255,255,0.35)", "rgba(255,255,255,0)"]} style={styles.sheen} />
           <View style={styles.heroText}>
             <Text style={styles.heroTitle} numberOfLines={1}>
               {reward.title}
@@ -105,9 +107,9 @@ function Card({ reward, index, cardWidth, scrollX, affordable, missing, onPress 
               {reward.subtitle}
             </Text>
           </View>
-          <View style={[styles.costPill, { backgroundColor: colors.primary }]}>
-            <Ionicons name="ribbon" size={13} color={colors.onPrimary} />
-            <Text style={{ color: colors.onPrimary, fontWeight: "800", fontSize: 13, marginLeft: 4 }}>{reward.pointsCost.toLocaleString("es-CO")}</Text>
+          <View style={styles.costPill}>
+            <Ionicons name="ribbon" size={13} color={colors.primaryDark} />
+            <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 13, marginLeft: 4 }}>{reward.pointsCost.toLocaleString("es-CO")}</Text>
           </View>
         </View>
 
@@ -163,13 +165,14 @@ export default function RewardCarousel({ rewards, availablePoints, width, onPres
       <Animated.ScrollView
         ref={ref}
         horizontal
-        style={WEB_SNAP_CONTAINER}
         showsHorizontalScrollIndicator={false}
         snapToInterval={step}
         decelerationRate="fast"
         onScroll={onScroll}
         scrollEventThrottle={16}
-        contentContainerStyle={{ paddingLeft: side, paddingRight: side - SPACING }}
+        // Vertical padding: a horizontal ScrollView clips on both axes, which cut the card shadows.
+        contentContainerStyle={{ paddingLeft: side, paddingRight: side - SPACING, paddingVertical: 22 }}
+        style={[WEB_SNAP_CONTAINER, { marginVertical: -22 }]}
       >
         {rewards.map((r, i) => (
           <Card
@@ -186,7 +189,7 @@ export default function RewardCarousel({ rewards, availablePoints, width, onPres
       </Animated.ScrollView>
       <View style={styles.controls}>
         <Arrow icon="chevron-back" label="Anterior" disabled={index <= 0} onPress={() => goTo(index - 1)} color={colors.primaryDark} />
-        <View style={styles.dots}>
+        <View style={[styles.dots, elevation("low")]}>
           {rewards.map((r, i) => (
             <Dot key={r.id} index={i} step={step} scrollX={scrollX} onPress={() => goTo(i)} />
           ))}
@@ -198,17 +201,19 @@ export default function RewardCarousel({ rewards, availablePoints, width, onPres
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 28, overflow: "hidden", shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 6 },
+  card: { borderRadius: 30, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.9)" },
+  sheen: { position: "absolute", left: 0, right: 0, top: 0, height: "35%" },
   hero: { height: 300, overflow: "hidden", justifyContent: "flex-end" },
   art: { alignItems: "center", justifyContent: "center" },
   scrim: { position: "absolute", left: 0, right: 0, bottom: 0, height: "60%" },
   heroText: { padding: 18 },
   heroTitle: { color: "#fff", fontSize: 26, fontWeight: "800", letterSpacing: -0.5 },
   heroSubtitle: { color: "rgba(255,255,255,0.9)", fontSize: 14, marginTop: 4 },
-  costPill: { position: "absolute", top: 14, right: 14, flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  costPill: { position: "absolute", top: 14, right: 14, flexDirection: "row", alignItems: "center", paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.82)", borderWidth: 1, borderColor: "rgba(255,255,255,0.95)" },
   footer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingVertical: 14 },
-  controls: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 14, marginTop: 14 },
-  dots: { flexDirection: "row", alignItems: "center", gap: 6 },
-  arrow: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.8)", borderWidth: 1, borderColor: "rgba(0,0,0,0.06)" },
+  controls: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12, marginTop: 16 },
+  // Dots sit on a small glass capsule (iOS page control) instead of floating loose.
+  dots: { flexDirection: "row", alignItems: "center", gap: 6, height: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.75)", borderWidth: 1, borderColor: "rgba(255,255,255,0.95)" },
+  arrow: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.8)", borderWidth: 1, borderColor: "rgba(255,255,255,0.95)" },
   dot: { height: 7, borderRadius: 4 },
 });

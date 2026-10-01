@@ -3,6 +3,7 @@ import { StyleSheet, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import GlassSurface from "./GlassSurface";
 import { useTheme } from "@/theme/useTheme";
+import { elevation } from "@/theme/colors";
 
 interface Props {
   children: React.ReactNode;
@@ -16,12 +17,12 @@ interface Props {
 }
 
 export default function GlassCard({ children, style, containerStyle, intensity = 35, entranceDelay = 0 }: Props) {
-  const { radii, shadow } = useTheme();
+  const { radii } = useTheme();
   return (
     <Animated.View
-      // Playful but quick: drops in with a small overshoot (Duolingo feel).
-      entering={FadeInDown.duration(380).delay(entranceDelay).springify().damping(13).mass(0.75)}
-      style={[{ borderRadius: radii.card }, shadow, containerStyle]}
+      // Rises into place, nearly critically damped: settles without a visible bounce.
+      entering={FadeInDown.duration(380).delay(entranceDelay).springify().damping(18).mass(0.8)}
+      style={[{ borderRadius: radii.card }, elevation("low"), containerStyle]}
     >
       <GlassSurface radius={radii.card} intensity={intensity} style={[styles.inner, style]}>
         {children}

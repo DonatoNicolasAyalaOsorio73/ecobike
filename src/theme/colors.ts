@@ -95,6 +95,29 @@ function buildShadow(color: string, offsetY: number, blurRadius: number, elevati
   } as const;
 }
 
+/**
+ * Layered elevation (iOS 26 glass): a wide ambient shadow plus a tight
+ * contact shadow, both green-tinted so surfaces never look grey or heavy.
+ * Web stacks real layers; native RN supports one shadow, so it uses the
+ * ambient one. Apply on a wrapper WITHOUT overflow:hidden, or iOS clips it.
+ */
+export const ELEVATION = {
+  low: { ambient: [6, 18, 0.1], contact: [1, 3, 0.08], elevation: 3 },
+  mid: { ambient: [12, 32, 0.14], contact: [2, 6, 0.1], elevation: 8 },
+  high: { ambient: [20, 48, 0.18], contact: [4, 10, 0.12], elevation: 14 },
+} as const;
+const TINT = "24,60,30";
+
+export function elevation(level: keyof typeof ELEVATION) {
+  const { ambient, contact, elevation: el } = ELEVATION[level];
+  if (Platform.OS === "web") {
+    return {
+      boxShadow: `0px ${ambient[0]}px ${ambient[1]}px rgba(${TINT},${ambient[2]}), 0px ${contact[0]}px ${contact[1]}px rgba(${TINT},${contact[2]})`,
+    } as const;
+  }
+  return buildShadow(`rgba(${TINT},${ambient[2]})`, ambient[0], ambient[1] / 2, el);
+}
+
 export function shadowStyle(theme: Theme) {
   return buildShadow(theme.shadow, 10, 20, 6);
 }

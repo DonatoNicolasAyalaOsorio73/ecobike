@@ -3,7 +3,7 @@ import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } fro
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import Animated, { Easing, FadeInDown, FadeInUp, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming, ZoomIn } from "react-native-reanimated";
+import Animated, { Easing, FadeInDown, FadeInUp, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import GlassButton from "@/components/ui/GlassButton";
 import SocialRow from "@/components/ui/SocialRow";
@@ -49,11 +49,11 @@ export default function WelcomeScreen() {
       <SafeAreaView style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.safe} showsVerticalScrollIndicator={false} bounces={false}>
         <View style={styles.hero}>
-          <Animated.View entering={ZoomIn.springify().damping(9)}>
+          <View>
             <Floating distance={6}>
               <Logo size={compact ? "small" : "large"} />
             </Floating>
-          </Animated.View>
+          </View>
 
           <Animated.Text entering={FadeInDown.delay(150).springify()} style={[styles.headline, { color: colors.ink }, compact && { fontSize: 26, lineHeight: 31, marginTop: 14 }]}>
             Muévete mejor.{"\n"}
