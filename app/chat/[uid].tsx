@@ -14,7 +14,7 @@ import { useTheme } from "@/theme/useTheme";
 import { useAuthStore } from "@/stores/authStore";
 import { useDemoChatStore } from "@/stores/demoChatStore";
 import { fetchPublicProfiles } from "@/services/social.service";
-import { markChatRead, sendMessage, subscribeMessages, type ChatMessage } from "@/services/chat.service";
+import { markChatRead, sendMessage, subscribeMessages, subscribeOtherUnread, type ChatMessage } from "@/services/chat.service";
 import { DEMO_FRIENDS } from "@/utils/demoData";
 
 const MAX = 1000;
@@ -39,6 +39,7 @@ export default function ChatScreen() {
   const [pending, setPending] = useState<ChatMessage[]>([]);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [otherUnread, setOtherUnread] = useState<number | null>(null);
   const [name, setName] = useState(DEMO_FRIENDS.find((f) => f.uid === other)?.displayName ?? "");
   const listRef = useRef<FlatList<Row>>(null);
 
@@ -49,8 +50,9 @@ export default function ChatScreen() {
       return;
     }
     fetchPublicProfiles([other]).then(([p]) => p && setName(p.displayName)).catch(() => {});
+    const unsubSeen = subscribeOtherUnread(me!, other, setOtherUnread);
     markChatRead(other);
-    return subscribeMessages(
+    const unsubMessages = subscribeMessages(
       me!,
       other,
       (msgs) => {
@@ -61,6 +63,10 @@ export default function ChatScreen() {
       },
       () => setRemote([]) // chat doc doesn't exist yet (first message not sent)
     );
+    return () => {
+      unsubMessages();
+      unsubSeen();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [other, me, isDemo]);
 
@@ -82,6 +88,9 @@ export default function ChatScreen() {
   useEffect(() => {
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
   }, [rows.length]);
+
+  const last = messages[messages.length - 1];
+  const seen = !isDemo && !!last?.fromMe && !last.pending && otherUnread === 0;
 
   const onSend = async () => {
     const t = text.trim();
@@ -124,6 +133,13 @@ export default function ChatScreen() {
             data={rows}
             keyExtractor={(r) => r.id}
             contentContainerStyle={styles.list}
+            ListFooterComponent={
+              seen ? (
+                <Animated.Text entering={FadeInUp.springify()} style={[styles.seen, { color: colors.inkFaint }]}>
+                  Visto
+                </Animated.Text>
+              ) : null
+            }
             ListEmptyComponent={
               <Text style={{ color: colors.inkSoft, textAlign: "center", marginTop: 40 }}>Escribe el primer mensaje. Solo tus amigos pueden escribirte.</Text>
             }
@@ -199,6 +215,7 @@ const styles = StyleSheet.create({
   left: { alignSelf: "flex-start" },
   right: { alignSelf: "flex-end" },
   bubble: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20 },
+  seen: { alignSelf: "flex-end", fontSize: 11.5, fontWeight: "700", marginTop: 2, marginRight: 6 },
   time: { fontSize: 10.5, marginTop: 3, alignSelf: "flex-end", opacity: 0.75 },
   composer: { flexDirection: "row", alignItems: "flex-end", marginHorizontal: 12, marginBottom: 8, paddingLeft: 16, paddingRight: 6, paddingVertical: 6 },
   input: { flex: 1, fontSize: 15.5, maxHeight: 120, paddingVertical: 8 },

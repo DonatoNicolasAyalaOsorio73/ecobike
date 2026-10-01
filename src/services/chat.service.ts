@@ -74,3 +74,13 @@ export function sendMessage(to: string, text: string) {
 export function markChatRead(other: string) {
   return api("messages", "POST", { action: "read", with: other }).catch(() => {});
 }
+
+/** Live unread count of the other participant (0 = they've read everything → "Visto"). */
+export function subscribeOtherUnread(me: string, other: string, cb: (unread: number | null) => void): Unsubscribe {
+  if (!isFirebaseConfigured) return () => {};
+  return onSnapshot(
+    doc(getDb(), "chats", chatIdFor(me, other)),
+    (snap) => cb(snap.exists() ? (snap.data().unread?.[other] ?? 0) : null),
+    () => cb(null)
+  );
+}
