@@ -32,7 +32,7 @@ import { shareText } from "@/services/share";
 import { inviteText } from "@/utils/shareText";
 import { daysLeftInWeek } from "@/utils/week";
 import { ridesInPeriod } from "@/utils/rideStats";
-import { accents } from "@/theme/colors";
+import { accents, elevation } from "@/theme/colors";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useLocalProfileStore } from "@/stores/localProfileStore";
 import { useRiderStats } from "@/hooks/useRiderStats";
@@ -468,7 +468,7 @@ export default function FriendsScreen() {
                 style={{ marginBottom: 10 }}
               />
               {league === "week" && (
-                <View style={[styles.leagueBanner, { backgroundColor: accents.purple.soft, borderColor: accents.purple.base }]}>
+                <View style={[styles.leagueBanner, elevation("low")]}>
                   <Ionicons name="shield-half" size={22} color={accents.purple.lip} />
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: accents.purple.lip, fontWeight: "700" }}>Liga semanal</Text>
@@ -490,13 +490,13 @@ export default function FriendsScreen() {
                       if (!e) return <View key={pos} style={{ flex: 1 }} />;
                       const h = pos === 0 ? 130 : pos === 1 ? 100 : 80;
                       return (
-                        <Animated.View key={e.uid} entering={FadeInUp.delay(120 + pos * 90).springify().damping(14)} style={styles.podiumCol}>
+                        <Animated.View key={e.uid} entering={FadeInUp.delay(100 + pos * 80).duration(360)} style={styles.podiumCol}>
                           <Avatar label={e.displayName} photoURL={e.photoURL} size={pos === 0 ? 58 : 48} />
                           <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 12.5, marginTop: 6 }} numberOfLines={1}>
                             {e.displayName.replace(" (tú)", "")}
                           </Text>
                           <Text style={{ color: colors.inkSoft, fontSize: 11.5 }}>{score(e).toLocaleString("es-CO")} pts</Text>
-                          <View style={[styles.podiumBar, { height: h, backgroundColor: pos === 0 ? colors.primary : colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
+                          <View style={[styles.podiumBar, { height: h, backgroundColor: pos === 0 ? colors.primary : "rgba(255,255,255,0.75)" }, elevation(pos === 0 ? "mid" : "low")]}>
                             <Text style={{ color: pos === 0 ? colors.onPrimary : colors.primaryDark, fontWeight: "700", fontSize: 22 }}>{pos + 1}</Text>
                           </View>
                         </Animated.View>
@@ -545,8 +545,8 @@ const styles = StyleSheet.create({
   leaderRow: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
   avatar: { alignItems: "center", justifyContent: "center", borderWidth: 1 },
   pill: { flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999, borderWidth: 1 },
-  leagueBanner: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 2, borderRadius: 18, padding: 12, marginBottom: 14 },
+  leagueBanner: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 18, padding: 12, marginBottom: 14, backgroundColor: "rgba(255,255,255,0.78)", borderWidth: 1, borderColor: "rgba(255,255,255,0.95)" },
   podium: { flexDirection: "row", alignItems: "flex-end", gap: 10, marginBottom: 16 },
   podiumCol: { flex: 1, alignItems: "center" },
-  podiumBar: { width: "100%", borderTopLeftRadius: 16, borderTopRightRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center", marginTop: 8 },
+  podiumBar: { width: "100%", borderTopLeftRadius: 18, borderTopRightRadius: 18, borderWidth: 1, borderColor: "rgba(255,255,255,0.9)", alignItems: "center", justifyContent: "center", marginTop: 8 },
 });
