@@ -5,6 +5,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-na
 import GlassSurface from "./GlassSurface";
 import { useTheme } from "@/theme/useTheme";
 import { SPRING } from "@/theme/motion";
+import { elevation } from "@/theme/colors";
 
 interface Props<T extends string> {
   options: { label: string; value: T }[];
@@ -48,18 +49,16 @@ export default function SegmentedControl<T extends string>({ options, value, onC
       radius={radii.pill}
       intensity={40}
       specular={false}
-      backgroundColor={colors.glassFillStrong}
-      style={[styles.track, style]}
+      backgroundColor="rgba(40,110,55,0.08)"
+      style={style}
     >
+      <View style={styles.track} role="tablist">
       <Animated.View
         pointerEvents="none"
         style={[
           styles.pill,
-          {
-            width: `${100 / options.length}%`,
-            backgroundColor: colors.glassGreenFill,
-            borderColor: colors.glassGreenBorder,
-          },
+          { width: `${100 / options.length}%` },
+          elevation("low"),
           pillStyle,
         ]}
       />
@@ -74,7 +73,9 @@ export default function SegmentedControl<T extends string>({ options, value, onC
               if (Platform.OS !== "web") Haptics.selectionAsync();
               onChange(option.value);
             }}
-            style={styles.segment}
+            style={({ pressed }) => [styles.segment, { opacity: pressed && !selected ? 0.6 : 1 }]}
+            accessibilityRole="tab"
+            accessibilityState={{ selected }}
           >
             <Text
               numberOfLines={1}
@@ -88,15 +89,17 @@ export default function SegmentedControl<T extends string>({ options, value, onC
           </Pressable>
         );
       })}
+      </View>
     </GlassSurface>
   );
 }
 
 const styles = StyleSheet.create({
-  // Vertical padding only: a horizontal inset would make the pill's
-  // percentage width resolve against a box wider than the segments.
-  track: { flexDirection: "row", paddingVertical: 4 },
+  // Inset row (margin, not padding) so the pill's percentages resolve
+  // against exactly the segments AND the pill never touches — and gets
+  // clipped by — the capsule's rounded ends.
+  track: { flexDirection: "row", margin: 3 },
   segment: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 8, borderRadius: 999, zIndex: 2 },
-  pill: { position: "absolute", top: 4, bottom: 4, left: 0, borderRadius: 999, borderWidth: 1 },
+  pill: { position: "absolute", top: 0, bottom: 0, left: 0, borderRadius: 999, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "rgba(255,255,255,0.95)" },
   label: { fontSize: 12.5 },
 });

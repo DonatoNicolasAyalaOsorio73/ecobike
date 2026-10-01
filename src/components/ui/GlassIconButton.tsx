@@ -6,6 +6,7 @@ import * as Haptics from "expo-haptics";
 import GlassSurface from "./GlassSurface";
 import { useTheme } from "@/theme/useTheme";
 import { SPRING } from "@/theme/motion";
+import { elevation } from "@/theme/colors";
 
 interface Props {
   icon: keyof typeof Ionicons.glyphMap;
@@ -36,7 +37,7 @@ export default function GlassIconButton({ icon, onPress, accessibilityLabel, siz
       }}
       style={style}
     >
-      <Animated.View style={animated}>
+      <Animated.View style={[{ borderRadius: size / 2 }, elevation("low"), animated]}>
         <GlassSurface
           radius={size / 2}
           intensity={55}
