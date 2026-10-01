@@ -15,6 +15,7 @@ import BarChart from "@/components/charts/BarChart";
 import DonutChart from "@/components/charts/DonutChart";
 import DeltaBadge from "@/components/charts/DeltaBadge";
 import StreakCard from "@/components/StreakCard";
+import MissionsCard from "@/components/MissionsCard";
 import { useTheme } from "@/theme/useTheme";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useRiderStats } from "@/hooks/useRiderStats";
@@ -123,6 +124,8 @@ export default function StatsScreen() {
 
           <Section title="Tu racha" />
           <StreakCard rides={rides} entranceDelay={30} />
+          <View style={{ height: 14 }} />
+          <MissionsCard rides={rides} entranceDelay={60} />
 
           <Section title="Tendencia" />
           <GlassCard entranceDelay={40}>

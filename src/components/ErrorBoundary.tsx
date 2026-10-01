@@ -1,4 +1,5 @@
 import React from "react";
+import { router } from "expo-router";
 import { captureError } from "@/services/monitoring";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -55,7 +56,17 @@ function ErrorFallback({ onRetry }: { onRetry: () => void }) {
           <Text style={[styles.subtitle, { color: colors.inkSoft }]}>
             Encontramos un error inesperado. Tus recorridos y datos guardados están a salvo.
           </Text>
-          <GlassButton label="Reintentar" icon="refresh" variant="primary" onPress={onRetry} style={{ marginTop: 20 }} />
+          <GlassButton label="Reintentar" icon="refresh" variant="primary" onPress={onRetry} style={{ marginTop: 20, alignSelf: "stretch" }} />
+          <GlassButton
+            label="Ir al inicio"
+            icon="home-outline"
+            variant="secondary"
+            onPress={() => {
+              router.replace("/");
+              onRetry();
+            }}
+            style={{ marginTop: 10, alignSelf: "stretch" }}
+          />
         </GlassCard>
       </SafeAreaView>
     </View>

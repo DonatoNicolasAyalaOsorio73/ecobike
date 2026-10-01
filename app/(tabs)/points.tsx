@@ -10,6 +10,8 @@ import GlassIconButton from "@/components/ui/GlassIconButton";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import RewardCarousel from "@/components/rewards/RewardCarousel";
 import RedeemSheet from "@/components/rewards/RedeemSheet";
+import MissionsCard from "@/components/MissionsCard";
+import { useRiderStats } from "@/hooks/useRiderStats";
 import EmailVerifyBanner from "@/components/EmailVerifyBanner";
 import { useTheme } from "@/theme/useTheme";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
@@ -26,6 +28,7 @@ export default function PointsScreen() {
   const [width, setWidth] = useState(360);
   const [selected, setSelected] = useState<Reward | null>(null);
   const { level, nextLevelAt } = levelForPoints(availablePoints);
+  const { rides } = useRiderStats(userId);
 
   useFocusEffect(
     useCallback(() => {
@@ -104,6 +107,11 @@ export default function PointsScreen() {
               <RewardCarousel rewards={rewards} availablePoints={availablePoints} width={width} onPress={setSelected} />
             </>
           )}
+
+          <Text style={[styles.section, { color: colors.ink }]}>Gana más puntos hoy</Text>
+          <View style={styles.pad}>
+            <MissionsCard rides={rides} />
+          </View>
 
           <Text style={[styles.section, { color: colors.ink }]}>Cómo ganar puntos</Text>
           <View style={styles.pad}>
