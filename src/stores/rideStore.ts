@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { Platform } from "react-native";
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
+import * as Haptics from "expo-haptics";
+import { goalProgress, type RideGoal } from "@/utils/rideGoals";
 import { createEmptyRide, type Ride, type RideStatus, type TrackPoint } from "@/types/ride";
 import { avgSpeedKmh, estimateCalories, incrementalDistanceMeters, totalElevationGainMeters } from "@/utils/geo";
 import { pointsForRide, computeRiderStats, evaluateAchievements } from "@/utils/gamification";
@@ -17,8 +19,11 @@ interface RideState {
   error: string | null;
   justUnlocked: AchievementDef[];
   currentLocation: { lat: number; lng: number } | null;
+  /** Optional target chosen in the map's ride menu. */
+  goal: RideGoal | null;
+  goalReached: boolean;
   requestPermissions: () => Promise<boolean>;
-  startRide: (userId: string) => Promise<void>;
+  startRide: (userId: string, goal?: RideGoal | null) => Promise<void>;
   pauseRide: () => void;
   resumeRide: () => void;
   finishRide: () => Promise<Ride | null>;
@@ -136,9 +141,10 @@ async function ensureTracking() {
       const state = useRideStore.getState();
       if (state.status !== "ACTIVE" || !state.ride) return;
       const durationSeconds = elapsedSeconds();
-      useRideStore.setState({
-        ride: { ...state.ride, durationSeconds, avgSpeedKmh: avgSpeedKmh(state.ride.distanceMeters, durationSeconds) },
-      });
+      const ride = { ...state.ride, durationSeconds, avgSpeedKmh: avgSpeedKmh(state.ride.distanceMeters, durationSeconds) };
+      const reached = !state.goalReached && !!state.goal && goalProgress(state.goal, ride) >= 1;
+      if (reached) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      useRideStore.setState(reached ? { ride, goalReached: true } : { ride });
       if (++ticksSinceAutosave >= 15) {
         ticksSinceAutosave = 0;
         const current = useRideStore.getState().ride;
@@ -154,13 +160,15 @@ export const useRideStore = create<RideState>((set, get) => ({
   error: null,
   justUnlocked: [],
   currentLocation: null,
+  goal: null,
+  goalReached: false,
 
   requestPermissions: async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     return status === "granted";
   },
 
-  startRide: async (userId: string) => {
+  startRide: async (userId: string, goal: RideGoal | null = null) => {
     set({ status: "PREPARING", error: null });
     const granted = await get().requestPermissions();
     if (!granted) {
@@ -172,7 +180,7 @@ export const useRideStore = create<RideState>((set, get) => ({
     baseSeconds = 0;
     activeSince = Date.now();
     segmentBreak = true;
-    set({ ride, status: "ACTIVE", currentLocation: null });
+    set({ ride, status: "ACTIVE", currentLocation: null, goal, goalReached: false });
     try {
       await ensureTracking();
     } catch {
@@ -246,7 +254,7 @@ export const useRideStore = create<RideState>((set, get) => ({
     stopTracking();
     const ride = get().ride;
     if (ride) db.deleteRide(ride.id);
-    set({ status: "IDLE", ride: null, currentLocation: null, error: null });
+    set({ status: "IDLE", ride: null, currentLocation: null, error: null, goal: null, goalReached: false });
   },
 
   clearJustUnlocked: () => set({ justUnlocked: [] }),

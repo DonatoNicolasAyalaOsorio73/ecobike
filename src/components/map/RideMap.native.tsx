@@ -7,58 +7,54 @@ export interface RideMapProps {
   route: { lat: number; lng: number }[];
   center: { lat: number; lng: number } | null;
   height?: number;
+  /** Fill the parent edge to edge (map as screen background) instead of a rounded card. */
+  fill?: boolean;
+  /** Bump to re-center the camera on `center` (the "locate me" button). */
+  recenterKey?: number;
 }
 
 /**
  * expo-maps has no single cross-platform component by design (Apple Maps and
  * Google Maps have genuinely different feature sets) — this wrapper picks
- * the native one per rule 5 (Apple-first, but never break Android) and
- * exposes only the subset of props this app actually uses.
+ * the native one per platform and exposes only what the app uses.
  */
-export default function RideMap({ route, center, height = 260 }: RideMapProps) {
+export default function RideMap({ route, center, height = 260, fill, recenterKey = 0 }: RideMapProps) {
   const { isDark } = useTheme();
   const coordinates = route.map((p) => ({ latitude: p.lat, longitude: p.lng }));
-  const cameraPosition = center
-    ? { coordinates: { latitude: center.lat, longitude: center.lng }, zoom: 16 }
-    : undefined;
+  // A new object identity (keyed by recenterKey) makes the camera move again.
+  const cameraPosition = React.useMemo(
+    () => (center ? { coordinates: { latitude: center.lat, longitude: center.lng }, zoom: 16 } : undefined),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [center?.lat, center?.lng, recenterKey]
+  );
+  const polylines = coordinates.length > 1 ? [{ coordinates, color: "#ADF14B", width: 6 }] : [];
+  const wrap = fill ? StyleSheet.absoluteFill : [styles.card, { height }];
 
-  if (Platform.OS === "ios") {
-    return (
-      <View style={[styles.wrap, { height }]}>
+  return (
+    <View style={wrap}>
+      {Platform.OS === "ios" ? (
         <AppleMaps.View
           style={StyleSheet.absoluteFill}
           cameraPosition={cameraPosition}
           colorScheme={isDark ? AppleMaps.MapColorScheme.DARK : AppleMaps.MapColorScheme.LIGHT}
           properties={{ isMyLocationEnabled: true }}
-          uiSettings={{ myLocationButtonEnabled: true, compassEnabled: true }}
-          polylines={
-            coordinates.length > 1
-              ? [{ coordinates, color: "#ADF14B", width: 5 }]
-              : []
-          }
+          uiSettings={{ myLocationButtonEnabled: false, compassEnabled: true }}
+          polylines={polylines}
         />
-      </View>
-    );
-  }
-
-  return (
-    <View style={[styles.wrap, { height }]}>
-      <GoogleMaps.View
-        style={StyleSheet.absoluteFill}
-        cameraPosition={cameraPosition}
-        colorScheme={isDark ? GoogleMaps.MapColorScheme.DARK : GoogleMaps.MapColorScheme.LIGHT}
-        properties={{ isMyLocationEnabled: true }}
-        uiSettings={{ myLocationButtonEnabled: true, compassEnabled: true }}
-        polylines={
-          coordinates.length > 1
-            ? [{ coordinates, color: "#ADF14B", width: 5 }]
-            : []
-        }
-      />
+      ) : (
+        <GoogleMaps.View
+          style={StyleSheet.absoluteFill}
+          cameraPosition={cameraPosition}
+          colorScheme={isDark ? GoogleMaps.MapColorScheme.DARK : GoogleMaps.MapColorScheme.LIGHT}
+          properties={{ isMyLocationEnabled: true }}
+          uiSettings={{ myLocationButtonEnabled: false, compassEnabled: true, zoomControlsEnabled: false }}
+          polylines={polylines}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { width: "100%", borderRadius: 24, overflow: "hidden" },
+  card: { width: "100%", borderRadius: 24, overflow: "hidden" },
 });

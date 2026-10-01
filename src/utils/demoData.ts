@@ -1,21 +1,12 @@
 import type { Ride, TrackPoint } from "@/types/ride";
 import { pointsForRide } from "@/utils/gamification";
 import { estimateCalories, totalElevationGainMeters } from "@/utils/geo";
+import { seededRandom } from "@/utils/random";
 
 // Deterministic demo content for "Explorar sin cuenta": a believable history
 // so every screen (stats, history, ride detail, points) has something to show.
 
-/** Small seeded PRNG (mulberry32) so demo data is identical on every device. */
-export function seededRandom(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+export { seededRandom } from "@/utils/random";
 
 export const DEMO_RIDE_PREFIX = "demo_";
 const BOGOTA = { lat: 4.6533, lng: -74.0836 };

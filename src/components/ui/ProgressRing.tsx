@@ -44,11 +44,12 @@ export default function ProgressRing({ progress, size = 120, thickness = 12, chi
           strokeWidth={thickness}
           strokeLinecap="round"
           fill="none"
-          strokeDasharray={circumference}
-          strokeDashoffset={dashOffset}
-          // Start the sweep at 12 o'clock instead of 3 o'clock, the way every
-          // ring-shaped progress indicator on iOS does.
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          strokeOpacity={animated > 0.001 ? 1 : 0}
+          strokeDasharray={`${circumference - dashOffset} ${circumference}`}
+          // Start the sweep at 12 o'clock (like iOS rings) by shifting the dash
+          // a quarter turn instead of an SVG rotate transform, which react-native-svg
+          // turns into an invalid `transform-origin` DOM attribute on web.
+          strokeDashoffset={circumference / 4}
         />
       </Svg>
       <View style={styles.center}>{children}</View>

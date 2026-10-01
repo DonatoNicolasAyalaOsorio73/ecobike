@@ -1,38 +1,64 @@
 import React, { useEffect } from "react";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { MapContainer, TileLayer, Polyline, CircleMarker, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { RideMapProps } from "./RideMap.native";
+import { useTheme } from "@/theme/useTheme";
 
-// No Google/Apple Maps SDK on web — OpenStreetMap tiles need no API key and
-// keep Web genuinely usable instead of a dead placeholder (rule 16).
-function Recenter({ center }: { center: { lat: number; lng: number } | null }) {
+const BOGOTA = { lat: 4.711, lng: -74.0721 };
+
+// Dark mode for OSM tiles without another tile provider: invert + hue-rotate
+// keeps streets readable and matches the app's dark glass surfaces.
+const DARK_TILES_CSS = ".ecobike-dark .leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9)}";
+let cssInjected = false;
+function injectCss() {
+  if (cssInjected || typeof document === "undefined") return;
+  const el = document.createElement("style");
+  el.textContent = DARK_TILES_CSS;
+  document.head.appendChild(el);
+  cssInjected = true;
+}
+
+function Recenter({ center, recenterKey }: { center: { lat: number; lng: number } | null; recenterKey: number }) {
   const map = useMap();
   useEffect(() => {
-    if (center) map.setView([center.lat, center.lng], map.getZoom() < 14 ? 16 : map.getZoom());
-  }, [center, map]);
+    if (center) map.flyTo([center.lat, center.lng], map.getZoom() < 14 ? 16 : map.getZoom(), { duration: 0.8 });
+  }, [center?.lat, center?.lng, recenterKey, map]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
 
-export default function RideMap({ route, center, height = 260 }: RideMapProps) {
-  const initialCenter = center ?? route[0] ?? { lat: 4.7110, lng: -74.0721 }; // Bogotá fallback
+/** OpenStreetMap via Leaflet: no API key, works in any browser. */
+export default function RideMap({ route, center, height = 260, fill, recenterKey = 0 }: RideMapProps) {
+  const { isDark } = useTheme();
+  injectCss();
+  const initialCenter = center ?? route[0] ?? BOGOTA;
   const positions = route.map((p) => [p.lat, p.lng] as [number, number]);
 
   return (
-    <View style={{ height, width: "100%", borderRadius: 24, overflow: "hidden" }}>
+    // zIndex 0 gives the map its own stacking context, so Leaflet's panes
+    // (z-index 400+) can't paint over the app's floating glass controls.
+    <View style={fill ? [StyleSheet.absoluteFill, { zIndex: 0 }] : [styles.card, { height, zIndex: 0 }]}>
       <MapContainer
         center={[initialCenter.lat, initialCenter.lng]}
         zoom={15}
+        zoomControl={!fill}
+        className={isDark ? "ecobike-dark" : undefined}
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {positions.length > 1 && <Polyline positions={positions} color="#6FA524" weight={5} />}
-        {center && <CircleMarker center={[center.lat, center.lng]} radius={8} pathOptions={{ color: "#ADF14B", fillOpacity: 1 }} />}
-        <Recenter center={center} />
+        {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: "#6FA524", weight: 6, lineCap: "round" }} />}
+        {center && (
+          <CircleMarker center={[center.lat, center.lng]} radius={9} pathOptions={{ color: "#fff", weight: 3, fillColor: "#ADF14B", fillOpacity: 1 }} />
+        )}
+        <Recenter center={center} recenterKey={recenterKey} />
       </MapContainer>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  card: { width: "100%", borderRadius: 24, overflow: "hidden" },
+});
