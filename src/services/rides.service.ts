@@ -1,7 +1,8 @@
 import { collection, getDocs } from "firebase/firestore";
 import { getDb, isFirebaseConfigured } from "./firebase";
 import { api } from "./api";
-import { getRide, listRides, markSynced, saveRide, unsyncedRides } from "./db";
+import { getRide, initDb, listRides, markSynced, saveRide, unlockAchievement, unsyncedRides, wipeAllLocalData } from "./db";
+import { computeRiderStats, evaluateAchievements } from "@/utils/gamification";
 import type { Ride } from "@/types/ride";
 
 /**
@@ -94,5 +95,22 @@ export async function pullRemoteRides(userId: string): Promise<number> {
     });
     added++;
   }
+  return added;
+}
+
+/**
+ * "Limpiar caché local": re-downloads ride history from the cloud. Refuses
+ * while any ride is still unsynced, so nothing that exists only on this
+ * device can be lost. Achievements are recomputed from the downloaded history.
+ */
+export async function resetLocalCache(userId: string): Promise<number> {
+  await syncPendingRides(userId);
+  if (unsyncedRides(userId).length > 0) {
+    throw new Error("Hay recorridos sin sincronizar. Conéctate a internet e inténtalo de nuevo.");
+  }
+  wipeAllLocalData(userId);
+  initDb();
+  const added = await pullRemoteRides(userId);
+  evaluateAchievements(computeRiderStats(listRides(userId)), new Set()).forEach((a) => unlockAchievement(userId, a.code));
   return added;
 }

@@ -29,16 +29,28 @@ export interface UserProfile {
 export type Units = "metric" | "imperial";
 export type AppearanceMode = "system" | "light" | "dark";
 
+export type GpsAccuracy = "high" | "balanced";
+
+/** Device-local preferences (persisted per device by settingsStore). */
 export interface UserSettings {
   units: Units;
   appearance: AppearanceMode;
   biometricUnlockEnabled: boolean;
+  /** Master switch for push on this device (token registered or cleared). */
   notificationsEnabled: boolean;
-  shareStatsWithFriends: boolean;
-  shareLocationDuringRide: boolean;
   /** Weekly distance target in kilometres, always stored metric regardless
    * of the display `units` setting so switching units never moves the goal. */
   weeklyGoalKm: number;
+  /** Rider weight for calorie estimates. */
+  weightKg: number;
+  /** Pause automatically when stopped and resume when moving again. */
+  autoPause: boolean;
+  /** Keep the screen on while a ride is being recorded. */
+  keepScreenOn: boolean;
+  /** "balanced" trades some GPS precision for battery life. */
+  gpsAccuracy: GpsAccuracy;
+  /** Local reminder every Sunday evening to check the weekly goal (native). */
+  weeklyReminder: boolean;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -46,7 +58,18 @@ export const DEFAULT_SETTINGS: UserSettings = {
   appearance: "system",
   biometricUnlockEnabled: false,
   notificationsEnabled: true,
-  shareStatsWithFriends: true,
-  shareLocationDuringRide: false,
   weeklyGoalKm: 30,
+  weightKg: 70,
+  autoPause: true,
+  keepScreenOn: true,
+  gpsAccuracy: "high",
+  weeklyReminder: false,
 };
+
+/** Account-level preferences stored on the server (usuarios/{uid}), shared by all devices. */
+export interface NotificationPrefs {
+  friends: boolean;
+  messages: boolean;
+}
+
+export const DEFAULT_NOTIF_PREFS: NotificationPrefs = { friends: true, messages: true };

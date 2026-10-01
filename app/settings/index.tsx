@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import Constants from "expo-constants";
@@ -11,19 +11,65 @@ import { SettingsChoiceRow, SettingsNavRow, SettingsStepperRow, SettingsSwitchRo
 import { useTheme } from "@/theme/useTheme";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useAuthStore } from "@/stores/authStore";
+import { useToastStore } from "@/stores/toastStore";
 import { useBiometricSupport } from "@/hooks/useBiometricUnlock";
+import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { sendPasswordReset } from "@/services/auth.service";
-import { isFirebaseConfigured } from "@/services/firebase";
+import { exportMyData, getAccountPrefs, setNotificationPrefs, setSearchable, signOutEverywhere, type AccountPrefs } from "@/services/account.service";
+import { resetLocalCache } from "@/services/rides.service";
+import { resetDemoData } from "@/services/demo.service";
+import { DEFAULT_NOTIF_PREFS } from "@/types/user";
+
+const PROVIDER_LABEL: Record<string, string> = { password: "Correo y contraseña", "google.com": "Google", "apple.com": "Apple" };
 
 export default function SettingsScreen() {
   const { colors } = useTheme();
   const settings = useSettingsStore();
   const profile = useAuthStore((s) => s.profile);
+  const firebaseUser = useAuthStore((s) => s.firebaseUser);
+  const isGuest = useAuthStore((s) => s.isGuest);
   const signOut = useAuthStore((s) => s.signOut);
+  const toast = useToastStore((s) => s.show);
+  const userId = useCurrentUserId();
   const { supported: biometricSupported, enrolled: biometricEnrolled, kind } = useBiometricSupport();
   const [resetSent, setResetSent] = useState(false);
+  const [prefs, setPrefs] = useState<AccountPrefs | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [confirmEverywhere, setConfirmEverywhere] = useState(false);
 
+  const uid = firebaseUser?.uid;
   const biometricLabel = kind === "face" ? "Face ID" : kind === "fingerprint" ? "Huella digital" : "Biometría";
+  const native = Platform.OS !== "web";
+
+  useEffect(() => {
+    if (uid) getAccountPrefs(uid).then(setPrefs).catch(() => setPrefs({ notif: DEFAULT_NOTIF_PREFS, searchable: true }));
+  }, [uid]);
+
+  // Optimistic update of a server-side preference, rolled back on failure.
+  const savePrefs = async (next: AccountPrefs) => {
+    if (!uid || !prefs) return;
+    const prev = prefs;
+    setPrefs(next);
+    try {
+      if (next.searchable !== prev.searchable) await setSearchable(uid, next.searchable);
+      if (next.notif !== prev.notif) await setNotificationPrefs(uid, next.notif);
+    } catch {
+      setPrefs(prev);
+      toast("No se pudo guardar. Revisa tu conexión.", "error");
+    }
+  };
+
+  const task = async (key: string, fn: () => Promise<unknown>, ok: string) => {
+    setBusy(key);
+    try {
+      await fn();
+      toast(ok, "success");
+    } catch (e: any) {
+      toast(e?.message ?? "Algo salió mal.", "error");
+    } finally {
+      setBusy(null);
+    }
+  };
 
   return (
     <View style={styles.screen}>
@@ -31,7 +77,9 @@ export default function SettingsScreen() {
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <View style={styles.headerRow}>
           <BackButton />
-          <Text style={[styles.header, { color: colors.ink }]}>Ajustes</Text>
+          <Text style={[styles.header, { color: colors.ink }]} accessibilityRole="header">
+            Ajustes
+          </Text>
           <View style={{ width: 44 }} />
         </View>
 
@@ -49,23 +97,20 @@ export default function SettingsScreen() {
                 { label: "Oscuro", value: "dark" },
               ]}
             />
-          </GlassCard>
-
-          <SectionLabel text="Unidades" />
-          <GlassCard>
+            <Divider />
             <SettingsChoiceRow
               icon="speedometer-outline"
               label="Unidades"
               value={settings.units}
               onChange={(v) => settings.update({ units: v })}
               options={[
-                { label: "Métrico (km)", value: "metric" },
-                { label: "Imperial (mi)", value: "imperial" },
+                { label: "Kilómetros", value: "metric" },
+                { label: "Millas", value: "imperial" },
               ]}
             />
           </GlassCard>
 
-          <SectionLabel text="Objetivos" />
+          <SectionLabel text="Recorridos" />
           <GlassCard>
             <SettingsStepperRow
               icon="flag-outline"
@@ -78,47 +123,44 @@ export default function SettingsScreen() {
               max={500}
               format={(v) => `${v} km`}
             />
-          </GlassCard>
-
-          <SectionLabel text="Seguridad" />
-          <GlassCard>
-            <SettingsSwitchRow
-              icon="finger-print-outline"
-              label={`Desbloquear con ${biometricLabel}`}
-              sublabel={!biometricSupported ? "Tu dispositivo no tiene biometría disponible" : !biometricEnrolled ? "Configura biometría en Ajustes del sistema" : undefined}
-              value={settings.biometricUnlockEnabled}
-              onValueChange={(v) => settings.update({ biometricUnlockEnabled: v })}
-            />
-            {profile?.email && (
-              <>
-                <Divider />
-                <SettingsNavRow
-                  icon="key-outline"
-                  label="Cambiar contraseña"
-                  sublabel={resetSent ? "Enlace enviado a tu correo" : undefined}
-                  onPress={async () => {
-                    await sendPasswordReset(profile.email!);
-                    setResetSent(true);
-                  }}
-                />
-              </>
-            )}
-          </GlassCard>
-
-          <SectionLabel text="Privacidad" />
-          <GlassCard>
-            <SettingsSwitchRow
-              icon="people-outline"
-              label="Compartir estadísticas con amigos"
-              value={settings.shareStatsWithFriends}
-              onValueChange={(v) => settings.update({ shareStatsWithFriends: v })}
+            <Divider />
+            <SettingsStepperRow
+              icon="body-outline"
+              label="Tu peso"
+              sublabel="Para estimar calorías"
+              value={settings.weightKg}
+              onChange={(v) => settings.update({ weightKg: v })}
+              step={1}
+              min={30}
+              max={200}
+              format={(v) => `${v} kg`}
             />
             <Divider />
             <SettingsSwitchRow
-              icon="location-outline"
-              label="Compartir ubicación en vivo durante recorridos"
-              value={settings.shareLocationDuringRide}
-              onValueChange={(v) => settings.update({ shareLocationDuringRide: v })}
+              icon="pause-circle-outline"
+              label="Pausa automática"
+              sublabel="Pausa al detenerte y reanuda al moverte"
+              value={settings.autoPause}
+              onValueChange={(v) => settings.update({ autoPause: v })}
+            />
+            <Divider />
+            <SettingsSwitchRow
+              icon="sunny-outline"
+              label="Pantalla encendida"
+              sublabel="No se apaga mientras grabas"
+              value={settings.keepScreenOn}
+              onValueChange={(v) => settings.update({ keepScreenOn: v })}
+            />
+            <Divider />
+            <SettingsChoiceRow
+              icon="navigate-outline"
+              label="GPS"
+              value={settings.gpsAccuracy}
+              onChange={(v) => settings.update({ gpsAccuracy: v })}
+              options={[
+                { label: "Alta precisión", value: "high" },
+                { label: "Ahorro de batería", value: "balanced" },
+              ]}
             />
           </GlassCard>
 
@@ -127,13 +169,146 @@ export default function SettingsScreen() {
             <SettingsSwitchRow
               icon="notifications-outline"
               label="Notificaciones push"
+              sublabel={native ? "En este dispositivo" : "Disponibles en la app del teléfono"}
               value={settings.notificationsEnabled}
               onValueChange={(v) => settings.update({ notificationsEnabled: v })}
             />
+            {uid && prefs && (
+              <>
+                <Divider />
+                <SettingsSwitchRow
+                  icon="person-add-outline"
+                  label="Solicitudes de amistad"
+                  value={prefs.notif.friends}
+                  onValueChange={(v) => savePrefs({ ...prefs, notif: { ...prefs.notif, friends: v } })}
+                />
+                <Divider />
+                <SettingsSwitchRow
+                  icon="chatbubble-outline"
+                  label="Mensajes"
+                  value={prefs.notif.messages}
+                  onValueChange={(v) => savePrefs({ ...prefs, notif: { ...prefs.notif, messages: v } })}
+                />
+              </>
+            )}
+            {native && (
+              <>
+                <Divider />
+                <SettingsSwitchRow
+                  icon="calendar-outline"
+                  label="Recordatorio semanal"
+                  sublabel="Domingos 6:00 p. m., revisa tu meta"
+                  value={settings.weeklyReminder}
+                  onValueChange={(v) => settings.update({ weeklyReminder: v })}
+                />
+              </>
+            )}
           </GlassCard>
 
-          <SectionLabel text="Legal" />
+          {uid && prefs && (
+            <>
+              <SectionLabel text="Privacidad" />
+              <GlassCard>
+                <SettingsSwitchRow
+                  icon="search-outline"
+                  label="Aparecer en búsquedas"
+                  sublabel="Otros pueden encontrarte por tu usuario"
+                  value={prefs.searchable}
+                  onValueChange={(v) => savePrefs({ ...prefs, searchable: v })}
+                />
+              </GlassCard>
+            </>
+          )}
+
+          <SectionLabel text="Seguridad" />
           <GlassCard>
+            <SettingsSwitchRow
+              icon="finger-print-outline"
+              label={`Desbloquear con ${biometricLabel}`}
+              sublabel={!biometricSupported ? "No disponible en este dispositivo" : !biometricEnrolled ? "Configúrala en los ajustes del sistema" : undefined}
+              value={settings.biometricUnlockEnabled}
+              onValueChange={(v) => settings.update({ biometricUnlockEnabled: v })}
+            />
+            {profile?.email && profile.providers.includes("password") && (
+              <>
+                <Divider />
+                <SettingsNavRow
+                  icon="key-outline"
+                  label="Cambiar contraseña"
+                  sublabel={resetSent ? "Te enviamos un enlace a tu correo" : undefined}
+                  onPress={async () => {
+                    await sendPasswordReset(profile.email!);
+                    setResetSent(true);
+                  }}
+                />
+              </>
+            )}
+            {uid && (
+              <>
+                <Divider />
+                <SettingsNavRow
+                  icon="phone-portrait-outline"
+                  label={confirmEverywhere ? "Toca otra vez para confirmar" : "Cerrar sesión en todos los dispositivos"}
+                  danger={confirmEverywhere}
+                  sublabel={busy === "everywhere" ? "Cerrando sesiones…" : undefined}
+                  onPress={() => {
+                    if (!confirmEverywhere) return setConfirmEverywhere(true);
+                    task("everywhere", async () => {
+                      await signOutEverywhere();
+                      await signOut();
+                    }, "Cerraste sesión en todos tus dispositivos.");
+                  }}
+                />
+              </>
+            )}
+          </GlassCard>
+
+          {profile && (
+            <>
+              <SectionLabel text="Cuentas vinculadas" />
+              <GlassCard>
+                {profile.providers.map((p, i) => (
+                  <View key={p}>
+                    {i > 0 && <Divider />}
+                    <SettingsNavRow icon="link-outline" label={PROVIDER_LABEL[p] ?? p} sublabel={p === "password" ? profile.email ?? undefined : undefined} onPress={() => {}} showChevron={false} />
+                  </View>
+                ))}
+              </GlassCard>
+            </>
+          )}
+
+          <SectionLabel text="Tus datos" />
+          <GlassCard>
+            {uid && (
+              <>
+                <SettingsNavRow
+                  icon="download-outline"
+                  label="Exportar mis datos"
+                  sublabel={busy === "export" ? "Preparando archivo…" : "Archivo JSON con todo lo que guardamos"}
+                  onPress={() => task("export", exportMyData, "Exportación lista.")}
+                />
+                <Divider />
+                <SettingsNavRow
+                  icon="refresh-outline"
+                  label="Volver a sincronizar"
+                  sublabel={busy === "cache" ? "Sincronizando…" : "Descarga de nuevo tu historial desde la nube"}
+                  onPress={() => task("cache", () => resetLocalCache(uid), "Historial sincronizado.")}
+                />
+              </>
+            )}
+            {isGuest && userId && (
+              <SettingsNavRow
+                icon="refresh-outline"
+                label="Restablecer datos de ejemplo"
+                onPress={() => task("demo", async () => resetDemoData(userId), "Datos de ejemplo restablecidos.")}
+              />
+            )}
+          </GlassCard>
+
+          <SectionLabel text="Ayuda y legal" />
+          <GlassCard>
+            <SettingsNavRow icon="help-buoy-outline" label="Centro de ayuda" onPress={() => router.push("/settings/help")} />
+            <Divider />
             <SettingsNavRow icon="shield-checkmark-outline" label="Política de privacidad" onPress={() => router.push("/legal/privacy")} />
             <Divider />
             <SettingsNavRow icon="document-text-outline" label="Términos de uso" onPress={() => router.push("/legal/terms")} />
@@ -141,32 +316,29 @@ export default function SettingsScreen() {
 
           <SectionLabel text="Cuenta" />
           <GlassCard>
-            <SettingsNavRow icon="people-circle-outline" label="Amigos y solicitudes" onPress={() => router.push("/(tabs)/friends")} />
+            {profile && (profile.role === "admin" || profile.role === "partner") && (
+              <>
+                <SettingsNavRow
+                  icon="storefront-outline"
+                  label={profile.role === "admin" ? "Administración" : "Validar códigos"}
+                  onPress={() => router.push("/settings/admin")}
+                />
+                <Divider />
+              </>
+            )}
+            <SettingsNavRow icon="log-out-outline" label={isGuest ? "Salir del modo invitado" : "Cerrar sesión"} onPress={signOut} />
             {profile && (
               <>
-                {(profile.role === "admin" || profile.role === "partner") && (
-                  <>
-                    <Divider />
-                    <SettingsNavRow icon="storefront-outline" label={profile.role === "admin" ? "Administración" : "Validar códigos"} onPress={() => router.push("/settings/admin")} />
-                  </>
-                )}
-                <Divider />
-                <SettingsNavRow icon="log-out-outline" label="Cerrar sesión" onPress={signOut} />
                 <Divider />
                 <SettingsNavRow icon="trash-outline" label="Eliminar cuenta" danger onPress={() => router.push("/settings/delete-account")} />
               </>
             )}
           </GlassCard>
 
-          <Text style={[styles.demoNotice, { color: colors.inkFaint }]}>
+          <Text style={[styles.footer, { color: colors.inkFaint }]}>
             EcoBike {Constants.expoConfig?.version ?? ""}
-            {Application.nativeBuildVersion ? ` (${Application.nativeBuildVersion})` : ""}
+            {Application.nativeBuildVersion ? ` (${Application.nativeBuildVersion})` : ""} · {Platform.OS === "web" ? "Web" : Platform.OS === "ios" ? "iOS" : "Android"}
           </Text>
-          {!isFirebaseConfigured && (
-            <Text style={[styles.demoNotice, { color: colors.inkFaint }]}>
-              Modo demo local — configura Firebase (ver ENVIRONMENT.md) para cuentas reales, sincronización y funciones sociales.
-            </Text>
-          )}
 
           <View style={{ height: 60 }} />
         </ScrollView>
@@ -192,5 +364,5 @@ const styles = StyleSheet.create({
   header: { fontSize: 17, fontWeight: "800" },
   scroll: { paddingHorizontal: 20, paddingTop: 12 },
   sectionLabel: { fontSize: 11.5, fontWeight: "700", letterSpacing: 0.5, marginBottom: 8, marginTop: 18 },
-  demoNotice: { fontSize: 11.5, textAlign: "center", marginTop: 20, paddingHorizontal: 10, lineHeight: 16 },
+  footer: { fontSize: 11.5, textAlign: "center", marginTop: 20 },
 });

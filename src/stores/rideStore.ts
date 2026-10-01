@@ -12,6 +12,9 @@ import * as db from "@/services/db";
 import { queueRideForSync } from "@/services/rides.service";
 import { useAuthStore } from "@/stores/authStore";
 import { isFirebaseConfigured } from "@/services/firebase";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
+import { MOVING_SPEED_MS, autoPauseAction, speedMs } from "@/utils/autoPause";
 
 interface RideState {
   status: RideStatus;
@@ -22,9 +25,11 @@ interface RideState {
   /** Optional target chosen in the map's ride menu. */
   goal: RideGoal | null;
   goalReached: boolean;
+  /** True when the current pause was triggered by auto-pause (resumes on movement). */
+  autoPaused: boolean;
   requestPermissions: () => Promise<boolean>;
   startRide: (userId: string, goal?: RideGoal | null) => Promise<void>;
-  pauseRide: () => void;
+  pauseRide: (auto?: boolean) => void;
   resumeRide: () => void;
   finishRide: () => Promise<Ride | null>;
   discardRide: () => void;
@@ -46,6 +51,11 @@ let ticksSinceAutosave = 0;
 let baseSeconds = 0; // accumulated before the current active segment
 let activeSince: number | null = null;
 let segmentBreak = true; // next fix starts a new segment (after start/pause)
+let lastMovingAt = 0;
+const KEEP_AWAKE_TAG = "ecobike-ride";
+
+const settings = () => useSettingsStore.getState();
+const gpsAccuracy = () => (settings().gpsAccuracy === "balanced" ? Location.Accuracy.Balanced : Location.Accuracy.BestForNavigation);
 
 function elapsedSeconds() {
   return Math.round(baseSeconds + (activeSince ? (Date.now() - activeSince) / 1000 : 0));
@@ -58,14 +68,32 @@ function stopTracking() {
   backgroundUpdates = false;
   if (tickInterval) clearInterval(tickInterval);
   tickInterval = null;
+  try {
+    deactivateKeepAwake(KEEP_AWAKE_TAG);
+  } catch {
+    // keep-awake was not active
+  }
 }
 
 function onLocations(locs: Location.LocationObject[]) {
   const store = useRideStore;
   for (const loc of locs) {
-    const state = store.getState();
-    if (state.status !== "ACTIVE" || !state.ride) return;
     if (loc.coords.accuracy != null && loc.coords.accuracy > MAX_ACCURACY_M) continue;
+    const before = store.getState();
+    if (!before.ride) return;
+    const last = before.ride.points[before.ride.points.length - 1];
+    const moving =
+      speedMs(
+        loc.coords.speed,
+        last ? incrementalDistanceMeters(last, { lat: loc.coords.latitude, lng: loc.coords.longitude, altitude: null, timestamp: loc.timestamp, speed: null }) : 0,
+        last ? loc.timestamp - last.timestamp : 0
+      ) >= MOVING_SPEED_MS;
+    if (moving) lastMovingAt = Date.now();
+    if (autoPauseAction({ enabled: settings().autoPause, status: before.status, autoPaused: before.autoPaused, movingNow: moving, lastMovingAt, now: Date.now() }) === "resume") {
+      before.resumeRide();
+    }
+    const state = store.getState();
+    if (state.status !== "ACTIVE" || !state.ride) continue;
     const point: TrackPoint = {
       lat: loc.coords.latitude,
       lng: loc.coords.longitude,
@@ -88,7 +116,7 @@ function onLocations(locs: Location.LocationObject[]) {
         ...state.ride,
         points,
         distanceMeters: state.ride.distanceMeters + added,
-        maxSpeedKmh: Math.max(state.ride.maxSpeedKmh, (loc.coords.speed ?? 0) * 3.6),
+        maxSpeedKmh: Math.max(state.ride.maxSpeedKmh, Math.max(0, loc.coords.speed ?? 0) * 3.6),
         elevationGainMeters: totalElevationGainMeters(points),
       },
     });
@@ -114,7 +142,7 @@ async function ensureTracking() {
     }
     if (background) {
       await Location.startLocationUpdatesAsync(BG_TASK, {
-        accuracy: Location.Accuracy.BestForNavigation,
+        accuracy: gpsAccuracy(),
         timeInterval: 3000,
         distanceInterval: 5,
         activityType: Location.ActivityType.Fitness,
@@ -130,16 +158,22 @@ async function ensureTracking() {
     } else {
       // Foreground only (web, or background permission declined).
       watchSubscription = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.BestForNavigation, timeInterval: 3000, distanceInterval: 5 },
+        { accuracy: gpsAccuracy(), timeInterval: 3000, distanceInterval: 5 },
         (loc) => onLocations([loc])
       );
     }
   }
 
+  if (settings().keepScreenOn) activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => {});
+
   if (!tickInterval) {
     tickInterval = setInterval(() => {
       const state = useRideStore.getState();
       if (state.status !== "ACTIVE" || !state.ride) return;
+      if (autoPauseAction({ enabled: settings().autoPause, status: state.status, autoPaused: false, movingNow: false, lastMovingAt, now: Date.now() }) === "pause") {
+        state.pauseRide(true);
+        return;
+      }
       const durationSeconds = elapsedSeconds();
       const ride = { ...state.ride, durationSeconds, avgSpeedKmh: avgSpeedKmh(state.ride.distanceMeters, durationSeconds) };
       const reached = !state.goalReached && !!state.goal && goalProgress(state.goal, ride) >= 1;
@@ -162,6 +196,7 @@ export const useRideStore = create<RideState>((set, get) => ({
   currentLocation: null,
   goal: null,
   goalReached: false,
+  autoPaused: false,
 
   requestPermissions: async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -179,8 +214,9 @@ export const useRideStore = create<RideState>((set, get) => ({
     const ride = createEmptyRide(userId, `${userId}_${Date.now()}`);
     baseSeconds = 0;
     activeSince = Date.now();
+    lastMovingAt = Date.now();
     segmentBreak = true;
-    set({ ride, status: "ACTIVE", currentLocation: null, goal, goalReached: false });
+    set({ ride, status: "ACTIVE", currentLocation: null, goal, goalReached: false, autoPaused: false });
     try {
       await ensureTracking();
     } catch {
@@ -189,22 +225,24 @@ export const useRideStore = create<RideState>((set, get) => ({
     }
   },
 
-  pauseRide: () => {
+  pauseRide: (auto = false) => {
     const ride = get().ride;
     if (get().status !== "ACTIVE" || !ride) return;
     baseSeconds = elapsedSeconds();
     activeSince = null;
     segmentBreak = true;
     const paused = { ...ride, durationSeconds: baseSeconds };
-    set({ status: "PAUSED", ride: paused });
+    set({ status: "PAUSED", ride: paused, autoPaused: auto });
+    if (auto) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
     db.saveRide(paused);
   },
 
   resumeRide: () => {
     if (get().status !== "PAUSED") return;
     activeSince = Date.now();
+    lastMovingAt = Date.now();
     segmentBreak = true;
-    set({ status: "ACTIVE" });
+    set({ status: "ACTIVE", autoPaused: false });
     // A ride recovered after an app restart has no GPS subscription yet.
     ensureTracking().catch(() => set({ error: "No se pudo reanudar el GPS." }));
   },
@@ -222,7 +260,7 @@ export const useRideStore = create<RideState>((set, get) => ({
       durationSeconds,
       avgSpeedKmh: avgSpeedKmh(ride.distanceMeters, durationSeconds),
       endedAt: Date.now(),
-      caloriesKcal: estimateCalories(ride.distanceMeters),
+      caloriesKcal: estimateCalories(ride.distanceMeters, settings().weightKg),
     };
     finished.pointsEarned = pointsForRide(finished);
 

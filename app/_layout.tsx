@@ -18,6 +18,7 @@ import Logo from "@/components/ui/Logo";
 import { initDb } from "@/services/db";
 import { pullRemoteRides, syncPendingRides } from "@/services/rides.service";
 import { disablePush, enablePush } from "@/services/push";
+import { setWeeklyReminder } from "@/services/reminders";
 import { withMonitoring } from "@/services/monitoring";
 // Side effect: registers the background location task at startup.
 import "@/stores/rideStore";
@@ -65,6 +66,11 @@ function RootLayout() {
   useEffect(() => {
     if (signedInUid) syncRides(signedInUid);
   }, [signedInUid]);
+
+  const weeklyReminder = useSettingsStore((s) => s.weeklyReminder);
+  useEffect(() => {
+    if (hydrated) setWeeklyReminder(weeklyReminder).catch(() => {});
+  }, [hydrated, weeklyReminder]);
 
   const notificationsEnabled = useSettingsStore((s) => s.notificationsEnabled);
   useEffect(() => {

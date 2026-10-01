@@ -45,6 +45,7 @@ export async function searchUserByUsername(username: string): Promise<UserProfil
     const snap = await getDocs(q);
     if (snap.empty) return null;
     const data = snap.docs[0].data();
+    if (data.buscable === false) return null; // user chose not to appear in search
     return {
       uid: snap.docs[0].id,
       email: null,

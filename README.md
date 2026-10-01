@@ -25,6 +25,15 @@ Gated behind **a native build** (EAS or `expo prebuild`, not Expo Go): Sign
 in with Apple, and native Apple/Google Maps via `expo-maps`. Everything else
 runs in Expo Go.
 
+## Features (iOS, Android and web, same account and data)
+
+- Map: full-screen live map, ride options menu (free ride or distance/time goals), background tracking, auto-pause, keep-screen-on, recording indicator
+- Stats: period comparison, trends, habits by day/hour, ride types, environmental impact, heatmap, records, levels, achievements with progress
+- Rewards: image carousel, confirmation, QR codes, store validation with camera scanner (partner/admin)
+- Friends: search, requests, real-time 1:1 chat with push, podium ranking
+- Profile and settings: account, notifications per type, privacy (search visibility), security (biometric unlock, sign out everywhere), data export, help center, legal pages
+- Guest mode ("Explorar sin cuenta"): example data on every screen, nothing leaves the device
+
 ## Quick start
 
 ```bash

@@ -8,6 +8,7 @@ export const PUBLIC_MIRROR_FIELDS = [
   "profileImageUrl",
   "puntosAcumulados",
   "amigos",
+  "buscable",
 ] as const;
 
 export function publicMirrorFields(data: {
@@ -17,6 +18,8 @@ export function publicMirrorFields(data: {
   profileImageUrl?: string | null;
   puntosAcumulados?: number;
   amigos?: string[];
+  /** false = hidden from username search (Ajustes > Privacidad). */
+  buscable?: boolean;
 }) {
   const fields: Record<string, unknown> = {};
   for (const key of PUBLIC_MIRROR_FIELDS) {

@@ -46,6 +46,9 @@ serverless functions in [`api/`](api) with the Firebase Admin SDK:
 | `POST /api/validate` | Store staff (role `partner`) or admin looks up a redemption code and marks it used, once. |
 | `POST /api/roles` | Admin assigns `partner` / `user` / `admin` by username. |
 | `POST /api/me` | After sign-in: rebuilds the public mirror from the server copy (legacy accounts), dedupes auto usernames, and changes username with a uniqueness check. |
+| `POST /api/messages` | Chat between friends only (checked server-side both ways), text trimmed and capped at 1000 chars, max 20 messages/min, push honors the recipient notification prefs; also read receipts. |
+| `GET /api/export` | Everything stored about the caller as JSON (right of access / portability); excludes the push token. |
+| `POST /api/sessions` | Revokes all refresh tokens ("cerrar sesión en todos los dispositivos"); `requireUser` verifies tokens with `checkRevoked`, so it applies immediately. |
 | `DELETE /api/account` | Deletes Firestore data, public mirror, avatars, friend links and the Auth user. |
 
 Every call sends the user Firebase ID token (`Authorization: Bearer`),
@@ -61,6 +64,12 @@ anything of value:
 - `usuarios_public/{uid}`: readable by signed-in users (search, leaderboard);
   owner may sync name/photo, points and friends come from the server.
 - `tiendas`: readable by signed-in users, server write only.
+- `chats/{id}` and `chats/{id}/messages`: readable only by the two
+  participants (rules check `participants`), written only by the server.
+- `usuarios_public.buscable` (boolean): owner can hide from username search.
+
+Rules are covered by emulator tests in `tests/firestore.rules.test.mjs`
+(run in CI; locally `npm run test:rules`, needs Java).
 - Everything else is denied.
 
 Known ceiling: ride points are checked for plausibility, not re-measured

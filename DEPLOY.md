@@ -29,7 +29,10 @@ npx vercel deploy --prod
 Check: `curl -X POST https://ecobike-demo.vercel.app/api/rides` must return
 `401 {"error":"Falta el token de autenticación."}`, not 404 or 500.
 
-### 2. Firestore + Storage rules
+### 2. Firestore rules, indexes + Storage rules
+
+Re-run this whenever `firestore.rules` or `firestore.indexes.json` change
+(the chat feature needs its two composite indexes).
 
 ```bash
 npm run deploy:rules

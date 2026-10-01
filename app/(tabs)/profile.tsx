@@ -1,27 +1,37 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import Animated, { FadeInUp } from "react-native-reanimated";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassButton from "@/components/ui/GlassButton";
-import { SettingsNavRow, SettingsSwitchRow } from "@/components/ui/SettingsRow";
+import GlassIconButton from "@/components/ui/GlassIconButton";
+import ProgressRing from "@/components/ui/ProgressRing";
+import AnimatedNumber from "@/components/ui/AnimatedNumber";
+import EmailVerifyBanner from "@/components/EmailVerifyBanner";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthStore } from "@/stores/authStore";
-import EmailVerifyBanner from "@/components/EmailVerifyBanner";
 import { useLocalProfileStore } from "@/stores/localProfileStore";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useToastStore } from "@/stores/toastStore";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useRiderStats } from "@/hooks/useRiderStats";
 import { useAvailablePoints } from "@/hooks/useAvailablePoints";
-import { formatDistance } from "@/utils/format";
-import { isFirebaseConfigured } from "@/services/firebase";
-import { sendPasswordReset, uploadProfilePhoto } from "@/services/auth.service";
+import { distanceThisWeek, environmentalImpact } from "@/utils/rideStats";
+import { levelForPoints } from "@/utils/gamification";
+import { listUnlockedAchievements } from "@/services/db";
+import { uploadProfilePhoto } from "@/services/auth.service";
 import { listFriendUids } from "@/services/social.service";
+import { ACHIEVEMENTS } from "@/types/achievement";
+import { DEMO_FRIENDS } from "@/utils/demoData";
 
 const LEVEL_TITLES = ["Biker Iniciante", "Biker Bronce", "Biker Plata", "Biker Oro", "Biker Platino", "Biker Diamante", "Biker Élite", "Leyenda EcoBike"];
+const LEVEL_FLOOR = [0, 100, 300, 700, 1500, 3000, 6000, 12000];
 
 export default function ProfileScreen() {
   const { colors } = useTheme();
@@ -29,26 +39,26 @@ export default function ProfileScreen() {
   const firebaseUser = useAuthStore((s) => s.firebaseUser);
   const isGuest = useAuthStore((s) => s.isGuest);
   const signOut = useAuthStore((s) => s.signOut);
+  const toast = useToastStore((s) => s.show);
   const localProfile = useLocalProfileStore();
-  const settings = useSettingsStore();
   const userId = useCurrentUserId();
   const units = useSettingsStore((s) => s.units);
-  const { points: availablePoints } = useAvailablePoints(userId);
-  const { stats, level, refresh } = useRiderStats(userId, availablePoints);
-  const [friendCount, setFriendCount] = useState<number | null>(null);
+  const weeklyGoalKm = useSettingsStore((s) => s.weeklyGoalKm);
+  const { points } = useAvailablePoints(userId);
+  const { rides, stats, refresh } = useRiderStats(userId, points);
+  const [friendCount, setFriendCount] = useState<number | null>(isGuest ? DEMO_FRIENDS.length : null);
   const [uploading, setUploading] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
+  const [recent, setRecent] = useState<{ code: string; unlockedAt: number }[]>([]);
 
-  useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+      if (userId) setRecent(listUnlockedAchievements(userId).sort((a, b) => b.unlockedAt - a.unlockedAt).slice(0, 4));
+    }, [refresh, userId])
+  );
 
   useEffect(() => {
-    if (!firebaseUser) {
-      setFriendCount(0);
-      return;
-    }
-    // null while loading so a real account never flashes "0 amigos" before
-    // the async Firestore read actually resolves — see friendCount usage
-    // below, which shows a spinner glyph instead of 0 until this settles.
+    if (!firebaseUser) return;
     setFriendCount(null);
     listFriendUids(firebaseUser.uid).then((f) => setFriendCount(f.length)).catch(() => setFriendCount(0));
   }, [firebaseUser]);
@@ -56,37 +66,42 @@ export default function ProfileScreen() {
   const displayName = profile?.displayName ?? localProfile.displayName;
   const username = profile?.username ?? localProfile.username;
   const photoUrl = profile?.photoURL ?? localProfile.photoUri;
+  const city = profile?.city ?? localProfile.city;
+  const bikeType = profile?.bikeType ?? localProfile.bikeType;
+  const { level, nextLevelAt } = levelForPoints(points);
+  const floor = LEVEL_FLOOR[level - 1] ?? 0;
+  const levelProgress = nextLevelAt ? (points - floor) / (nextLevelAt - floor) : 1;
   const levelTitle = LEVEL_TITLES[Math.min(level - 1, LEVEL_TITLES.length - 1)];
+  const co2 = environmentalImpact(stats.totalDistanceMeters).co2Kg;
+  const weekKm = distanceThisWeek(rides) / 1000;
+  const memberSince = profile?.createdAt ? format(new Date(profile.createdAt), "MMMM yyyy", { locale: es }) : null;
+  const recentDefs = useMemo(
+    () => recent.map((r) => ({ ...r, def: ACHIEVEMENTS.find((a) => a.code === r.code) })).filter((r) => r.def),
+    [recent]
+  );
 
   const onChangeAvatar = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) return;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
+    if (!permission.granted) return toast("Permite el acceso a tus fotos para cambiar tu imagen.", "error");
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.8 });
     if (result.canceled || !result.assets[0]) return;
     const uri = result.assets[0].uri;
-
-    if (firebaseUser) {
-      setUploading(true);
-      try {
-        await uploadProfilePhoto(firebaseUser.uid, uri);
-        await useAuthStore.getState().refreshProfile();
-      } finally {
-        setUploading(false);
-      }
-    } else {
-      await localProfile.update({ photoUri: uri });
+    if (!firebaseUser) return localProfile.update({ photoUri: uri });
+    setUploading(true);
+    try {
+      await uploadProfilePhoto(firebaseUser.uid, uri);
+      await useAuthStore.getState().refreshProfile();
+      toast("Foto actualizada.", "success");
+    } catch {
+      toast("No se pudo subir la foto. Inténtalo de nuevo.", "error");
+    } finally {
+      setUploading(false);
     }
   };
 
-  const onResetPassword = async () => {
-    if (!profile?.email) return;
-    await sendPasswordReset(profile.email);
-    setResetSent(true);
+  const createAccount = async () => {
+    await signOut(); // leaves guest mode; the welcome/register flow takes over
+    router.replace("/(auth)/register");
   };
 
   return (
@@ -94,115 +109,140 @@ export default function ProfileScreen() {
       <BackgroundBlobs />
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Text style={[styles.header, { color: colors.ink }]}>Perfil</Text>
-          <View style={{ marginHorizontal: -20 }}>
-            <EmailVerifyBanner />
+          <View style={styles.headerRow}>
+            <Text style={[styles.header, { color: colors.ink }]} accessibilityRole="header">
+              Perfil
+            </Text>
+            <GlassIconButton icon="settings-outline" accessibilityLabel="Ajustes" onPress={() => router.push("/settings")} size={44} />
           </View>
 
-          <GlassCard style={styles.profileCard}>
-            <View style={styles.pointsPillWrap}>
-              <View style={[styles.pointsPill, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
-                <Ionicons name="ribbon-outline" size={13} color={colors.primaryDark} />
-                <Text style={{ color: colors.primaryDark, fontWeight: "700", fontSize: 12, marginLeft: 4 }}>{availablePoints} pts</Text>
-              </View>
-            </View>
-
-            <Pressable onPress={onChangeAvatar} style={styles.avatarWrap}>
-              <View style={[styles.avatar, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
-                {photoUrl ? (
-                  <Image source={{ uri: photoUrl }} style={styles.avatarImage} />
-                ) : (
-                  <Ionicons name="person" size={34} color={colors.primaryDark} />
-                )}
-              </View>
+          <GlassCard intensity={45} style={styles.hero}>
+            <Pressable onPress={onChangeAvatar} accessibilityRole="button" accessibilityLabel="Cambiar foto de perfil" style={styles.avatarWrap}>
+              <ProgressRing progress={levelProgress} size={124} thickness={7}>
+                <View style={[styles.avatar, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
+                  {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.avatarImage} /> : <Ionicons name="person" size={40} color={colors.primaryDark} />}
+                  {uploading && (
+                    <View style={[StyleSheet.absoluteFill, styles.uploading]}>
+                      <ActivityIndicator color="#fff" />
+                    </View>
+                  )}
+                </View>
+              </ProgressRing>
               <View style={[styles.cameraBadge, { backgroundColor: colors.primary, borderColor: colors.bgTop }]}>
-                <Ionicons name="camera" size={13} color={colors.onPrimary} />
+                <Ionicons name="camera" size={14} color={colors.onPrimary} />
               </View>
             </Pressable>
 
             <Text style={[styles.name, { color: colors.ink }]}>{displayName}</Text>
-            <Text style={[styles.username, { color: colors.inkSoft }]}>@{username}</Text>
+            <Text style={{ color: colors.inkSoft, fontSize: 13.5, marginTop: 2 }}>@{username}</Text>
 
-            <View style={[styles.levelBadge, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
-              <Text style={{ color: colors.primaryDark, fontWeight: "700", fontSize: 12 }}>{levelTitle}</Text>
+            <View style={styles.chips}>
+              <Chip icon="trophy" text={`Nivel ${level} · ${levelTitle}`} strong />
+              {city ? <Chip icon="location-outline" text={city} /> : null}
+              {bikeType ? <Chip icon="bicycle-outline" text={bikeType} /> : null}
             </View>
+            <Text style={{ color: colors.inkFaint, fontSize: 12, marginTop: 8 }}>
+              {nextLevelAt ? `${(nextLevelAt - points).toLocaleString("es-CO")} pts para el nivel ${level + 1}` : "Nivel máximo alcanzado"}
+              {memberSince ? ` · Miembro desde ${memberSince}` : ""}
+            </Text>
 
-            <View style={styles.statsRow}>
-              <ProfileStat label="km" value={formatDistance(stats.totalDistanceMeters, units).split(" ")[0]} />
-              <View style={[styles.divider, { backgroundColor: colors.divider }]} />
-              <ProfileStat label="rutas" value={String(stats.totalRides)} />
-              <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+            <View style={[styles.statsRow, { borderTopColor: colors.divider }]}>
+              <ProfileStat label={units === "metric" ? "km" : "mi"} value={Math.round((stats.totalDistanceMeters / 1000) * (units === "metric" ? 1 : 0.621371)).toLocaleString("es-CO")} />
+              <ProfileStat label="recorridos" value={String(stats.totalRides)} />
               <ProfileStat label="amigos" value={friendCount === null ? "…" : String(friendCount)} />
+              <ProfileStat label="kg CO₂" value={co2.toFixed(0)} />
             </View>
           </GlassCard>
 
-          {!profile && isGuest && isFirebaseConfigured && (
-            <GlassButton
-              label="Iniciar sesión"
-              icon="log-in-outline"
-              variant="primary"
-              onPress={() => router.replace("/(auth)/welcome")}
-              style={{ marginTop: 16 }}
-            />
+          {isGuest && (
+            <GlassCard style={{ marginTop: 14 }}>
+              <View style={styles.ctaRow}>
+                <Ionicons name="cloud-upload-outline" size={26} color={colors.primaryDark} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.ink, fontWeight: "800" }}>Crea tu cuenta gratis</Text>
+                  <Text style={{ color: colors.inkSoft, fontSize: 12.5, marginTop: 2 }}>
+                    Guarda tus recorridos en la nube, gana puntos reales y úsalos desde el teléfono o la web.
+                  </Text>
+                </View>
+              </View>
+              <GlassButton label="Crear cuenta" icon="person-add-outline" onPress={createAccount} style={{ marginTop: 12 }} />
+            </GlassCard>
           )}
 
-          <Text style={[styles.sectionLabel, { color: colors.inkFaint }]}>MI CUENTA</Text>
+          <View style={{ marginHorizontal: -20, marginTop: 14 }}>
+            <EmailVerifyBanner />
+          </View>
+
+          <View style={styles.actions}>
+            <Action icon="create-outline" label="Editar perfil" onPress={() => router.push("/settings/edit-profile")} delay={0} />
+            <Action icon="time-outline" label="Historial" onPress={() => router.push("/history")} delay={40} />
+            <Action icon="qr-code-outline" label="Mis códigos" onPress={() => router.push("/points/my-codes")} delay={80} />
+            <Action icon="stats-chart-outline" label="Estadísticas" onPress={() => router.push("/(tabs)/stats")} delay={120} />
+          </View>
+
+          <Text style={[styles.section, { color: colors.ink }]}>Esta semana</Text>
           <GlassCard>
-            <SettingsNavRow icon="create-outline" label="Editar perfil" onPress={() => router.push("/settings/edit-profile")} />
-            {profile?.email && (
-              <>
-                <View style={[styles.rowDivider, { backgroundColor: colors.divider }]} />
-                <SettingsNavRow icon="mail-outline" label={profile.email} onPress={() => {}} showChevron={false} />
-              </>
-            )}
+            <View style={styles.weekRow}>
+              <AnimatedNumber value={Math.round(weekKm * 10)} style={[styles.weekValue, { color: colors.ink }]} format={(v) => `${(v / 10).toFixed(1)} km`} />
+              <Text style={{ color: colors.inkSoft }}>de {weeklyGoalKm} km</Text>
+            </View>
+            <View style={[styles.track, { backgroundColor: colors.divider }]}>
+              <View style={[styles.fill, { width: `${Math.min(1, weeklyGoalKm ? weekKm / weeklyGoalKm : 0) * 100}%`, backgroundColor: colors.primary }]} />
+            </View>
           </GlassCard>
 
-          <Text style={[styles.sectionLabel, { color: colors.inkFaint }]}>ACTIVIDAD</Text>
-          <GlassCard>
-            <SettingsNavRow icon="trophy-outline" label="Logros y nivel" sublabel={levelTitle} onPress={() => router.push("/(tabs)/stats")} />
-            <View style={[styles.rowDivider, { backgroundColor: colors.divider }]} />
-            <SettingsNavRow icon="time-outline" label="Historial de recorridos" onPress={() => router.push("/history")} />
-          </GlassCard>
+          {recentDefs.length > 0 && (
+            <>
+              <Text style={[styles.section, { color: colors.ink }]}>Logros recientes</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+                {recentDefs.map((r, i) => (
+                  <Animated.View key={r.code} entering={FadeInUp.delay(i * 60).springify().damping(16)}>
+                    <GlassCard style={styles.badge}>
+                      <View style={[styles.badgeIcon, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
+                        <Ionicons name={r.def!.icon as any} size={22} color={colors.primaryDark} />
+                      </View>
+                      <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 12.5, textAlign: "center", marginTop: 8 }} numberOfLines={2}>
+                        {r.def!.title}
+                      </Text>
+                      <Text style={{ color: colors.inkFaint, fontSize: 11, marginTop: 2 }}>{format(new Date(r.unlockedAt), "d MMM", { locale: es })}</Text>
+                    </GlassCard>
+                  </Animated.View>
+                ))}
+              </ScrollView>
+            </>
+          )}
 
-          <Text style={[styles.sectionLabel, { color: colors.inkFaint }]}>AJUSTES</Text>
-          <GlassCard>
-            <SettingsSwitchRow
-              icon="moon-outline"
-              label="Modo oscuro"
-              value={settings.appearance === "dark"}
-              onValueChange={(v) => settings.update({ appearance: v ? "dark" : "light" })}
-            />
-            {profile?.email && (
-              <>
-                <View style={[styles.rowDivider, { backgroundColor: colors.divider }]} />
-                <SettingsNavRow
-                  icon="key-outline"
-                  label="Restablecer contraseña"
-                  sublabel={resetSent ? "Enlace enviado a tu correo" : undefined}
-                  onPress={onResetPassword}
-                />
-              </>
-            )}
-            <View style={[styles.rowDivider, { backgroundColor: colors.divider }]} />
-            <SettingsNavRow icon="options-outline" label="Más ajustes" onPress={() => router.push("/settings")} />
-            {profile && (
-              <>
-                <View style={[styles.rowDivider, { backgroundColor: colors.divider }]} />
-                <SettingsNavRow icon="trash-outline" label="Eliminar cuenta" danger onPress={() => router.push("/settings/delete-account")} />
-              </>
-            )}
-          </GlassCard>
+          {profile && (
+            <>
+              <Text style={[styles.section, { color: colors.ink }]}>Cuenta</Text>
+              <GlassCard>
+                <InfoRow icon="mail-outline" label="Correo" value={profile.email ?? "—"} />
+                <InfoRow icon="shield-checkmark-outline" label="Verificación" value={firebaseUser?.emailVerified ? "Verificado" : "Pendiente"} />
+                <InfoRow icon="star-outline" label="Rol" value={profile.role === "admin" ? "Administrador" : profile.role === "partner" ? "Tienda aliada" : "Ciclista"} last />
+              </GlassCard>
+            </>
+          )}
 
+          <GlassButton label="Ajustes" icon="settings-outline" variant="secondary" onPress={() => router.push("/settings")} style={{ marginTop: 20 }} />
           <GlassButton
-            label="Cerrar sesión"
+            label={isGuest ? "Salir del modo invitado" : "Cerrar sesión"}
             icon="log-out-outline"
             variant="secondary"
             onPress={signOut}
-            loading={uploading}
-            style={{ marginTop: 20, marginBottom: 120 }}
+            style={{ marginTop: 10, marginBottom: 120 }}
           />
         </ScrollView>
       </SafeAreaView>
+    </View>
+  );
+}
+
+function Chip({ icon, text, strong }: { icon: any; text: string; strong?: boolean }) {
+  const { colors } = useTheme();
+  return (
+    <View style={[styles.chip, { backgroundColor: strong ? colors.glassGreenFill : colors.glassFillStrong, borderColor: strong ? colors.glassGreenBorder : colors.glassBorder }]}>
+      <Ionicons name={icon} size={12} color={strong ? colors.primaryDark : colors.inkSoft} />
+      <Text style={{ color: strong ? colors.primaryDark : colors.inkSoft, fontSize: 12, fontWeight: "700", marginLeft: 4 }}>{text}</Text>
     </View>
   );
 }
@@ -211,8 +251,37 @@ function ProfileStat({ label, value }: { label: string; value: string }) {
   const { colors } = useTheme();
   return (
     <View style={{ alignItems: "center", flex: 1 }}>
-      <Text style={{ fontSize: 17, fontWeight: "800", color: colors.ink }}>{value}</Text>
-      <Text style={{ fontSize: 11.5, color: colors.inkSoft, marginTop: 2 }}>{label}</Text>
+      <Text style={{ fontSize: 18, fontWeight: "800", color: colors.ink }}>{value}</Text>
+      <Text style={{ fontSize: 11, color: colors.inkSoft, marginTop: 2 }}>{label}</Text>
+    </View>
+  );
+}
+
+function Action({ icon, label, onPress, delay }: { icon: any; label: string; onPress: () => void; delay: number }) {
+  const { colors } = useTheme();
+  return (
+    <Animated.View entering={FadeInUp.delay(delay).springify().damping(18)} style={styles.actionWrap}>
+      <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.96 : 1 }] })}>
+        <GlassCard style={styles.action}>
+          <View style={[styles.actionIcon, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
+            <Ionicons name={icon} size={20} color={colors.primaryDark} />
+          </View>
+          <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 13, marginTop: 8 }}>{label}</Text>
+        </GlassCard>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+function InfoRow({ icon, label, value, last }: { icon: any; label: string; value: string; last?: boolean }) {
+  const { colors } = useTheme();
+  return (
+    <View style={[styles.infoRow, !last && { borderBottomWidth: 1, borderBottomColor: colors.divider }]}>
+      <Ionicons name={icon} size={17} color={colors.primaryDark} />
+      <Text style={{ color: colors.inkSoft, marginLeft: 10, flex: 1 }}>{label}</Text>
+      <Text style={{ color: colors.ink, fontWeight: "700", flexShrink: 1 }} numberOfLines={1}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -221,19 +290,29 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 20, paddingTop: 8 },
-  header: { fontSize: 24, fontWeight: "800", marginBottom: 14 },
-  profileCard: { alignItems: "center", paddingVertical: 24, paddingTop: 16 },
-  pointsPillWrap: { alignSelf: "flex-end", marginBottom: -8 },
-  pointsPill: { flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1 },
-  avatarWrap: { marginTop: 8 },
-  avatar: { width: 88, height: 88, borderRadius: 44, alignItems: "center", justifyContent: "center", borderWidth: 1, overflow: "hidden" },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
+  header: { fontSize: 28, fontWeight: "800", letterSpacing: -0.5 },
+  hero: { alignItems: "center", paddingTop: 22 },
+  avatarWrap: { alignItems: "center", justifyContent: "center" },
+  avatar: { width: 100, height: 100, borderRadius: 50, alignItems: "center", justifyContent: "center", borderWidth: 1, overflow: "hidden" },
   avatarImage: { width: "100%", height: "100%" },
-  cameraBadge: { position: "absolute", bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", borderWidth: 2 },
-  name: { fontSize: 18, fontWeight: "800", marginTop: 12 },
-  username: { fontSize: 13, marginTop: 2 },
-  levelBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1, marginTop: 10 },
-  statsRow: { flexDirection: "row", alignItems: "center", width: "100%", marginTop: 20 },
-  divider: { width: 1, height: 28 },
-  sectionLabel: { fontSize: 11.5, fontWeight: "700", letterSpacing: 0.5, marginBottom: 8, marginTop: 20 },
-  rowDivider: { height: 1, marginLeft: 30 },
+  uploading: { backgroundColor: "rgba(0,0,0,0.4)", alignItems: "center", justifyContent: "center" },
+  cameraBadge: { position: "absolute", bottom: 6, right: 6, width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", borderWidth: 2 },
+  name: { fontSize: 22, fontWeight: "800", marginTop: 12, letterSpacing: -0.3 },
+  chips: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 6, marginTop: 12 },
+  chip: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  statsRow: { flexDirection: "row", alignSelf: "stretch", marginTop: 18, paddingTop: 16, borderTopWidth: 1 },
+  ctaRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 14 },
+  actionWrap: { width: "47%", flexGrow: 1 },
+  action: { alignItems: "flex-start" },
+  actionIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", borderWidth: 1 },
+  section: { fontSize: 18, fontWeight: "800", marginTop: 22, marginBottom: 10 },
+  weekRow: { flexDirection: "row", alignItems: "baseline", gap: 8, marginBottom: 10 },
+  weekValue: { fontSize: 28, fontWeight: "800", letterSpacing: -0.5 },
+  track: { height: 8, borderRadius: 4, overflow: "hidden" },
+  fill: { height: "100%", borderRadius: 4 },
+  badge: { width: 116, alignItems: "center" },
+  badgeIcon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", borderWidth: 1 },
+  infoRow: { flexDirection: "row", alignItems: "center", paddingVertical: 11 },
 });

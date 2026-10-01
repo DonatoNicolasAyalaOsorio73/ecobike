@@ -40,6 +40,7 @@ export default function MapScreen() {
     error,
     goal,
     goalReached,
+    autoPaused,
     currentLocation,
     justUnlocked,
     startRide,
@@ -253,7 +254,7 @@ export default function MapScreen() {
               <GlassSurface radius={999} intensity={55} backgroundColor={colors.glassFillStrong} style={styles.pointsPill}>
                 <PulseDot color={status === "ACTIVE" ? colors.danger : colors.warning} active={status === "ACTIVE"} />
                 <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 12, marginLeft: 8 }}>
-                  {status === "ACTIVE" ? "GRABANDO" : "EN PAUSA"}
+                  {status === "ACTIVE" ? "GRABANDO" : autoPaused ? "PAUSA AUTO" : "EN PAUSA"}
                 </Text>
               </GlassSurface>
             </Animated.View>

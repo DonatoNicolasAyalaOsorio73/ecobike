@@ -56,7 +56,8 @@ async function requireUser(req) {
   if (!token) throw httpError(401, "Falta el token de autenticación.");
   const auth = admin().auth(); // config errors must surface as 500, not 401
   try {
-    return await auth.verifyIdToken(token);
+    // checkRevoked: "cerrar sesión en todos los dispositivos" takes effect immediately.
+    return await auth.verifyIdToken(token, true);
   } catch {
     throw httpError(401, "Token inválido o expirado. Vuelve a iniciar sesión.");
   }

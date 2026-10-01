@@ -36,6 +36,7 @@ module.exports = handler(["POST"], async (req) => {
     puntosAcumulados: d.puntosAcumulados ?? 0,
     amigos: d.amigos ?? [],
   };
-  await db.collection("usuarios_public").doc(user.uid).set(mirror);
+  // merge keeps owner-controlled fields like "buscable".
+  await db.collection("usuarios_public").doc(user.uid).set(mirror, { merge: true });
   return { ok: true };
 });
