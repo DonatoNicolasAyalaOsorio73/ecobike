@@ -2,7 +2,15 @@
 //                           Idempotent: re-sending the same ride id never awards twice.
 // DELETE /api/rides {id}  — delete one of my rides and take back its points
 //                           (never below 0), so deleting can't be used to farm.
-const { admin, httpError, requireUser, body, handler, validateRide, MAX_RIDES_PER_DAY } = require("./_lib");
+const { admin, httpError, requireUser, body, handler, validateRide, weekKey, MAX_RIDES_PER_DAY } = require("./_lib");
+
+/** Weekly league points after adding `delta` for a ride in `rideWeek` (resets when the week changes). */
+function nextWeekly(pub, rideWeek, delta) {
+  const current = weekKey(Date.now());
+  if (rideWeek !== current) return null; // rides from past weeks don't count for this week's league
+  const base = pub?.weekKey === current ? pub.weekPoints ?? 0 : 0;
+  return { weekKey: current, weekPoints: Math.max(0, base + delta) };
+}
 
 module.exports = handler(["POST", "DELETE"], async (req) => {
   const user = await requireUser(req);
@@ -20,8 +28,9 @@ module.exports = handler(["POST", "DELETE"], async (req) => {
   const recent = await userRef.collection("rides").where("startedAt", ">=", dayAgo).count().get();
   const points = recent.data().count >= MAX_RIDES_PER_DAY ? 0 : v.points;
 
+  const pubRef = db.collection("usuarios_public").doc(user.uid);
   return db.runTransaction(async (tx) => {
-    const [existing, userSnap] = await Promise.all([tx.get(rideRef), tx.get(userRef)]);
+    const [existing, userSnap, pubSnap] = await Promise.all([tx.get(rideRef), tx.get(userRef), tx.get(pubRef)]);
     if (!userSnap.exists) throw httpError(404, "Perfil de usuario no encontrado.");
     if (existing.exists) {
       return { pointsEarned: existing.data().pointsEarned ?? 0, balance: userSnap.data().puntosAcumulados ?? 0, duplicate: true };
@@ -42,7 +51,8 @@ module.exports = handler(["POST", "DELETE"], async (req) => {
     });
     const balance = (userSnap.data().puntosAcumulados ?? 0) + points;
     tx.update(userRef, { puntosAcumulados: FieldValue.increment(points), updatedAt: FieldValue.serverTimestamp() });
-    tx.set(db.collection("usuarios_public").doc(user.uid), { puntosAcumulados: balance }, { merge: true });
+    const weekly = nextWeekly(pubSnap.data(), weekKey(v.startedAt), points);
+    tx.set(pubRef, { puntosAcumulados: balance, ...(weekly ?? {}) }, { merge: true });
     return { pointsEarned: points, balance, duplicate: false };
   });
 });
@@ -53,14 +63,18 @@ async function deleteRide(uid, id) {
   const { FieldValue } = require("firebase-admin/firestore");
   const userRef = db.collection("usuarios").doc(uid);
   const rideRef = userRef.collection("rides").doc(id);
+  const pubRef = db.collection("usuarios_public").doc(uid);
   return db.runTransaction(async (tx) => {
-    const [rideSnap, userSnap] = await Promise.all([tx.get(rideRef), tx.get(userRef)]);
+    const [rideSnap, userSnap, pubSnap] = await Promise.all([tx.get(rideRef), tx.get(userRef), tx.get(pubRef)]);
     if (!rideSnap.exists) return { deleted: false };
     const pts = rideSnap.data().pointsEarned ?? 0;
     const balance = Math.max(0, (userSnap.data()?.puntosAcumulados ?? 0) - pts);
     tx.delete(rideRef);
     tx.update(userRef, { puntosAcumulados: balance, updatedAt: FieldValue.serverTimestamp() });
-    tx.set(db.collection("usuarios_public").doc(uid), { puntosAcumulados: balance }, { merge: true });
+    const weekly = nextWeekly(pubSnap.data(), weekKey(rideSnap.data().startedAt ?? 0), -pts);
+    tx.set(pubRef, { puntosAcumulados: balance, ...(weekly ?? {}) }, { merge: true });
     return { deleted: true, pointsRemoved: pts, balance };
   });
 }
+
+module.exports.nextWeekly = nextWeekly;

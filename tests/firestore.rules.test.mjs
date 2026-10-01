@@ -70,6 +70,7 @@ test("usuarios_public: readable by signed-in users; owner can't fake points or f
   await assertSucceeds(updateDoc(doc(db, "usuarios_public", ALICE), { nombre: "Alicia", buscable: false }));
   await assertFails(updateDoc(doc(db, "usuarios_public", ALICE), { buscable: "no" }));
   await assertFails(updateDoc(doc(db, "usuarios_public", ALICE), { puntosAcumulados: 1e9 }));
+  await assertFails(updateDoc(doc(db, "usuarios_public", ALICE), { weekPoints: 5000, weekKey: "2026-W40" }));
   await assertFails(updateDoc(doc(db, "usuarios_public", ALICE), { email: "leak@example.com" }));
   await assertFails(setDoc(doc(as("carol"), "usuarios_public", "carol"), { username: "carol", puntosAcumulados: 50 }));
 });

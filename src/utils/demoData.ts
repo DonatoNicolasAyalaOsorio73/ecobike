@@ -120,13 +120,14 @@ export interface DemoFriend {
   displayName: string;
   username: string;
   points: number;
+  weekPoints: number;
 }
 
 export const DEMO_FRIENDS: DemoFriend[] = [
-  { uid: "demo_friend_laura", displayName: "Laura Gómez", username: "lauragomez", points: 4210 },
-  { uid: "demo_friend_andres", displayName: "Andrés Rojas", username: "arojas", points: 2875 },
-  { uid: "demo_friend_camila", displayName: "Camila Torres", username: "camitorres", points: 1960 },
-  { uid: "demo_friend_mateo", displayName: "Mateo Herrera", username: "mateoh", points: 980 },
+  { uid: "demo_friend_laura", displayName: "Laura Gómez", username: "lauragomez", points: 4210, weekPoints: 340 },
+  { uid: "demo_friend_andres", displayName: "Andrés Rojas", username: "arojas", points: 2875, weekPoints: 410 },
+  { uid: "demo_friend_camila", displayName: "Camila Torres", username: "camitorres", points: 1960, weekPoints: 120 },
+  { uid: "demo_friend_mateo", displayName: "Mateo Herrera", username: "mateoh", points: 980, weekPoints: 60 },
 ];
 
 export interface DemoMessage {

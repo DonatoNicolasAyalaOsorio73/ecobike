@@ -31,7 +31,7 @@ service cloud.firestore {
     }
 
     function publicFields() {
-      return ['username', 'nombre', 'apellido', 'profileImageUrl', 'puntosAcumulados', 'amigos', 'buscable'];
+      return ['username', 'nombre', 'apellido', 'profileImageUrl', 'puntosAcumulados', 'amigos', 'buscable', 'weekKey', 'weekPoints'];
     }
 
     // ─── /usuarios/{uid} — private profile (email, fechaNacimiento, ...) ───
@@ -69,11 +69,12 @@ service cloud.firestore {
       allow create: if isOwner(uid)
         && request.resource.data.keys().hasOnly(publicFields())
         && request.resource.data.get('puntosAcumulados', 0) == 0
+        && request.resource.data.get('weekPoints', 0) == 0
         && request.resource.data.get('amigos', []).size() == 0;
       allow update: if isOwner(uid)
         && request.resource.data.keys().hasOnly(publicFields())
         && request.resource.data.get('buscable', true) is bool
-        && !changes().hasAny(['puntosAcumulados', 'amigos', 'username']);
+        && !changes().hasAny(['puntosAcumulados', 'amigos', 'username', 'weekKey', 'weekPoints']);
       allow delete: if false;
     }
 

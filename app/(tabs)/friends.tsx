@@ -28,6 +28,12 @@ import {
 } from "@/services/social.service";
 import { subscribeChats, type ChatSummary } from "@/services/chat.service";
 import { DEMO_FRIENDS } from "@/utils/demoData";
+import { daysLeftInWeek } from "@/utils/week";
+import { ridesInPeriod } from "@/utils/rideStats";
+import { accents } from "@/theme/colors";
+import { useCurrentUserId } from "@/hooks/useCurrentUserId";
+import { useLocalProfileStore } from "@/stores/localProfileStore";
+import { useRiderStats } from "@/hooks/useRiderStats";
 import type { UserProfile } from "@/types/user";
 
 type Tab = "messages" | "friends" | "ranking";
@@ -58,6 +64,11 @@ export default function FriendsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [requests, setRequests] = useState<PublicProfile[]>([]);
   const [friends, setFriends] = useState<PublicProfile[]>(isGuest ? DEMO_FRIENDS.map((f) => ({ ...f, photoURL: null })) : []);
+  const [league, setLeague] = useState<"week" | "total">("week");
+  const [myWeekPoints, setMyWeekPoints] = useState(0);
+  const userId = useCurrentUserId();
+  const localName = useLocalProfileStore((s) => s.displayName);
+  const { rides: myRides } = useRiderStats(userId);
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [names, setNames] = useState<Record<string, PublicProfile>>({});
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
@@ -68,9 +79,14 @@ export default function FriendsScreen() {
     setLoadError(null);
     try {
       const [incoming, friendUids] = await Promise.all([listIncomingFriendRequests(uid), listFriendUids(uid)]);
-      const [req, fr] = await Promise.all([fetchPublicProfiles(incoming.map((r) => r.from)), fetchPublicProfiles(friendUids)]);
+      const [req, fr, mine] = await Promise.all([
+        fetchPublicProfiles(incoming.map((r) => r.from)),
+        fetchPublicProfiles(friendUids),
+        fetchPublicProfiles([uid]),
+      ]);
       setRequests(req);
       setFriends(fr);
+      setMyWeekPoints(mine[0]?.weekPoints ?? 0);
     } catch (e: any) {
       setLoadError(e?.message ?? "No se pudo cargar tu lista de amigos.");
     }
@@ -162,10 +178,18 @@ export default function FriendsScreen() {
 
   const alreadyFriend = !!searchResult && friends.some((f) => f.uid === searchResult.uid);
   const myPoints = me?.puntosAcumulados ?? 0;
-  const ranking = [
-    ...friends,
-    { uid: uid ?? "me", displayName: `${me?.displayName ?? "Tú"} (tú)`, username: me?.username ?? "", photoURL: me?.photoURL ?? null, points: isGuest ? 2400 : myPoints },
-  ].sort((a, b) => b.points - a.points);
+  // Guests: weekly points from their local rides; accounts: server-side league points.
+  const guestWeek = ridesInPeriod(myRides, "week").reduce((sum, r) => sum + r.pointsEarned, 0);
+  const meEntry = {
+    uid: uid ?? "me",
+    displayName: `${me?.displayName ?? localName} (tú)`,
+    username: me?.username ?? "",
+    photoURL: me?.photoURL ?? null,
+    points: isGuest ? 2400 : myPoints,
+    weekPoints: isGuest ? guestWeek : myWeekPoints,
+  };
+  const score = (e: { points: number; weekPoints: number }) => (league === "week" ? e.weekPoints : e.points);
+  const ranking = [...friends, meEntry].sort((a, b) => score(b) - score(a));
 
   if (!isFirebaseConfigured) {
     return (
@@ -414,6 +438,26 @@ export default function FriendsScreen() {
 
           {tab === "ranking" && (
             <>
+              <SegmentedControl
+                options={[
+                  { label: "Esta semana", value: "week" },
+                  { label: "Total", value: "total" },
+                ]}
+                value={league}
+                onChange={setLeague}
+                style={{ marginBottom: 10 }}
+              />
+              {league === "week" && (
+                <View style={[styles.leagueBanner, { backgroundColor: accents.purple.soft, borderColor: accents.purple.base }]}>
+                  <Ionicons name="shield-half" size={22} color={accents.purple.base} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: accents.purple.lip, fontWeight: "900" }}>Liga semanal</Text>
+                    <Text style={{ color: colors.inkSoft, fontSize: 12.5 }}>
+                      Termina en {daysLeftInWeek()} {daysLeftInWeek() === 1 ? "día" : "días"}. ¡Pedalea para subir posiciones!
+                    </Text>
+                  </View>
+                </View>
+              )}
               {friends.length === 0 ? (
                 <GlassCard>
                   <Text style={{ color: colors.inkSoft, textAlign: "center", paddingVertical: 8 }}>Agrega amigos para comparar progreso.</Text>
@@ -431,7 +475,7 @@ export default function FriendsScreen() {
                           <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 12.5, marginTop: 6 }} numberOfLines={1}>
                             {e.displayName.replace(" (tú)", "")}
                           </Text>
-                          <Text style={{ color: colors.inkSoft, fontSize: 11.5 }}>{e.points.toLocaleString("es-CO")} pts</Text>
+                          <Text style={{ color: colors.inkSoft, fontSize: 11.5 }}>{score(e).toLocaleString("es-CO")} pts</Text>
                           <View style={[styles.podiumBar, { height: h, backgroundColor: pos === 0 ? colors.primary : colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
                             <Text style={{ color: pos === 0 ? colors.onPrimary : colors.primaryDark, fontWeight: "800", fontSize: 22 }}>{pos + 1}</Text>
                           </View>
@@ -447,7 +491,7 @@ export default function FriendsScreen() {
                         <Text style={{ color: colors.ink, flex: 1, marginLeft: 10, fontWeight: entry.displayName.endsWith("(tú)") ? "800" : "500" }} numberOfLines={1}>
                           {entry.displayName}
                         </Text>
-                        <Text style={{ color: colors.inkSoft, fontSize: 12.5 }}>{entry.points.toLocaleString("es-CO")} pts</Text>
+                        <Text style={{ color: colors.inkSoft, fontSize: 12.5 }}>{score(entry).toLocaleString("es-CO")} pts</Text>
                       </View>
                     ))}
                   </GlassCard>
@@ -481,6 +525,7 @@ const styles = StyleSheet.create({
   leaderRow: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
   avatar: { alignItems: "center", justifyContent: "center", borderWidth: 1 },
   pill: { flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999, borderWidth: 1 },
+  leagueBanner: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 2, borderRadius: 18, padding: 12, marginBottom: 14 },
   podium: { flexDirection: "row", alignItems: "flex-end", gap: 10, marginBottom: 16 },
   podiumCol: { flex: 1, alignItems: "center" },
   podiumBar: { width: "100%", borderTopLeftRadius: 16, borderTopRightRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center", marginTop: 8 },

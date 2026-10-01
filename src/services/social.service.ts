@@ -1,6 +1,7 @@
 import { collection, doc, getDoc, getDocs, limit, query, where } from "firebase/firestore";
 import { getDb, isFirebaseConfigured } from "./firebase";
 import { api } from "./api";
+import { weekKey } from "@/utils/week";
 import type { UserProfile } from "@/types/user";
 
 // Real, live collection — see types/user.ts and auth.service.ts for the
@@ -113,6 +114,8 @@ export interface PublicProfile {
   username: string;
   photoURL: string | null;
   points: number;
+  /** Weekly league points for the current week (0 if none yet this week). */
+  weekPoints: number;
 }
 
 /** Names/photos for a list of uids, from the public mirror (missing docs fall back to the uid). */
@@ -128,6 +131,7 @@ export async function fetchPublicProfiles(uids: string[]): Promise<PublicProfile
       username,
       photoURL: (d.profileImageUrl as string | undefined) ?? null,
       points: (d.puntosAcumulados as number | undefined) ?? 0,
+      weekPoints: d.weekKey === weekKey(Date.now()) ? ((d.weekPoints as number | undefined) ?? 0) : 0,
     };
   });
 }

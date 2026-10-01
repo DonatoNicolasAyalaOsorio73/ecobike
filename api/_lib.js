@@ -163,6 +163,21 @@ async function sendPush(uids, title, message, type = "friends", data = undefined
   }
 }
 
+// ─── Weekly league ─────────────────────────────────────────────────────────
+// ISO week ("2026-W40") of a timestamp in Colombia time (UTC-5, no DST).
+// Keep identical to src/utils/week.ts (both are tested with the same cases).
+// ponytail: single fixed timezone; per-user timezone if the app expands abroad.
+function weekKey(ms, tzOffsetHours = -5) {
+  const d = new Date(ms + tzOffsetHours * 3_600_000);
+  // ISO-8601: the week belongs to the year of its Thursday.
+  const thursday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  thursday.setUTCDate(thursday.getUTCDate() - ((thursday.getUTCDay() + 6) % 7) + 3);
+  const firstThursday = new Date(Date.UTC(thursday.getUTCFullYear(), 0, 1));
+  firstThursday.setUTCDate(1 + ((4 - firstThursday.getUTCDay() + 7) % 7));
+  const week = 1 + Math.round((thursday - firstThursday) / 604_800_000);
+  return `${thursday.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
 // ─── Chat ────────────────────────────────────────────────────────────────────
 /** Deterministic id for the 1:1 chat between two users (order-independent). */
 function chatIdFor(a, b) {
@@ -182,4 +197,4 @@ function redemptionCode() {
   return require("crypto").randomBytes(6).toString("hex").toUpperCase();
 }
 
-module.exports = { chatIdFor, cleanMessage, MAX_MESSAGE_LENGTH, sendPush, admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };
+module.exports = { weekKey, chatIdFor, cleanMessage, MAX_MESSAGE_LENGTH, sendPush, admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };
