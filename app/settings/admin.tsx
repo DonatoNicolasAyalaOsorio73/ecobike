@@ -9,6 +9,7 @@ import GlassButton from "@/components/ui/GlassButton";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthStore } from "@/stores/authStore";
 import { api } from "@/services/api";
+import QrScanner from "@/components/QrScanner";
 
 interface Store {
   id: string;
@@ -49,11 +50,12 @@ export default function AdminScreen() {
     }
   };
 
-  const validate = async (confirm: boolean) => {
+  const [scanning, setScanning] = useState(false);
+  const validate = async (confirm: boolean, value = code) => {
     setBusy(true);
     setCodeMsg(null);
     try {
-      const r = await api<{ code: string; store: string; status: string }>("validate", "POST", { code, confirm });
+      const r = await api<{ code: string; store: string; status: string }>("validate", "POST", { code: value, confirm });
       setCheck(r);
       if (confirm) setCodeMsg("Código marcado como usado.");
     } catch (e: any) {
@@ -139,8 +141,21 @@ export default function AdminScreen() {
               {check?.status === "active" ? (
                 <GlassButton label="Confirmar canje" icon="checkmark-circle-outline" onPress={() => validate(true)} loading={busy} />
               ) : (
-                <GlassButton label="Verificar" icon="search" variant="secondary" onPress={() => validate(false)} loading={busy} />
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <GlassButton label="Escanear QR" icon="qr-code-outline" onPress={() => setScanning(true)} style={{ flex: 1 }} />
+                  <GlassButton label="Verificar" icon="search" variant="secondary" onPress={() => validate(false)} loading={busy} style={{ flex: 1 }} />
+                </View>
               )}
+              <QrScanner
+                visible={scanning}
+                onClose={() => setScanning(false)}
+                onScanned={(v) => {
+                  const scanned = v.trim().toUpperCase();
+                  setScanning(false);
+                  setCode(scanned);
+                  validate(false, scanned);
+                }}
+              />
             </GlassCard>
 
             {isAdmin && (

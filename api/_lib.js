@@ -28,6 +28,22 @@ function admin() {
   return adminMod;
 }
 
+// Server error reporting, only when SENTRY_DSN is set on Vercel.
+let sentry = null;
+async function reportError(e, req) {
+  if (!process.env.SENTRY_DSN) return;
+  try {
+    if (!sentry) {
+      sentry = require("@sentry/node");
+      sentry.init({ dsn: process.env.SENTRY_DSN, environment: process.env.VERCEL_ENV || "production", sendDefaultPii: false });
+    }
+    sentry.captureException(e, { tags: { route: req.url, method: req.method } });
+    await sentry.flush(2000); // serverless: flush before the function freezes
+  } catch {
+    // never let reporting break the response
+  }
+}
+
 function httpError(status, message) {
   const e = new Error(message);
   e.status = status;
@@ -38,8 +54,9 @@ async function requireUser(req) {
   const header = req.headers.authorization || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;
   if (!token) throw httpError(401, "Falta el token de autenticación.");
+  const auth = admin().auth(); // config errors must surface as 500, not 401
   try {
-    return await admin().auth().verifyIdToken(token);
+    return await auth.verifyIdToken(token);
   } catch {
     throw httpError(401, "Token inválido o expirado. Vuelve a iniciar sesión.");
   }
@@ -79,7 +96,10 @@ function handler(methods, fn) {
       if (!res.headersSent) res.status(200).json(out ?? { ok: true });
     } catch (e) {
       const status = e.status || 500;
-      if (status === 500) console.error(e);
+      if (status === 500) {
+        console.error(e);
+        await reportError(e, req);
+      }
       res.status(status).json({ error: status === 500 && !e.status ? "Error interno del servidor." : e.message });
     }
   };

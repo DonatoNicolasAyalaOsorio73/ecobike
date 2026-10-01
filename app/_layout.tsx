@@ -18,13 +18,16 @@ import Logo from "@/components/ui/Logo";
 import { initDb } from "@/services/db";
 import { pullRemoteRides, syncPendingRides } from "@/services/rides.service";
 import { disablePush, enablePush } from "@/services/push";
+import { withMonitoring } from "@/services/monitoring";
 // Side effect: registers the background location task at startup.
 import "@/stores/rideStore";
 import NetInfo from "@react-native-community/netinfo";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-export default function RootLayout() {
+export default withMonitoring(RootLayout);
+
+function RootLayout() {
   const { colors } = useTheme();
   const hydrated = useSettingsStore((s) => s.hydrated);
   const hydrate = useSettingsStore((s) => s.hydrate);

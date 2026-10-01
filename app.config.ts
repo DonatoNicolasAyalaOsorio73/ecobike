@@ -72,6 +72,19 @@ const config: ExpoConfig = {
     "expo-secure-store",
     "expo-apple-authentication",
     "expo-sqlite",
+    // Native crash reporting. Source map upload needs SENTRY_AUTH_TOKEN (EAS
+    // secret); until then eas.json sets SENTRY_DISABLE_AUTO_UPLOAD.
+    [
+      "@sentry/react-native/expo",
+      { organization: process.env.SENTRY_ORG, project: process.env.SENTRY_PROJECT, url: "https://sentry.io/" },
+    ],
+    [
+      "expo-camera",
+      {
+        cameraPermission: "EcoBike usa la cámara para que las tiendas aliadas escaneen el código QR de un canje.",
+        recordAudioAndroid: false,
+      },
+    ],
     ["expo-notifications", { color: "#ADF14B" }],
     // Required peer of @expo/vector-icons / expo-symbols — without it icons
     // fail to load in a real (non-Expo-Go) native build.

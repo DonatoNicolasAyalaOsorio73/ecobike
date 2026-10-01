@@ -3,6 +3,7 @@ import type { User } from "firebase/auth";
 import { fetchUserProfile, signOut as firebaseSignOut, subscribeToAuthState } from "@/services/auth.service";
 import { isFirebaseConfigured } from "@/services/firebase";
 import { api } from "@/services/api";
+import { setMonitoringUser } from "@/services/monitoring";
 import { initDb, wipeAllLocalData } from "@/services/db";
 import type { UserProfile } from "@/types/user";
 
@@ -36,6 +37,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     unsubscribe?.();
     unsubscribe = subscribeToAuthState(async (user) => {
+      setMonitoringUser(user?.uid ?? null);
       if (!user) {
         set({ status: "signedOut", firebaseUser: null, profile: null, isGuest: false });
         return;

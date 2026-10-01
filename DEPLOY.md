@@ -44,7 +44,8 @@ Firestore only (rules + the code index): `npx firebase deploy --only firestore`.
 Set `role: "admin"` on your own `usuarios/{uid}` document in the Firebase
 Console (clients cannot set it). "Administración" then appears in Ajustes, on
 web and mobile: edit stores, make store staff `partner` (they get "Validar
-códigos"), validate customer codes.
+códigos"), validate customer codes by typing them or with "Escanear QR"
+(camera, works on phone and web).
 
 ### 4. Mobile builds (EAS)
 
@@ -62,6 +63,7 @@ Firebase and the API URL without extra setup.
 
 - Privacy policy URL: `https://ecobike-demo.vercel.app/legal/privacy` (terms: `/legal/terms`). Both are public routes of the web app.
 - Push credentials (APNs, FCM V1) on EAS, see ENVIRONMENT.md section 5.
+- Sentry DSN (recommended before launch), see ENVIRONMENT.md section 7.
 - Play Console: Data safety form, background location justification video.
 - App Store: Sign in with Apple is enabled because Google sign-in may appear;
   set up the Apple Developer App ID with that capability.

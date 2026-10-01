@@ -105,6 +105,19 @@ sendPush`). Needs a native build (not Expo Go, not web) plus credentials on EAS:
 `EXPO_PUBLIC_SUPPORT_EMAIL` in `.env.production` adds a contact line to
 the privacy policy (`/legal/privacy`).
 
+## 7. Sentry (error monitoring)
+
+Code is wired and stays off until a DSN exists:
+
+1. Create a free project at sentry.io (platform: React Native). Copy the DSN.
+2. App (web + mobile): add `EXPO_PUBLIC_SENTRY_DSN=<dsn>` to `.env.production`.
+   Reports crashes, render errors (ErrorBoundary) and the signed-in uid only.
+3. API: add `SENTRY_DSN=<dsn>` in Vercel > ecobike-demo > Environment Variables.
+   Reports every 500 from `/api`.
+4. Readable native stack traces (optional): create a Sentry auth token, run
+   `npx eas-cli env:create --name SENTRY_AUTH_TOKEN --visibility secret`, set
+   `SENTRY_ORG` / `SENTRY_PROJECT`, and delete `SENTRY_DISABLE_AUTO_UPLOAD` from `eas.json`.
+
 ## Summary: what needs what
 
 | Feature | Works in Expo Go? | Needs |
