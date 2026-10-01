@@ -91,7 +91,7 @@ export default function StatsScreen() {
             </Text>
             {isGuest && (
               <View style={[styles.demoPill, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
-                <Text style={{ color: colors.primaryDark, fontSize: 11, fontWeight: "800" }}>DATOS DEMO</Text>
+                <Text style={{ color: colors.primaryDark, fontSize: 11, fontWeight: "800" }}>DATOS DE EJEMPLO</Text>
               </View>
             )}
           </View>

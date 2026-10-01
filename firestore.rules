@@ -75,7 +75,20 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Everything else (including legacy canjes/, challenges/, chats/) is closed.
+    // ─── /chats/{chatId} — 1:1 chats between friends. Written by api/messages.js ───
+    // Readable only by its two participants (also enforced on list queries:
+    // the app queries with participants array-contains its own uid).
+    match /chats/{chatId} {
+      allow read: if isAuth() && request.auth.uid in resource.data.participants;
+      allow write: if false;
+
+      match /messages/{messageId} {
+        allow read: if isAuth() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        allow write: if false;
+      }
+    }
+
+    // Everything else (including legacy canjes/, challenges/) is closed.
     match /{document=**} {
       allow read, write: if false;
     }

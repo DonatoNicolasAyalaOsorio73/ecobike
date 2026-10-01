@@ -28,3 +28,18 @@ test("rejects bad ids, future and stale rides", () => {
   assert.ok(validateRide(ride({ startedAt: now - 40 * 86400_000 }), now).error);
   assert.ok(validateRide(ride({ distanceMeters: "15000" }), now).error);
 });
+
+const { chatIdFor, cleanMessage } = createRequire(import.meta.url)("./_lib.js");
+
+test("chatIdFor is order-independent", () => {
+  assert.equal(chatIdFor("b", "a"), chatIdFor("a", "b"));
+  assert.equal(chatIdFor("a", "b"), "a__b");
+});
+
+test("cleanMessage trims, rejects empty, non-strings and over-long text", () => {
+  assert.deepEqual(cleanMessage("  hola  "), { text: "hola" });
+  assert.ok(cleanMessage("   ").error);
+  assert.ok(cleanMessage(42).error);
+  assert.ok(cleanMessage("x".repeat(1001)).error);
+  assert.equal(cleanMessage("x".repeat(1000)).text.length, 1000);
+});

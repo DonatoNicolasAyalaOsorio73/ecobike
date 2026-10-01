@@ -139,14 +139,18 @@ function validateRide(r, now = Date.now()) {
 // Best-effort Expo push to users who registered a token (src/services/push.ts).
 // ponytail: one token per user (last device wins); store a token list if
 // people commonly use several phones.
-async function sendPush(uids, title, message) {
+// `type` maps to usuarios/{uid}.notifPrefs[type] (Ajustes > Notificaciones);
+// a user who turned that type off gets nothing. `data` deep-links the tap.
+async function sendPush(uids, title, message, type = "friends", data = undefined) {
   try {
     const db = admin().firestore();
     const snaps = await Promise.all(uids.map((u) => db.collection("usuarios").doc(u).get()));
     const messages = snaps
-      .map((s) => s.data()?.pushToken)
+      .map((s) => s.data() || {})
+      .filter((d) => d.notifPrefs?.[type] !== false)
+      .map((d) => d.pushToken)
       .filter((t) => typeof t === "string" && t.startsWith("ExponentPushToken"))
-      .map((to) => ({ to, title, body: message, sound: "default" }));
+      .map((to) => ({ to, title, body: message, sound: "default", ...(data ? { data } : {}) }));
     if (!messages.length) return;
     await fetch("https://exp.host/--/api/v2/push/send", {
       method: "POST",
@@ -158,8 +162,23 @@ async function sendPush(uids, title, message) {
   }
 }
 
+// ─── Chat ────────────────────────────────────────────────────────────────────
+/** Deterministic id for the 1:1 chat between two users (order-independent). */
+function chatIdFor(a, b) {
+  return [a, b].sort().join("__");
+}
+
+const MAX_MESSAGE_LENGTH = 1000;
+function cleanMessage(text) {
+  if (typeof text !== "string") return { error: "Mensaje inválido." };
+  const t = text.trim();
+  if (!t) return { error: "El mensaje está vacío." };
+  if (t.length > MAX_MESSAGE_LENGTH) return { error: `Máximo ${MAX_MESSAGE_LENGTH} caracteres.` };
+  return { text: t };
+}
+
 function redemptionCode() {
   return require("crypto").randomBytes(6).toString("hex").toUpperCase();
 }
 
-module.exports = { sendPush, admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };
+module.exports = { chatIdFor, cleanMessage, MAX_MESSAGE_LENGTH, sendPush, admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };

@@ -9,7 +9,7 @@ export default function BackgroundBlobs({ variant = "default" }: { variant?: "de
   const isWeb = Platform.OS === "web";
 
   return (
-    <View style={[StyleSheet.absoluteFill, styles.noPointerEvents]}>
+    <View style={[StyleSheet.absoluteFill, styles.noPointerEvents, { overflow: "hidden" }]}>
       <LinearGradient colors={[colors.bgTop, colors.bgBottom]} style={StyleSheet.absoluteFill} />
 
       <View style={[styles.blob, styles.blobTopLeft, { backgroundColor: colors.blobGreen }]} />
