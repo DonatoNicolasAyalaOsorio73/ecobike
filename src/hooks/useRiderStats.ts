@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { listRides, listUnlockedAchievements } from "@/services/db";
-import { computeStreakDays, levelForPoints } from "@/utils/gamification";
+import { computeRiderStats, levelForPoints } from "@/utils/gamification";
 import type { Ride } from "@/types/ride";
-import type { RiderStats } from "@/types/achievement";
 
 /**
  * `pointsForLevel` lets a caller override what level/progress is computed
@@ -22,14 +21,7 @@ export function useRiderStats(userId: string | null, pointsForLevel?: number) {
 
   useEffect(refresh, [refresh]);
 
-  const stats: RiderStats = {
-    totalRides: rides.length,
-    totalDistanceMeters: rides.reduce((s, r) => s + r.distanceMeters, 0),
-    totalDurationSeconds: rides.reduce((s, r) => s + r.durationSeconds, 0),
-    bestRide: rides.reduce<Ride | null>((best, r) => (!best || r.distanceMeters > best.distanceMeters ? r : best), null),
-    currentStreakDays: computeStreakDays(rides.map((r) => new Date(r.startedAt))),
-    totalPoints: rides.reduce((s, r) => s + r.pointsEarned, 0),
-  };
+  const stats = computeRiderStats(rides);
 
   const { level, nextLevelAt } = levelForPoints(pointsForLevel ?? stats.totalPoints);
 

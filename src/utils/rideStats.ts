@@ -131,3 +131,151 @@ export function groupRidesByMonth(rides: Ride[]): { key: string; label: string; 
     return { key, label, rides: groupRides };
   });
 }
+
+// ─── Richer analytics for the Estadísticas screen ────────────────────────────
+
+const MONTH_LABELS = ["E", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+const WEEKDAY_LABELS = ["L", "M", "X", "J", "V", "S", "D"];
+
+export interface Series {
+  labels: string[];
+  /** Kilometres per bucket. */
+  values: number[];
+}
+
+/**
+ * Distance over time for the selected period: days of the week, days of the
+ * month, months of the year, or the last 12 months for "all".
+ */
+export function trendSeries(rides: Ride[], period: StatsPeriod, now = new Date()): Series {
+  if (period === "week") {
+    const start = startOfWeek(now).getTime();
+    const values = new Array(7).fill(0);
+    for (const r of rides) {
+      const i = Math.floor((startOfDay(new Date(r.startedAt)).getTime() - start) / 86_400_000);
+      if (i >= 0 && i < 7) values[i] += r.distanceMeters / 1000;
+    }
+    return { labels: WEEKDAY_LABELS, values };
+  }
+  if (period === "month") {
+    const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const values = new Array(days).fill(0);
+    for (const r of rides) {
+      const d = new Date(r.startedAt);
+      if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) values[d.getDate() - 1] += r.distanceMeters / 1000;
+    }
+    return { labels: values.map((_, i) => (i % 5 === 0 ? String(i + 1) : "")), values };
+  }
+  // year: Jan..Dec of this year; all: rolling last 12 months.
+  const months: { y: number; m: number }[] = [];
+  for (let i = 0; i < 12; i++) {
+    const d = period === "year" ? new Date(now.getFullYear(), i, 1) : new Date(now.getFullYear(), now.getMonth() - 11 + i, 1);
+    months.push({ y: d.getFullYear(), m: d.getMonth() });
+  }
+  const values = new Array(12).fill(0);
+  for (const r of rides) {
+    const d = new Date(r.startedAt);
+    const i = months.findIndex((x) => x.y === d.getFullYear() && x.m === d.getMonth());
+    if (i >= 0) values[i] += r.distanceMeters / 1000;
+  }
+  return { labels: months.map((x) => MONTH_LABELS[x.m]), values };
+}
+
+export interface PeriodTotals {
+  distanceMeters: number;
+  durationSeconds: number;
+  rides: number;
+  points: number;
+}
+
+function totals(rides: Ride[]): PeriodTotals {
+  return {
+    distanceMeters: rides.reduce((s, r) => s + r.distanceMeters, 0),
+    durationSeconds: rides.reduce((s, r) => s + r.durationSeconds, 0),
+    rides: rides.length,
+    points: rides.reduce((s, r) => s + r.pointsEarned, 0),
+  };
+}
+
+/** Start of the period immediately before the current one (null for "all"). */
+export function previousPeriodStart(period: StatsPeriod, now = new Date()): Date | null {
+  switch (period) {
+    case "week": {
+      const d = startOfWeek(now);
+      d.setDate(d.getDate() - 7);
+      return d;
+    }
+    case "month":
+      return new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    case "year":
+      return new Date(now.getFullYear() - 1, 0, 1);
+    case "all":
+      return null;
+  }
+}
+
+/** Current period vs. the full previous one, with % change (null when there is no baseline). */
+export function periodComparison(rides: Ride[], period: StatsPeriod, now = new Date()) {
+  const current = totals(ridesInPeriod(rides, period, now));
+  const prevStart = previousPeriodStart(period, now);
+  const curStart = startOfPeriod(period, now);
+  const previous =
+    prevStart && curStart
+      ? totals(rides.filter((r) => r.startedAt >= prevStart.getTime() && r.startedAt < curStart.getTime()))
+      : null;
+  const pct = (a: number, b: number) => (b > 0 ? ((a - b) / b) * 100 : null);
+  return {
+    current,
+    previous,
+    change: previous
+      ? {
+          distance: pct(current.distanceMeters, previous.distanceMeters),
+          duration: pct(current.durationSeconds, previous.durationSeconds),
+          rides: pct(current.rides, previous.rides),
+          points: pct(current.points, previous.points),
+        }
+      : null,
+  };
+}
+
+/** Kilometres by weekday (Monday first). */
+export function weekdayDistribution(rides: Ride[]): Series {
+  const values = new Array(7).fill(0);
+  for (const r of rides) values[(new Date(r.startedAt).getDay() + 6) % 7] += r.distanceMeters / 1000;
+  return { labels: WEEKDAY_LABELS, values };
+}
+
+/** Number of rides started in each 3-hour slot of the day. */
+export function hourDistribution(rides: Ride[]): Series {
+  const values = new Array(8).fill(0);
+  for (const r of rides) values[Math.floor(new Date(r.startedAt).getHours() / 3)] += 1;
+  return { labels: ["0h", "3h", "6h", "9h", "12h", "15h", "18h", "21h"], values };
+}
+
+/** Short (< 5 km), medium (5–15 km) and long (> 15 km) ride counts. */
+export function distanceBuckets(rides: Ride[]) {
+  let short = 0;
+  let medium = 0;
+  let long = 0;
+  for (const r of rides) {
+    if (r.distanceMeters < 5000) short++;
+    else if (r.distanceMeters <= 15000) medium++;
+    else long++;
+  }
+  return { short, medium, long };
+}
+
+// Average-car figures used for the impact card (per km a car didn't drive).
+export const CO2_KG_PER_KM = 0.12;
+const FUEL_L_PER_KM = 0.08;
+const CO2_KG_ABSORBED_PER_TREE_YEAR = 21;
+
+export function environmentalImpact(distanceMeters: number) {
+  const km = distanceMeters / 1000;
+  const co2Kg = km * CO2_KG_PER_KM;
+  return {
+    co2Kg,
+    fuelLiters: km * FUEL_L_PER_KM,
+    treesYear: co2Kg / CO2_KG_ABSORBED_PER_TREE_YEAR,
+  };
+}

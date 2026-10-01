@@ -4,8 +4,8 @@ import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
 import { createEmptyRide, type Ride, type RideStatus, type TrackPoint } from "@/types/ride";
 import { avgSpeedKmh, estimateCalories, incrementalDistanceMeters, totalElevationGainMeters } from "@/utils/geo";
-import { pointsForRide, computeStreakDays, evaluateAchievements } from "@/utils/gamification";
-import type { AchievementDef, RiderStats } from "@/types/achievement";
+import { pointsForRide, computeRiderStats, evaluateAchievements } from "@/utils/gamification";
+import type { AchievementDef } from "@/types/achievement";
 import * as db from "@/services/db";
 import { queueRideForSync } from "@/services/rides.service";
 import { useAuthStore } from "@/stores/authStore";
@@ -220,18 +220,7 @@ export const useRideStore = create<RideState>((set, get) => ({
 
     db.saveRide(finished);
 
-    const history = db.listRides(ride.userId);
-    const stats: RiderStats = {
-      totalRides: history.length,
-      totalDistanceMeters: history.reduce((sum, r) => sum + r.distanceMeters, 0),
-      totalDurationSeconds: history.reduce((sum, r) => sum + r.durationSeconds, 0),
-      bestRide: history.reduce<Ride | null>(
-        (best, r) => (!best || r.distanceMeters > best.distanceMeters ? r : best),
-        null
-      ),
-      currentStreakDays: computeStreakDays(history.map((r) => new Date(r.startedAt))),
-      totalPoints: history.reduce((sum, r) => sum + r.pointsEarned, 0),
-    };
+    const stats = computeRiderStats(db.listRides(ride.userId));
 
     const alreadyUnlocked = new Set(db.listUnlockedAchievements(ride.userId).map((a) => a.code));
     const newlyUnlocked = evaluateAchievements(stats, alreadyUnlocked);

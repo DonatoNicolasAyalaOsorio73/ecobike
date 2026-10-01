@@ -47,6 +47,18 @@ function startOfDayKey(d: Date) {
 
 export function evaluateAchievements(stats: RiderStats, alreadyUnlocked: Set<string>) {
   return ACHIEVEMENTS.filter(
-    (a) => !alreadyUnlocked.has(a.code) && a.isUnlocked(stats)
+    (a) => !alreadyUnlocked.has(a.code) && a.progress(stats) >= 1
   );
+}
+
+/** Aggregate stats over a ride history (shared by stats screen, ride finish and demo seeding). */
+export function computeRiderStats(rides: Ride[]): RiderStats {
+  return {
+    totalRides: rides.length,
+    totalDistanceMeters: rides.reduce((s, r) => s + r.distanceMeters, 0),
+    totalDurationSeconds: rides.reduce((s, r) => s + r.durationSeconds, 0),
+    bestRide: rides.reduce<Ride | null>((best, r) => (!best || r.distanceMeters > best.distanceMeters ? r : best), null),
+    currentStreakDays: computeStreakDays(rides.map((r) => new Date(r.startedAt))),
+    totalPoints: rides.reduce((s, r) => s + r.pointsEarned, 0),
+  };
 }

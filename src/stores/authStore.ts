@@ -3,6 +3,8 @@ import type { User } from "firebase/auth";
 import { fetchUserProfile, signOut as firebaseSignOut, subscribeToAuthState } from "@/services/auth.service";
 import { isFirebaseConfigured } from "@/services/firebase";
 import { api } from "@/services/api";
+import { getOrCreateGuestId, isGuestMode, setGuestMode } from "@/services/guest";
+import { seedDemoIfEmpty } from "@/services/demo.service";
 import { setMonitoringUser } from "@/services/monitoring";
 import { initDb, wipeAllLocalData } from "@/services/db";
 import type { UserProfile } from "@/types/user";
@@ -15,7 +17,7 @@ interface AuthState {
   profile: UserProfile | null;
   isGuest: boolean;
   init: (biometricUnlockEnabled: boolean) => void;
-  continueAsGuest: () => void;
+  continueAsGuest: () => Promise<void>;
   confirmBiometricUnlock: () => void;
   signOut: () => Promise<void>;
   deleteLocalDataOnly: () => void;
@@ -32,16 +34,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   init: (biometricUnlockEnabled: boolean) => {
     if (!isFirebaseConfigured) {
-      set({ status: "signedOut" });
+      isGuestMode().then((guest) => (guest ? get().continueAsGuest() : set({ status: "signedOut" })));
       return;
     }
     unsubscribe?.();
     unsubscribe = subscribeToAuthState(async (user) => {
       setMonitoringUser(user?.uid ?? null);
       if (!user) {
+        if (await isGuestMode()) return get().continueAsGuest();
         set({ status: "signedOut", firebaseUser: null, profile: null, isGuest: false });
         return;
       }
+      await setGuestMode(false);
       initDb();
       const profile = await fetchUserProfile(user.uid).catch(() => null);
       // Keep the public mirror (search/ranking) in sync, incl. legacy accounts.
@@ -60,7 +64,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // Firebase project configured yet (rule: keep working even when a
   // capability isn't available), and remains a normal "skip sign-in for
   // now" option once one is.
-  continueAsGuest: () => {
+  continueAsGuest: async () => {
+    // Demo mode: a guest starts with a realistic history so every screen has data.
+    try {
+      const guestId = await getOrCreateGuestId();
+      initDb();
+      seedDemoIfEmpty(guestId);
+    } catch {
+      // Demo data is a nicety; never block entering the app.
+    }
+    await setGuestMode(true);
     set({ status: "signedIn", isGuest: true, firebaseUser: null, profile: null });
   },
 
@@ -70,6 +83,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signOut: async () => {
     if (get().isGuest) {
+      await setGuestMode(false);
       set({ status: "signedOut", isGuest: false });
       return;
     }
