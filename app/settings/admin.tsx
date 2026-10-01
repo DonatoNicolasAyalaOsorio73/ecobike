@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View, Image } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import BackButton from "@/components/ui/BackButton";
@@ -9,6 +10,8 @@ import GlassButton from "@/components/ui/GlassButton";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthStore } from "@/stores/authStore";
 import { api } from "@/services/api";
+import SegmentedControl from "@/components/ui/SegmentedControl";
+import { accents, type AccentName } from "@/theme/colors";
 import QrScanner from "@/components/QrScanner";
 
 interface Store {
@@ -18,6 +21,31 @@ interface Store {
   logo?: string;
   pointsRequired: number | string;
   isActive?: boolean;
+}
+
+interface Kpis {
+  users: number;
+  ridesWeek: number;
+  kmWeek: number;
+  pointsWeek: number;
+  redemptionsWeek: number;
+  codesUsedTotal: number;
+  stores: number;
+}
+
+function Kpi({ accent, icon, value, label }: { accent: AccentName; icon: keyof typeof Ionicons.glyphMap; value: number | undefined; label: string }) {
+  const a = accents[accent];
+  return (
+    <View style={[styles.kpi, { borderColor: a.base, borderBottomColor: a.lip }]}>
+      <Ionicons name={icon} size={16} color={a.base} />
+      <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit>
+        {value === undefined ? "…" : value.toLocaleString("es-CO")}
+      </Text>
+      <Text style={styles.kpiLabel} numberOfLines={1}>
+        {label}
+      </Text>
+    </View>
+  );
 }
 
 const EMPTY = { id: "", name: "", description: "", logo: "", pointsRequired: "", isActive: true };
@@ -66,6 +94,9 @@ export default function AdminScreen() {
     }
   };
   const [stores, setStores] = useState<Store[]>([]);
+  const [section, setSection] = useState<"validate" | "stores" | "team">("validate");
+  const [kpis, setKpis] = useState<Kpis | null>(null);
+  const [storeQuery, setStoreQuery] = useState("");
   const [form, setForm] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -80,7 +111,9 @@ export default function AdminScreen() {
   }, []);
 
   useEffect(() => {
-    if (isAdmin) load();
+    if (!isAdmin) return;
+    load();
+    api<Kpis>("admin-stats", "GET").then(setKpis).catch(() => setKpis(null));
   }, [isAdmin, load]);
 
   const save = async () => {
@@ -118,6 +151,29 @@ export default function AdminScreen() {
           </GlassCard>
         ) : (
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+            {isAdmin && (
+              <>
+                <View style={styles.kpis}>
+                  <Kpi accent="blue" icon="people" value={kpis?.users} label="Usuarios" />
+                  <Kpi accent="green" icon="bicycle" value={kpis?.ridesWeek} label="Recorridos 7 d" />
+                  <Kpi accent="teal" icon="speedometer" value={kpis?.kmWeek} label="Km 7 d" />
+                  <Kpi accent="gold" icon="ribbon" value={kpis?.pointsWeek} label="Puntos 7 d" />
+                  <Kpi accent="orange" icon="gift" value={kpis?.redemptionsWeek} label="Canjes 7 d" />
+                  <Kpi accent="purple" icon="checkmark-done" value={kpis?.codesUsedTotal} label="Códigos usados" />
+                </View>
+                <SegmentedControl
+                  options={[
+                    { label: "Validar", value: "validate" },
+                    { label: "Tiendas", value: "stores" },
+                    { label: "Equipo", value: "team" },
+                  ]}
+                  value={section}
+                  onChange={setSection}
+                  style={{ marginBottom: 14 }}
+                />
+              </>
+            )}
+            {(!isAdmin || section === "validate") && (
             <GlassCard style={{ marginBottom: 16 }}>
               <Text style={[styles.section, { color: colors.ink }]}>Validar código de canje</Text>
               <GlassInput
@@ -157,11 +213,14 @@ export default function AdminScreen() {
                 }}
               />
             </GlassCard>
+            )}
 
-            {isAdmin && (
-            <>
+            {isAdmin && section === "team" && (
             <GlassCard style={{ marginBottom: 16 }}>
               <Text style={[styles.section, { color: colors.ink }]}>Tiendas aliadas (rol partner)</Text>
+              <Text style={{ color: colors.inkSoft, fontSize: 12.5, marginBottom: 10 }}>
+                Los partners pueden validar códigos de canje en su tienda. No pueden editar el catálogo.
+              </Text>
               <GlassInput icon="person-outline" placeholder="@usuario" value={roleUser} onChangeText={setRoleUser} autoCapitalize="none" autoCorrect={false} />
               {roleMsg && <Text style={{ color: colors.inkSoft, marginBottom: 10 }}>{roleMsg}</Text>}
               <View style={{ flexDirection: "row", gap: 8 }}>
@@ -169,6 +228,10 @@ export default function AdminScreen() {
                 <GlassButton label="Quitar" icon="close" variant="secondary" onPress={() => setRole("user")} style={{ flex: 1 }} />
               </View>
             </GlassCard>
+            )}
+
+            {isAdmin && section === "stores" && (
+            <>
             <GlassCard>
               <Text style={[styles.section, { color: colors.ink }]}>{form.id ? "Editar tienda" : "Nueva tienda"}</Text>
               <GlassInput icon="storefront-outline" placeholder="Nombre" value={form.name} onChangeText={set("name")} />
@@ -192,7 +255,8 @@ export default function AdminScreen() {
               ) : null}
             </GlassCard>
 
-            {stores.map((s) => (
+            <GlassInput icon="search-outline" placeholder="Buscar tienda" value={storeQuery} onChangeText={setStoreQuery} containerStyle={{ marginTop: 16 }} />
+            {stores.filter((s) => s.name.toLowerCase().includes(storeQuery.trim().toLowerCase())).map((s) => (
               <Pressable
                 key={s.id}
                 accessibilityRole="button"
@@ -208,12 +272,29 @@ export default function AdminScreen() {
                   })
                 }
               >
-                <GlassCard style={{ marginTop: 12 }}>
-                  <Text style={{ color: colors.ink, fontWeight: "700" }}>
-                    {s.name} {s.isActive === false ? "(inactiva)" : ""}
-                  </Text>
-                  <Text style={{ color: colors.inkSoft }}>{s.pointsRequired} pts</Text>
-                </GlassCard>
+                <View style={[styles.storeRow, { opacity: s.isActive === false ? 0.6 : 1 }]}>
+                  <View style={[styles.storeLogo, { backgroundColor: accents.green.soft, borderColor: accents.green.base }]}>
+                    {s.logo?.startsWith("https://") ? (
+                      <Image source={{ uri: s.logo }} style={StyleSheet.absoluteFill} />
+                    ) : (
+                      <Ionicons name="storefront" size={20} color={accents.green.lip} />
+                    )}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.ink, fontWeight: "800" }} numberOfLines={1}>
+                      {s.name}
+                    </Text>
+                    <Text style={{ color: colors.inkSoft, fontSize: 12 }} numberOfLines={1}>
+                      {s.description || "Sin descripción"}
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: "flex-end", gap: 4 }}>
+                    <Text style={{ color: accents.gold.lip, fontWeight: "900" }}>{s.pointsRequired} pts</Text>
+                    <Text style={{ color: s.isActive === false ? colors.danger : accents.green.lip, fontSize: 11, fontWeight: "800" }}>
+                      {s.isActive === false ? "INACTIVA" : "ACTIVA"}
+                    </Text>
+                  </View>
+                </View>
               </Pressable>
             ))}
             </>
@@ -233,4 +314,10 @@ const styles = StyleSheet.create({
   scroll: { paddingBottom: 60 },
   section: { fontSize: 16, fontWeight: "700", marginBottom: 12 },
   row: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
+  kpis: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
+  kpi: { flexBasis: "31%", flexGrow: 1, backgroundColor: "#fff", borderWidth: 2, borderBottomWidth: 4, borderRadius: 16, padding: 10, gap: 2 },
+  kpiValue: { fontSize: 18, fontWeight: "900", color: "#1F2A22" },
+  kpiLabel: { fontSize: 10.5, fontWeight: "700", color: "#6B776F" },
+  storeRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#fff", borderWidth: 2, borderColor: "#EDF1EA", borderBottomWidth: 4, borderRadius: 18, padding: 12, marginTop: 10 },
+  storeLogo: { width: 44, height: 44, borderRadius: 12, borderWidth: 2, alignItems: "center", justifyContent: "center", overflow: "hidden" },
 });
