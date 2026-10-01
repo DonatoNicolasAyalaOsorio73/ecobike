@@ -75,6 +75,6 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1, paddingHorizontal: 24 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  title: { fontSize: 20, fontWeight: "800", textAlign: "center" },
+  title: { fontSize: 20, fontWeight: "700", textAlign: "center" },
   subtitle: { fontSize: 13.5, textAlign: "center", marginTop: 8, paddingHorizontal: 20 },
 });

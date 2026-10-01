@@ -160,5 +160,5 @@ const styles = StyleSheet.create({
   choiceLabelRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
   stepper: { flexDirection: "row", alignItems: "center", borderRadius: 999, borderWidth: 1, paddingHorizontal: 4 },
   stepperButton: { paddingHorizontal: 8, paddingVertical: 7 },
-  stepperValue: { fontSize: 13, fontWeight: "800", minWidth: 52, textAlign: "center" },
+  stepperValue: { fontSize: 13, fontWeight: "700", minWidth: 52, textAlign: "center" },
 });

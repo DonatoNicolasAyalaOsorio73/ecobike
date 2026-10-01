@@ -80,5 +80,5 @@ const styles = StyleSheet.create({
   wrap: { position: "absolute", left: 16, right: 16, alignItems: "center", zIndex: 60 },
   pill: { flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 8, paddingRight: 16, paddingVertical: 8, width: "100%", borderWidth: 2 },
   iconDot: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  text: { fontSize: 13.5, fontWeight: "800", flex: 1 },
+  text: { fontSize: 13.5, fontWeight: "700", flex: 1 },
 });

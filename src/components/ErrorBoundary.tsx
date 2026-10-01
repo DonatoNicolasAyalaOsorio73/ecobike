@@ -76,6 +76,6 @@ function ErrorFallback({ onRetry }: { onRetry: () => void }) {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1, justifyContent: "center", paddingHorizontal: 24 },
-  title: { fontSize: 18, fontWeight: "800", marginTop: 14, textAlign: "center" },
+  title: { fontSize: 18, fontWeight: "700", marginTop: 14, textAlign: "center" },
   subtitle: { fontSize: 13.5, marginTop: 8, textAlign: "center", lineHeight: 19 },
 });

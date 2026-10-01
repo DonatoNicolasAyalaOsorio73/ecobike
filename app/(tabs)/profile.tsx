@@ -169,7 +169,7 @@ export default function ProfileScreen() {
               <View style={styles.ctaRow}>
                 <Ionicons name="cloud-upload-outline" size={26} color={colors.primaryDark} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.ink, fontWeight: "800" }}>Crea tu cuenta gratis</Text>
+                  <Text style={{ color: colors.ink, fontWeight: "700" }}>Crea tu cuenta gratis</Text>
                   <Text style={{ color: colors.inkSoft, fontSize: 12.5, marginTop: 2 }}>
                     Guarda tus recorridos en la nube, gana puntos reales y úsalos desde el teléfono o la web.
                   </Text>
@@ -272,7 +272,7 @@ function ProfileStat({ label, value }: { label: string; value: string }) {
   const { colors } = useTheme();
   return (
     <View style={{ alignItems: "center", flex: 1 }}>
-      <Text style={{ fontSize: 18, fontWeight: "800", color: colors.ink }}>{value}</Text>
+      <Text style={{ fontSize: 18, fontWeight: "700", color: colors.ink }}>{value}</Text>
       <Text style={{ fontSize: 11, color: colors.inkSoft, marginTop: 2 }}>{label}</Text>
     </View>
   );
@@ -312,14 +312,14 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 20, paddingTop: 8 },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
-  header: { fontSize: 28, fontWeight: "800", letterSpacing: -0.5 },
+  header: { fontSize: 28, fontWeight: "700", letterSpacing: -0.5 },
   hero: { alignItems: "center", paddingTop: 22 },
   avatarWrap: { alignItems: "center", justifyContent: "center" },
   avatar: { width: 100, height: 100, borderRadius: 50, alignItems: "center", justifyContent: "center", borderWidth: 1, overflow: "hidden" },
   avatarImage: { width: "100%", height: "100%" },
   uploading: { backgroundColor: "rgba(0,0,0,0.4)", alignItems: "center", justifyContent: "center" },
   cameraBadge: { position: "absolute", bottom: 6, right: 6, width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", borderWidth: 2 },
-  name: { fontSize: 22, fontWeight: "800", marginTop: 12, letterSpacing: -0.3 },
+  name: { fontSize: 22, fontWeight: "700", marginTop: 12, letterSpacing: -0.3 },
   chips: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 6, marginTop: 12 },
   chip: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
   statsRow: { flexDirection: "row", alignSelf: "stretch", marginTop: 18, paddingTop: 16, borderTopWidth: 1 },
@@ -328,9 +328,9 @@ const styles = StyleSheet.create({
   actionWrap: { width: "47%", flexGrow: 1 },
   action: { alignItems: "flex-start" },
   actionIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", borderWidth: 1 },
-  section: { fontSize: 18, fontWeight: "800", marginTop: 22, marginBottom: 10 },
+  section: { fontSize: 18, fontWeight: "700", marginTop: 22, marginBottom: 10 },
   weekRow: { flexDirection: "row", alignItems: "baseline", gap: 8, marginBottom: 10 },
-  weekValue: { fontSize: 28, fontWeight: "800", letterSpacing: -0.5 },
+  weekValue: { fontSize: 28, fontWeight: "700", letterSpacing: -0.5 },
   track: { height: 8, borderRadius: 4, overflow: "hidden" },
   fill: { height: "100%", borderRadius: 4 },
   badge: { width: 116, alignItems: "center" },

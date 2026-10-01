@@ -2,8 +2,10 @@ import React from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { SPRING } from "@/theme/motion";
+import { elevation } from "@/theme/colors";
 
 interface Props {
   label: string;
@@ -15,63 +17,61 @@ interface Props {
   style?: StyleProp<ViewStyle>;
 }
 
-// Duolingo-style "chunky" 3D button: a solid face sitting on a darker lip.
-// Pressing pushes the face down onto the lip; releasing springs it back up
-// with a little bounce. Same props as before, so every button in the app
-// picks up the new feel.
-const LIP = 4;
-const RADIUS = 16;
-
+// iOS 26 capsule button: a filled (primary) or glass (secondary) pill that
+// scales down slightly under the finger and settles back critically damped.
+// Same props as before, so every button in the app picks up the new feel.
 const PALETTE = {
-  primary: { face: "#ADF14B", lip: "#7CB82F", border: "#9BDD3F", text: "#1F3A0B" },
-  secondary: { face: "#FFFFFF", lip: "#D5DDD2", border: "#E2E8E0", text: "#3C4A3F" },
-  danger: { face: "#FF5A5F", lip: "#D33A3F", border: "#FF5A5F", text: "#FFFFFF" },
-  disabled: { face: "#EEF1EC", lip: "#D9DED6", border: "#E2E6DF", text: "#A2ACA4" },
+  primary: { fill: ["#B9F45F", "#9EE23C"] as const, border: "rgba(255,255,255,0.55)", text: "#15240A" },
+  secondary: { fill: ["rgba(255,255,255,0.92)", "rgba(255,255,255,0.78)"] as const, border: "rgba(20,40,25,0.08)", text: "#1C2420" },
+  danger: { fill: ["#FFFFFF", "#FFF6F6"] as const, border: "rgba(229,72,77,0.25)", text: "#D93036" },
+  disabled: { fill: ["#EEF1EC", "#EEF1EC"] as const, border: "transparent", text: "#A2ACA4" },
 } as const;
 
 export default function GlassButton({ label, icon, onPress, variant = "primary", disabled = false, loading = false, style }: Props) {
   const p = disabled ? PALETTE.disabled : PALETTE[variant];
   const press = useSharedValue(0);
-
-  const faceStyle = useAnimatedStyle(() => ({ transform: [{ translateY: press.value * LIP }] }));
+  const animated = useAnimatedStyle(() => ({ transform: [{ scale: 1 - press.value * 0.035 }], opacity: 1 - press.value * 0.12 }));
 
   return (
     <View style={style}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        accessibilityState={{ disabled: disabled || loading, busy: loading }}
-        disabled={disabled || loading}
-        onPressIn={() => {
-          press.value = withSpring(1, SPRING.press);
-          Haptics.selectionAsync().catch(() => {});
-        }}
-        onPressOut={() => (press.value = withSpring(0, SPRING.bouncy))}
-        onPress={onPress}
-        style={[styles.lip, { backgroundColor: p.lip }]}
-      >
-        <Animated.View style={[styles.face, { backgroundColor: p.face, borderColor: p.border }, faceStyle]}>
-          {variant !== "secondary" && !disabled && <View pointerEvents="none" style={styles.shine} />}
+      <Animated.View style={[styles.shadow, !disabled && elevation(variant === "primary" ? "mid" : "low"), animated]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          accessibilityState={{ disabled: disabled || loading, busy: loading }}
+          disabled={disabled || loading}
+          onPressIn={() => {
+            press.value = withSpring(1, SPRING.press);
+            Haptics.selectionAsync().catch(() => {});
+          }}
+          onPressOut={() => (press.value = withSpring(0, SPRING.default))}
+          onPress={onPress}
+          style={({ hovered }: any) => [styles.face, { borderColor: p.border, opacity: hovered ? 0.94 : 1 }]}
+        >
+          <LinearGradient colors={p.fill} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFill} />
+          {variant === "primary" && !disabled && (
+            <LinearGradient pointerEvents="none" colors={["rgba(255,255,255,0.5)", "rgba(255,255,255,0)"]} style={styles.sheen} />
+          )}
           {loading ? (
             <ActivityIndicator color={p.text} />
           ) : (
             <View style={styles.row}>
-              {icon ? <Ionicons name={icon} size={19} color={p.text} /> : null}
+              {icon ? <Ionicons name={icon} size={18} color={p.text} /> : null}
               <Text style={[styles.label, { color: p.text }]} numberOfLines={1}>
                 {label}
               </Text>
             </View>
           )}
-        </Animated.View>
-      </Pressable>
+        </Pressable>
+      </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  lip: { borderRadius: RADIUS, paddingBottom: LIP },
-  face: { borderRadius: RADIUS, borderWidth: 2, minHeight: 50, paddingHorizontal: 16, alignItems: "center", justifyContent: "center" },
-  shine: { position: "absolute", top: 5, left: 14, right: 14, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.45)" },
+  shadow: { borderRadius: 999 },
+  face: { borderRadius: 999, borderWidth: 1, minHeight: 52, paddingHorizontal: 20, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  sheen: { position: "absolute", top: 0, left: 0, right: 0, height: "55%" },
   row: { flexDirection: "row", alignItems: "center", gap: 8 },
-  label: { fontSize: 16, fontWeight: "800", letterSpacing: 0.2 },
+  label: { fontSize: 16.5, fontWeight: "600", letterSpacing: -0.2 },
 });

@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1, paddingHorizontal: 20 },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
-  header: { fontSize: 18, fontWeight: "800", flexShrink: 1, textAlign: "center" },
+  header: { fontSize: 18, fontWeight: "700", flexShrink: 1, textAlign: "center" },
   scroll: { paddingBottom: 60 },
   title: { fontSize: 15, fontWeight: "700", marginBottom: 4 },
   body: { fontSize: 13.5, lineHeight: 20 },

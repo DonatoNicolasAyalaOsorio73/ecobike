@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, paddingHorizontal: 24 },
   scroll: { paddingBottom: 32, paddingTop: 8 },
   logoWrap: { alignItems: "center", marginTop: 8 },
-  title: { marginTop: 18, fontSize: 24, fontWeight: "800", textAlign: "center" },
+  title: { marginTop: 18, fontSize: 24, fontWeight: "700", textAlign: "center" },
   subtitle: { marginTop: 4, fontSize: 14, textAlign: "center", marginBottom: 18 },
   forgot: { textAlign: "right", fontWeight: "600", fontSize: 13, marginBottom: 16, marginTop: -2 },
   registerLine: { textAlign: "center", marginTop: 14, fontSize: 13.5 },

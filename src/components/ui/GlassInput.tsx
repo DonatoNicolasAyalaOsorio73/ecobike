@@ -101,7 +101,7 @@ export default function GlassInput({
 }
 
 const styles = StyleSheet.create({
-  label: { fontSize: 12.5, fontWeight: "800", marginBottom: 6, marginLeft: 6 },
+  label: { fontSize: 12.5, fontWeight: "700", marginBottom: 6, marginLeft: 6 },
   wrap: { marginBottom: 12 },
   inner: { flexDirection: "row", alignItems: "center", paddingHorizontal: 18, paddingVertical: 14, gap: 10 },
   input: { flex: 1, fontSize: 15.5, minWidth: 0 },

@@ -88,7 +88,7 @@ export default function RegisterScreen() {
                       <View key={i} style={[styles.strengthBar, { backgroundColor: i < Math.max(1, strength.score) ? STRENGTH_COLORS[strength.score] : "#E6EAE3" }]} />
                     ))}
                   </View>
-                  <Text style={{ color: STRENGTH_COLORS[strength.score], fontWeight: "800", fontSize: 12 }}>{strength.label}</Text>
+                  <Text style={{ color: STRENGTH_COLORS[strength.score], fontWeight: "700", fontSize: 12 }}>{strength.label}</Text>
                 </View>
               )}
               <GlassInput
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1, paddingHorizontal: 24 },
   scroll: { paddingBottom: 32, paddingTop: 8 },
-  title: { marginTop: 22, fontSize: 26, fontWeight: "800" },
+  title: { marginTop: 22, fontSize: 26, fontWeight: "700" },
   subtitle: { marginTop: 4, fontSize: 14.5, marginBottom: 18 },
   loginLine: { textAlign: "center", marginTop: 14, fontSize: 13.5 },
   loginLink: { fontWeight: "700" },

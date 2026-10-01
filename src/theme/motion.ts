@@ -37,9 +37,9 @@ export const SPRING = {
   /** Sheets and drawers, per Apple's shipped values. */
   sheet: spring(0.8, 0.3),
 
-  /** Playful overshoot (Duolingo-style): button release, badges popping in,
-   * celebratory elements. Use for delight moments, not for plain layout. */
-  bouncy: spring(0.45, 0.42),
+  /** Gentle overshoot (iOS 26 feel): badges and celebratory elements settle
+   * with a barely visible overshoot. Use for delight moments, not plain layout. */
+  bouncy: spring(0.78, 0.42),
 } as const;
 
 /**

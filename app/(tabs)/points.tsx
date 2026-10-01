@@ -66,7 +66,7 @@ export default function PointsScreen() {
               <View style={styles.balanceRow}>
                 <View style={[styles.levelPill, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
                   <Ionicons name="trending-up" size={12} color={colors.primaryDark} />
-                  <Text style={{ color: colors.primaryDark, fontSize: 12, fontWeight: "800", marginLeft: 4 }}>Nivel {level}</Text>
+                  <Text style={{ color: colors.primaryDark, fontSize: 12, fontWeight: "700", marginLeft: 4 }}>Nivel {level}</Text>
                 </View>
                 <Text style={{ color: colors.inkSoft, fontSize: 12.5, flex: 1 }}>
                   {nextLevelAt ? `${(nextLevelAt - availablePoints).toLocaleString("es-CO")} pts para el nivel ${level + 1}` : "Nivel máximo"}
@@ -148,13 +148,13 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1 },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 8, marginBottom: 14 },
-  header: { fontSize: 28, fontWeight: "800", letterSpacing: -0.5 },
+  header: { fontSize: 28, fontWeight: "700", letterSpacing: -0.5 },
   pad: { paddingHorizontal: 20 },
-  balance: { fontSize: 44, fontWeight: "800", letterSpacing: -1.2, marginTop: 2 },
+  balance: { fontSize: 44, fontWeight: "700", letterSpacing: -1.2, marginTop: 2 },
   balanceRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 6 },
   levelPill: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },
   notice: { fontSize: 12, textAlign: "center", fontWeight: "600", marginTop: 12, paddingHorizontal: 20 },
-  section: { fontSize: 18, fontWeight: "800", paddingHorizontal: 20, marginTop: 24, marginBottom: 12 },
+  section: { fontSize: 18, fontWeight: "700", paddingHorizontal: 20, marginTop: 24, marginBottom: 12 },
   howRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 11 },
   howIcon: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", borderWidth: 1 },
 });

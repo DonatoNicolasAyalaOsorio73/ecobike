@@ -80,6 +80,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1, paddingHorizontal: 24 },
   center: { flex: 1, justifyContent: "center" },
   iconCircle: { width: 68, height: 68, borderRadius: 34, alignItems: "center", justifyContent: "center", borderWidth: 1, marginBottom: 16 },
-  title: { fontSize: 20, fontWeight: "800" },
+  title: { fontSize: 20, fontWeight: "700" },
   subtitle: { fontSize: 13.5, textAlign: "center", marginTop: 8, marginBottom: 18, lineHeight: 19 },
 });

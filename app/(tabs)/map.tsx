@@ -133,7 +133,7 @@ export default function MapScreen() {
               <ProgressRing progress={weekProgress} size={72} thickness={8}>
                 <AnimatedNumber
                   value={Math.round(Math.min(999, weekProgress * 100))}
-                  style={{ fontSize: 15, fontWeight: "800", color: colors.ink }}
+                  style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}
                   format={(v) => `${v}%`}
                 />
               </ProgressRing>
@@ -151,9 +151,9 @@ export default function MapScreen() {
               <Text style={{ color: colors.inkSoft, fontSize: 12.5, fontWeight: "700", flex: 1 }}>
                 Hoy {Math.min(todayPts, dailyGoal)} / {dailyGoal} pts
               </Text>
-              {todayPts >= dailyGoal && <Text style={{ color: "#46A302", fontSize: 12, fontWeight: "900" }}>¡Meta del día!</Text>}
+              {todayPts >= dailyGoal && <Text style={{ color: "#46A302", fontSize: 12, fontWeight: "700" }}>¡Meta del día!</Text>}
             </View>
-            <DuoProgressBar value={todayPts / dailyGoal} accent="gold" height={10} />
+            <DuoProgressBar value={todayPts / dailyGoal} accent="gold" />
             <View style={styles.controlsRow}>
               <GlassButton label="Iniciar" icon="play" variant="primary" onPress={() => begin(null)} disabled={!userId} style={{ flex: 1 }} />
               <GlassButton label="Con meta" icon="flag-outline" variant="secondary" onPress={() => setMenuOpen(true)} style={{ flex: 1 }} />
@@ -181,10 +181,10 @@ export default function MapScreen() {
               {goal && (
                 <View style={styles.goalRow}>
                   <ProgressRing progress={rideGoalProgress} size={54} thickness={6}>
-                    <Text style={{ fontSize: 12, fontWeight: "800", color: colors.ink }}>{Math.round(rideGoalProgress * 100)}%</Text>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: colors.ink }}>{Math.round(rideGoalProgress * 100)}%</Text>
                   </ProgressRing>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.ink, fontWeight: "800" }}>
+                    <Text style={{ color: colors.ink, fontWeight: "700" }}>
                       {goalReached ? "Meta alcanzada" : `Meta: ${goalLabel(goal)}`}
                     </Text>
                     <Text style={{ color: colors.inkSoft, fontSize: 12 }}>
@@ -247,7 +247,7 @@ export default function MapScreen() {
               <Ionicons name="ribbon-outline" size={14} color={colors.primaryDark} />
               <AnimatedNumber
                 value={availablePoints}
-                style={{ color: colors.ink, fontWeight: "800", fontSize: 13, marginLeft: 6 }}
+                style={{ color: colors.ink, fontWeight: "700", fontSize: 13, marginLeft: 6 }}
                 format={(v) => `${v.toLocaleString("es-CO")} pts`}
               />
             </GlassSurface>
@@ -255,14 +255,14 @@ export default function MapScreen() {
           <Animated.View entering={FadeIn.duration(400).delay(80)}>
             <GlassSurface radius={999} intensity={55} backgroundColor={colors.glassFillStrong} style={styles.pointsPill}>
               <Flame size={16} lit={streak > 0} />
-              <Text style={{ color: streak > 0 ? accents.orange.lip : colors.inkSoft, fontWeight: "900", fontSize: 13, marginLeft: 4 }}>{streak}</Text>
+              <Text style={{ color: streak > 0 ? accents.orange.lip : colors.inkSoft, fontWeight: "700", fontSize: 13, marginLeft: 4 }}>{streak}</Text>
             </GlassSurface>
           </Animated.View>
           {riding && (
             <Animated.View entering={ZoomIn.springify()}>
               <GlassSurface radius={999} intensity={55} backgroundColor={colors.glassFillStrong} style={styles.pointsPill}>
                 <PulseDot color={status === "ACTIVE" ? colors.danger : colors.warning} active={status === "ACTIVE"} />
-                <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 12, marginLeft: 8 }}>
+                <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 12, marginLeft: 8 }}>
                   {status === "ACTIVE" ? "GRABANDO" : autoPaused ? "PAUSA AUTO" : "EN PAUSA"}
                 </Text>
               </GlassSurface>
@@ -291,7 +291,7 @@ function Stat({ label, value, big, accent }: { label: string; value: string; big
   const { colors } = useTheme();
   return (
     <View style={{ alignItems: "center", flex: 1 }}>
-      <Text style={{ fontSize: big ? 26 : 15, fontWeight: "800", color: accent ? colors.primaryDark : colors.ink, letterSpacing: big ? -0.5 : 0 }}>
+      <Text style={{ fontSize: big ? 26 : 15, fontWeight: "700", color: accent ? colors.primaryDark : colors.ink, letterSpacing: big ? -0.5 : 0 }}>
         {value}
       </Text>
       <Text style={{ fontSize: 11, color: colors.inkSoft, marginTop: 2 }}>{label}</Text>
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   pointsPill: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 9 },
   rail: { position: "absolute", right: 14, top: 120, gap: 12, alignItems: "center" },
   bottom: { position: "absolute", left: 14, right: 14, bottom: 104 },
-  title: { fontSize: 17, fontWeight: "800" },
+  title: { fontSize: 17, fontWeight: "700" },
   subtitle: { fontSize: 13, marginTop: 6, lineHeight: 18 },
   dailyRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 14, marginBottom: 6 },
   idleRow: { flexDirection: "row", alignItems: "center", gap: 14 },

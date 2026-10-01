@@ -59,7 +59,7 @@ export default function MyCodesScreen() {
               <View style={[styles.emptyIcon, { backgroundColor: accents.gold.soft, borderColor: accents.gold.base }]}>
                 <Ionicons name="gift" size={34} color={accents.gold.lip} />
               </View>
-              <Text style={{ color: colors.ink, fontWeight: "900", fontSize: 17, marginTop: 12 }}>Aún no tienes códigos</Text>
+              <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 17, marginTop: 12 }}>Aún no tienes códigos</Text>
               <Text style={{ color: colors.inkSoft, textAlign: "center", marginTop: 4, marginBottom: 14 }}>
                 Canjea tus puntos por recompensas en tiendas aliadas.
               </Text>
@@ -88,14 +88,14 @@ export default function MyCodesScreen() {
                   </Text>
                 </View>
                 <View style={[styles.codePill, { backgroundColor: colors.glassFillStrong, borderColor: colors.glassBorder }]}>
-                  <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 13, letterSpacing: 1, textDecorationLine: used ? "line-through" : "none" }}>
+                  <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 13, letterSpacing: 1, textDecorationLine: used ? "line-through" : "none" }}>
                     {item.code}
                   </Text>
                 </View>
               </View>
               <View style={[styles.status, { backgroundColor: used ? "#EEF1EC" : accents.green.soft }]}>
                 <Ionicons name={used ? "checkmark-done" : "ticket"} size={12} color={used ? colors.inkSoft : accents.green.lip} />
-                <Text style={{ color: used ? colors.inkSoft : accents.green.lip, fontSize: 11, fontWeight: "900" }}>{used ? "USADO" : "ACTIVO"}</Text>
+                <Text style={{ color: used ? colors.inkSoft : accents.green.lip, fontSize: 11, fontWeight: "700" }}>{used ? "USADO" : "ACTIVO"}</Text>
               </View>
               {open && (
                 <View style={styles.qrWrap}>
@@ -120,7 +120,7 @@ export default function MyCodesScreen() {
 function SummaryPill({ accent, icon, value, label }: { accent: AccentName; icon: keyof typeof Ionicons.glyphMap; value: number; label: string }) {
   const a = accents[accent];
   return (
-    <View style={[styles.pill, { borderColor: a.base, borderBottomColor: a.lip }]}>
+    <View style={[styles.pill, { borderColor: a.base }]}>
       <Ionicons name={icon} size={16} color={a.base} />
       <Text style={styles.pillValue}>{value.toLocaleString("es-CO")}</Text>
       <Text style={styles.pillLabel} numberOfLines={1}>
@@ -132,15 +132,15 @@ function SummaryPill({ accent, icon, value, label }: { accent: AccentName; icon:
 
 const styles = StyleSheet.create({
   summary: { flexDirection: "row", gap: 8, marginBottom: 12 },
-  pill: { flex: 1, alignItems: "center", gap: 2, paddingVertical: 10, borderRadius: 16, borderWidth: 2, borderBottomWidth: 4, backgroundColor: "#fff" },
-  pillValue: { fontSize: 18, fontWeight: "900", color: "#1F2A22" },
+  pill: { flex: 1, alignItems: "center", gap: 2, paddingVertical: 10, borderRadius: 16, borderWidth: 1, backgroundColor: "#fff" },
+  pillValue: { fontSize: 18, fontWeight: "700", color: "#1F2A22" },
   pillLabel: { fontSize: 11, fontWeight: "700", color: "#6B776F" },
   status: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, marginTop: 10 },
   emptyIcon: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", borderWidth: 3 },
   screen: { flex: 1 },
   safe: { flex: 1 },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 4, marginBottom: 8 },
-  header: { fontSize: 17, fontWeight: "800" },
+  header: { fontSize: 17, fontWeight: "700" },
   row: { flexDirection: "row", alignItems: "center", gap: 12 },
   iconWrap: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", borderWidth: 1 },
   title: { fontSize: 14.5, fontWeight: "700" },

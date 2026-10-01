@@ -67,7 +67,7 @@ export default function WelcomeScreen() {
                   <Ionicons name={f.icon} size={20} color={accents[f.accent].lip} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 15 }}>{f.title}</Text>
+                  <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 15 }}>{f.title}</Text>
                   <Text style={{ color: colors.inkSoft, fontSize: 13 }}>{f.text}</Text>
                 </View>
               </Animated.View>
@@ -103,12 +103,12 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flexGrow: 1, justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 12 },
   hero: { flexGrow: 1, alignItems: "center", justifyContent: "center", paddingVertical: 12 },
-  headline: { marginTop: 22, fontSize: 30, fontWeight: "900", textAlign: "center", lineHeight: 36, letterSpacing: -0.5 },
+  headline: { marginTop: 22, fontSize: 30, fontWeight: "700", textAlign: "center", lineHeight: 36, letterSpacing: -0.5 },
   features: { alignSelf: "stretch", gap: 12, marginTop: 26 },
   feature: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "rgba(255,255,255,0.75)", borderRadius: 18, borderWidth: 2, borderColor: "#EDF1EA", padding: 12 },
   featureIcon: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", borderWidth: 2 },
   notice: { marginTop: 14, fontSize: 12.5, textAlign: "center", fontWeight: "600" },
-  guestLink: { marginTop: 16, fontSize: 14, textAlign: "center", fontWeight: "800" },
+  guestLink: { marginTop: 16, fontSize: 14, textAlign: "center", fontWeight: "700" },
   actions: { paddingBottom: 18 },
   deco: { position: "absolute" },
   decoBubble: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },

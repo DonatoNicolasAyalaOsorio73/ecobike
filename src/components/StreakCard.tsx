@@ -41,7 +41,7 @@ export default function StreakCard({ rides, entranceDelay = 0 }: { rides: Ride[]
           <View key={i} style={styles.dayCol}>
             <Text style={[styles.dayLabel, { color: d.status === "today" ? accents.orange.base : colors.inkFaint }]}>{d.label}</Text>
             {d.status === "done" ? (
-              <Animated.View entering={ZoomIn.delay(entranceDelay + 150 + i * 60).springify().damping(10)} style={[styles.dot, { backgroundColor: accents.orange.base, borderColor: accents.orange.lip }]}>
+              <Animated.View entering={ZoomIn.delay(entranceDelay + 150 + i * 60).springify().damping(16)} style={[styles.dot, { backgroundColor: accents.orange.base, borderColor: accents.orange.lip }]}>
                 <Ionicons name="checkmark" size={15} color="#fff" />
               </Animated.View>
             ) : (
@@ -59,7 +59,7 @@ export default function StreakCard({ rides, entranceDelay = 0 }: { rides: Ride[]
       </View>
 
       <View style={styles.goalHead}>
-        <Text style={{ color: colors.ink, fontWeight: "800" }}>Meta diaria</Text>
+        <Text style={{ color: colors.ink, fontWeight: "700" }}>Meta diaria</Text>
         <Text style={{ color: colors.inkSoft, fontWeight: "700" }}>
           {Math.min(today, dailyGoal)} / {dailyGoal} pts
         </Text>
@@ -73,11 +73,11 @@ export default function StreakCard({ rides, entranceDelay = 0 }: { rides: Ride[]
 const styles = StyleSheet.create({
   top: { flexDirection: "row", alignItems: "center", gap: 14 },
   countRow: { flexDirection: "row", alignItems: "baseline", gap: 6 },
-  count: { fontSize: 34, fontWeight: "900", letterSpacing: -1 },
-  countLabel: { fontSize: 15, fontWeight: "800" },
+  count: { fontSize: 34, fontWeight: "700", letterSpacing: -1 },
+  countLabel: { fontSize: 15, fontWeight: "700" },
   week: { flexDirection: "row", justifyContent: "space-between", marginTop: 16, marginBottom: 16 },
   dayCol: { alignItems: "center", gap: 6, flex: 1 },
-  dayLabel: { fontSize: 12, fontWeight: "800" },
+  dayLabel: { fontSize: 12, fontWeight: "700" },
   dot: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, alignItems: "center", justifyContent: "center" },
   goalHead: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
 });

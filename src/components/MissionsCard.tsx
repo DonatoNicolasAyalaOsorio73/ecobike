@@ -23,7 +23,7 @@ export default function MissionsCard({ rides, entranceDelay = 0 }: { rides: Ride
         <Text style={[styles.title, { color: colors.ink }]}>Misiones de hoy</Text>
         <View style={[styles.counter, { backgroundColor: done === missions.length ? accents.gold.base : accents.gold.soft }]}>
           <Ionicons name="star" size={12} color={done === missions.length ? "#fff" : accents.gold.lip} />
-          <Text style={{ color: done === missions.length ? "#fff" : accents.gold.lip, fontWeight: "900", fontSize: 12 }}>
+          <Text style={{ color: done === missions.length ? "#fff" : accents.gold.lip, fontWeight: "700", fontSize: 12 }}>
             {done}/{missions.length}
           </Text>
         </View>
@@ -45,10 +45,10 @@ export default function MissionsCard({ rides, entranceDelay = 0 }: { rides: Ride
                   {m.unit ? ` ${m.unit}` : ""}
                 </Text>
               </View>
-              <DuoProgressBar value={m.current / m.target} accent={m.accent} height={12} delay={entranceDelay + 150 + i * 90} />
+              <DuoProgressBar value={m.current / m.target} accent={m.accent} delay={entranceDelay + 150 + i * 90} />
             </View>
             {m.done && (
-              <Animated.View entering={ZoomIn.delay(entranceDelay + 300 + i * 90).springify().damping(9)} style={styles.chest}>
+              <Animated.View entering={ZoomIn.delay(entranceDelay + 300 + i * 90).springify().damping(16)} style={styles.chest}>
                 <Ionicons name="trophy" size={18} color={accents.gold.base} />
               </Animated.View>
             )}
@@ -61,11 +61,11 @@ export default function MissionsCard({ rides, entranceDelay = 0 }: { rides: Ride
 
 const styles = StyleSheet.create({
   head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
-  title: { fontSize: 16, fontWeight: "900" },
+  title: { fontSize: 16, fontWeight: "700" },
   counter: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
   icon: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", borderWidth: 2 },
   labelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 },
-  mTitle: { fontSize: 14, fontWeight: "800", flex: 1 },
+  mTitle: { fontSize: 14, fontWeight: "700", flex: 1 },
   chest: { width: 28, alignItems: "center" },
 });

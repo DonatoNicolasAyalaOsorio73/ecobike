@@ -93,7 +93,7 @@ export default function StatsScreen() {
             </Text>
             {isGuest && (
               <View style={[styles.demoPill, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
-                <Text style={{ color: colors.primaryDark, fontSize: 11, fontWeight: "800" }}>DATOS DE EJEMPLO</Text>
+                <Text style={{ color: colors.primaryDark, fontSize: 11, fontWeight: "700" }}>DATOS DE EJEMPLO</Text>
               </View>
             )}
           </View>
@@ -236,7 +236,7 @@ export default function StatsScreen() {
               <Text style={{ color: colors.inkSoft, fontSize: 12.5 }}>
                 {availablePoints.toLocaleString("es-CO")} {nextLevelAt ? `/ ${nextLevelAt.toLocaleString("es-CO")} pts` : "pts (nivel máximo)"}
               </Text>
-              <Text style={{ color: colors.primaryDark, fontSize: 12.5, fontWeight: "800" }}>{Math.round(progressToNext * 100)}%</Text>
+              <Text style={{ color: colors.primaryDark, fontSize: 12.5, fontWeight: "700" }}>{Math.round(progressToNext * 100)}%</Text>
             </View>
             <ProgressBar value={progressToNext} />
           </GlassCard>
@@ -297,7 +297,7 @@ function Kpi({ label, value, pct }: { label: string; value: string; pct: number 
   return (
     <View style={{ flex: 1, gap: 4 }}>
       <Text style={{ color: colors.inkSoft, fontSize: 11.5 }}>{label}</Text>
-      <Text style={{ color: colors.ink, fontSize: 16, fontWeight: "800" }}>{value}</Text>
+      <Text style={{ color: colors.ink, fontSize: 16, fontWeight: "700" }}>{value}</Text>
       <DeltaBadge pct={pct} />
     </View>
   );
@@ -310,7 +310,7 @@ function Impact({ icon, value, label }: { icon: any; value: string; label: strin
       <View style={[styles.impactIcon, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
         <Ionicons name={icon} size={18} color={colors.primaryDark} />
       </View>
-      <Text style={{ color: colors.ink, fontSize: 16, fontWeight: "800", marginTop: 8 }}>{value}</Text>
+      <Text style={{ color: colors.ink, fontSize: 16, fontWeight: "700", marginTop: 8 }}>{value}</Text>
       <Text style={{ color: colors.inkSoft, fontSize: 11, textAlign: "center" }}>{label}</Text>
     </View>
   );
@@ -336,7 +336,7 @@ function RecordRow({ icon, label, value, last }: { icon: any; label: string; val
     <View style={[styles.recordRow, !last && { borderBottomWidth: 1, borderBottomColor: colors.divider }]}>
       <Ionicons name={icon} size={17} color={colors.primaryDark} />
       <Text style={{ color: colors.inkSoft, fontSize: 13, flex: 1, marginLeft: 10 }}>{label}</Text>
-      <Text style={{ color: colors.ink, fontSize: 13.5, fontWeight: "800" }}>{value}</Text>
+      <Text style={{ color: colors.ink, fontSize: 13.5, fontWeight: "700" }}>{value}</Text>
     </View>
   );
 }
@@ -346,17 +346,17 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 20, paddingTop: 8 },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
-  header: { fontSize: 28, fontWeight: "800", letterSpacing: -0.5 },
+  header: { fontSize: 28, fontWeight: "700", letterSpacing: -0.5 },
   demoPill: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   eyebrow: { fontSize: 12.5, fontWeight: "600" },
   heroRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 2 },
-  heroValue: { fontSize: 38, fontWeight: "800", letterSpacing: -1 },
+  heroValue: { fontSize: 38, fontWeight: "700", letterSpacing: -1 },
   kpiRow: { flexDirection: "row", gap: 12, marginTop: 14, paddingTop: 14, borderTopWidth: 1 },
   section: { marginTop: 22, marginBottom: 10 },
-  sectionTitle: { fontSize: 18, fontWeight: "800" },
+  sectionTitle: { fontSize: 18, fontWeight: "700" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 16 },
   goalRow: { flexDirection: "row", alignItems: "center", gap: 16 },
-  goalPercent: { fontSize: 19, fontWeight: "800" },
+  goalPercent: { fontSize: 19, fontWeight: "700" },
   link: { fontSize: 12.5, fontWeight: "700", marginTop: 8 },
   impactRow: { flexDirection: "row", justifyContent: "space-between" },
   impact: { flex: 1, alignItems: "center" },

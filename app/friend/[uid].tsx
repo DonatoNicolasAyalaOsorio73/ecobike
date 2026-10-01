@@ -97,13 +97,13 @@ export default function FriendProfileScreen() {
           <BackButton />
         </View>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Animated.View entering={ZoomIn.springify().damping(11)} style={{ alignItems: "center" }}>
+          <Animated.View entering={ZoomIn.springify().damping(16)} style={{ alignItems: "center" }}>
             <ProgressRing progress={progress} size={130} thickness={8}>
               <View style={[styles.avatar, { backgroundColor: accents.blue.soft, borderColor: accents.blue.base }]}>
                 {friend.photoURL ? (
                   <Image source={{ uri: friend.photoURL }} style={StyleSheet.absoluteFill} />
                 ) : (
-                  <Text style={{ color: accents.blue.lip, fontSize: 40, fontWeight: "900" }}>{friend.displayName.slice(0, 1).toUpperCase()}</Text>
+                  <Text style={{ color: accents.blue.lip, fontSize: 40, fontWeight: "700" }}>{friend.displayName.slice(0, 1).toUpperCase()}</Text>
                 )}
               </View>
             </ProgressRing>
@@ -147,7 +147,7 @@ export default function FriendProfileScreen() {
 function Tile({ accent, icon, value, label, delay }: { accent: AccentName; icon: keyof typeof Ionicons.glyphMap; value: string; label: string; delay: number }) {
   const a = accents[accent];
   return (
-    <Animated.View entering={ZoomIn.delay(delay).springify().damping(12)} style={[styles.tile, { borderColor: a.base, backgroundColor: "#fff", borderBottomColor: a.lip }]}>
+    <Animated.View entering={ZoomIn.delay(delay).springify().damping(16)} style={[styles.tile, { borderColor: a.base, backgroundColor: "#fff" }]}>
       <Ionicons name={icon} size={20} color={a.base} />
       <Text style={styles.tileValue} numberOfLines={1} adjustsFontSizeToFit>
         {value}
@@ -165,9 +165,9 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 16, paddingTop: 4 },
   scroll: { padding: 20, paddingBottom: 60 },
   avatar: { width: 108, height: 108, borderRadius: 54, borderWidth: 3, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  name: { fontSize: 24, fontWeight: "900", textAlign: "center", marginTop: 14 },
+  name: { fontSize: 24, fontWeight: "700", textAlign: "center", marginTop: 14 },
   tiles: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 22 },
-  tile: { flexBasis: "46%", flexGrow: 1, borderWidth: 2, borderBottomWidth: 4, borderRadius: 18, padding: 14, gap: 4 },
-  tileValue: { fontSize: 20, fontWeight: "900", color: "#1F2A22" },
+  tile: { flexBasis: "46%", flexGrow: 1, borderWidth: 1, borderRadius: 18, padding: 14, gap: 4 },
+  tileValue: { fontSize: 20, fontWeight: "700", color: "#1F2A22" },
   tileLabel: { fontSize: 12, color: "#6B776F", fontWeight: "700" },
 });

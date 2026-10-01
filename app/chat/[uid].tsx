@@ -117,10 +117,10 @@ export default function ChatScreen() {
         <View style={styles.header}>
           <BackButton />
           <View style={[styles.avatar, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
-            <Text style={{ color: colors.primaryDark, fontWeight: "800" }}>{(name || "?").slice(0, 1).toUpperCase()}</Text>
+            <Text style={{ color: colors.primaryDark, fontWeight: "700" }}>{(name || "?").slice(0, 1).toUpperCase()}</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 16 }} numberOfLines={1} accessibilityRole="header">
+            <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 16 }} numberOfLines={1} accessibilityRole="header">
               {name || "Chat"}
             </Text>
             {isDemo && <Text style={{ color: colors.inkFaint, fontSize: 11.5 }}>Conversación de demostración</Text>}

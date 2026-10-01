@@ -46,7 +46,7 @@ function Avatar({ label, photoURL, size = 44 }: { label: string; photoURL?: stri
   if (photoURL) return <Image source={{ uri: photoURL }} style={box} accessibilityIgnoresInvertColors />;
   return (
     <View style={[styles.avatar, box, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
-      <Text style={{ color: colors.primaryDark, fontWeight: "800", fontSize: size * 0.4 }}>{label.slice(0, 1).toUpperCase()}</Text>
+      <Text style={{ color: colors.primaryDark, fontWeight: "700", fontSize: size * 0.4 }}>{label.slice(0, 1).toUpperCase()}</Text>
     </View>
   );
 }
@@ -299,7 +299,7 @@ export default function FriendsScreen() {
                             </Text>
                             {c.unread > 0 && (
                               <View style={[styles.unread, { backgroundColor: colors.primary }]}>
-                                <Text style={{ color: colors.onPrimary, fontSize: 11, fontWeight: "800" }}>{c.unread}</Text>
+                                <Text style={{ color: colors.onPrimary, fontSize: 11, fontWeight: "700" }}>{c.unread}</Text>
                               </View>
                             )}
                           </View>
@@ -471,7 +471,7 @@ export default function FriendsScreen() {
                 <View style={[styles.leagueBanner, { backgroundColor: accents.purple.soft, borderColor: accents.purple.base }]}>
                   <Ionicons name="shield-half" size={22} color={accents.purple.base} />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: accents.purple.lip, fontWeight: "900" }}>Liga semanal</Text>
+                    <Text style={{ color: accents.purple.lip, fontWeight: "700" }}>Liga semanal</Text>
                     <Text style={{ color: colors.inkSoft, fontSize: 12.5 }}>
                       Termina en {daysLeftInWeek()} {daysLeftInWeek() === 1 ? "día" : "días"}. ¡Pedalea para subir posiciones!
                     </Text>
@@ -497,7 +497,7 @@ export default function FriendsScreen() {
                           </Text>
                           <Text style={{ color: colors.inkSoft, fontSize: 11.5 }}>{score(e).toLocaleString("es-CO")} pts</Text>
                           <View style={[styles.podiumBar, { height: h, backgroundColor: pos === 0 ? colors.primary : colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
-                            <Text style={{ color: pos === 0 ? colors.onPrimary : colors.primaryDark, fontWeight: "800", fontSize: 22 }}>{pos + 1}</Text>
+                            <Text style={{ color: pos === 0 ? colors.onPrimary : colors.primaryDark, fontWeight: "700", fontSize: 22 }}>{pos + 1}</Text>
                           </View>
                         </Animated.View>
                       );
@@ -506,7 +506,7 @@ export default function FriendsScreen() {
                   <GlassCard>
                     {ranking.map((entry, i) => (
                       <View key={entry.uid} style={styles.leaderRow}>
-                        <Text style={{ width: 26, color: i < 3 ? colors.primaryDark : colors.inkFaint, fontWeight: "800" }}>{i + 1}</Text>
+                        <Text style={{ width: 26, color: i < 3 ? colors.primaryDark : colors.inkFaint, fontWeight: "700" }}>{i + 1}</Text>
                         <Avatar label={entry.displayName} photoURL={entry.photoURL} size={32} />
                         <Text style={{ color: colors.ink, flex: 1, marginLeft: 10, fontWeight: entry.displayName.endsWith("(tú)") ? "800" : "500" }} numberOfLines={1}>
                           {entry.displayName}
@@ -531,9 +531,9 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1 },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 8, marginBottom: 12 },
-  header: { fontSize: 28, fontWeight: "800", letterSpacing: -0.5 },
+  header: { fontSize: 28, fontWeight: "700", letterSpacing: -0.5 },
   badge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  badgeText: { color: "#fff", fontSize: 11.5, fontWeight: "800" },
+  badgeText: { color: "#fff", fontSize: 11.5, fontWeight: "700" },
   scroll: { paddingHorizontal: 20 },
   sectionLabel: { fontSize: 11.5, fontWeight: "700", letterSpacing: 0.5, marginBottom: 8, marginTop: 18 },
   resultRow: { flexDirection: "row", alignItems: "center", marginTop: 12, gap: 10 },

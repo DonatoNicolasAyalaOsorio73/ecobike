@@ -83,9 +83,9 @@ export default function RideDetailScreen() {
               {ride.endedAt ? ` – ${format(new Date(ride.endedAt), "HH:mm")}` : ""}
             </Text>
           </View>
-          <Animated.View entering={ZoomIn.delay(150).springify().damping(9)} style={[styles.ptsBadge, { backgroundColor: accents.gold.soft, borderColor: accents.gold.base }]}>
+          <Animated.View entering={ZoomIn.delay(150).springify().damping(16)} style={[styles.ptsBadge, { backgroundColor: accents.gold.soft, borderColor: accents.gold.base }]}>
             <Ionicons name="ribbon" size={16} color={accents.gold.lip} />
-            <Text style={{ color: accents.gold.lip, fontWeight: "900", fontSize: 16 }}>+{ride.pointsEarned}</Text>
+            <Text style={{ color: accents.gold.lip, fontWeight: "700", fontSize: 16 }}>+{ride.pointsEarned}</Text>
           </Animated.View>
         </Animated.View>
 
@@ -104,7 +104,7 @@ export default function RideDetailScreen() {
               <Ionicons name="leaf" size={20} color={accents.teal.lip} />
             </View>
             <Text style={{ color: colors.ink, flex: 1, fontWeight: "700" }}>
-              Evitaste <Text style={{ color: accents.teal.lip, fontWeight: "900" }}>{co2.toFixed(2)} kg de CO₂</Text> frente a ir en carro.
+              Evitaste <Text style={{ color: accents.teal.lip, fontWeight: "700" }}>{co2.toFixed(2)} kg de CO₂</Text> frente a ir en carro.
             </Text>
           </View>
         </GlassCard>
@@ -183,16 +183,16 @@ const styles = StyleSheet.create({
   floatingBack: { position: "absolute", left: 16, top: 0 },
   content: { padding: 20, paddingTop: 20 },
   headRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
-  date: { fontSize: 20, fontWeight: "900", textTransform: "capitalize" },
+  date: { fontSize: 20, fontWeight: "700", textTransform: "capitalize" },
   ptsBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 2, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   noMap: { height: 220, alignItems: "center", justifyContent: "center", paddingTop: 40 },
   co2Row: { flexDirection: "row", alignItems: "center", gap: 12 },
   co2Icon: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", borderWidth: 2 },
-  section: { fontSize: 18, fontWeight: "800", marginTop: 22, marginBottom: 10 },
+  section: { fontSize: 18, fontWeight: "700", marginTop: 22, marginBottom: 10 },
   splitRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 5 },
-  splitKm: { width: 30, fontWeight: "900", fontSize: 13 },
+  splitKm: { width: 30, fontWeight: "700", fontSize: 13 },
   splitTrack: { flex: 1, height: 12, borderRadius: 6, backgroundColor: "#EEF1EC", overflow: "hidden" },
   splitFill: { height: "100%", borderRadius: 6 },
-  splitTime: { width: 74, textAlign: "right", fontWeight: "800", fontSize: 12.5 },
+  splitTime: { width: 74, textAlign: "right", fontWeight: "700", fontSize: 12.5 },
 });

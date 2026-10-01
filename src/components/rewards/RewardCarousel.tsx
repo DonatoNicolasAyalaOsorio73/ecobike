@@ -109,13 +109,13 @@ function Card({ reward, index, cardWidth, scrollX, affordable, missing, onPress 
           </View>
           <View style={styles.costPill}>
             <Ionicons name="ribbon" size={13} color={colors.primaryDark} />
-            <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 13, marginLeft: 4 }}>{reward.pointsCost.toLocaleString("es-CO")}</Text>
+            <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 13, marginLeft: 4 }}>{reward.pointsCost.toLocaleString("es-CO")}</Text>
           </View>
         </View>
 
         <View style={styles.footer}>
           {affordable ? (
-            <Text style={{ color: colors.primaryDark, fontWeight: "800", fontSize: 13.5 }}>Disponible para canjear</Text>
+            <Text style={{ color: colors.primaryDark, fontWeight: "700", fontSize: 13.5 }}>Disponible para canjear</Text>
           ) : (
             <Text style={{ color: colors.inkSoft, fontSize: 13 }}>Te faltan {missing.toLocaleString("es-CO")} pts</Text>
           )}
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   art: { alignItems: "center", justifyContent: "center" },
   scrim: { position: "absolute", left: 0, right: 0, bottom: 0, height: "60%" },
   heroText: { padding: 18 },
-  heroTitle: { color: "#fff", fontSize: 26, fontWeight: "800", letterSpacing: -0.5 },
+  heroTitle: { color: "#fff", fontSize: 26, fontWeight: "700", letterSpacing: -0.5 },
   heroSubtitle: { color: "rgba(255,255,255,0.9)", fontSize: 14, marginTop: 4 },
   costPill: { position: "absolute", top: 14, right: 14, flexDirection: "row", alignItems: "center", paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.82)", borderWidth: 1, borderColor: "rgba(255,255,255,0.95)" },
   footer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingVertical: 14 },

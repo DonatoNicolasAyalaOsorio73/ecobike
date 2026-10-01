@@ -152,9 +152,9 @@ const styles = StyleSheet.create({
   sheetWrap: { position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: "90%", alignItems: "center" },
   sheet: { width: "100%", maxWidth: 480, padding: 22, paddingBottom: 34, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
   grabber: { width: 40, height: 5, borderRadius: 3, alignSelf: "center", marginBottom: 14 },
-  title: { fontSize: 24, fontWeight: "800", letterSpacing: -0.4, marginTop: 6 },
+  title: { fontSize: 24, fontWeight: "700", letterSpacing: -0.4, marginTop: 6 },
   summary: { borderWidth: 1, borderRadius: 18, padding: 14, marginTop: 16, gap: 8 },
   row: { flexDirection: "row", justifyContent: "space-between" },
   qr: { padding: 14, backgroundColor: "#fff", borderRadius: 18, marginTop: 16 },
-  code: { fontSize: 20, fontWeight: "800", letterSpacing: 2, marginTop: 12 },
+  code: { fontSize: 20, fontWeight: "700", letterSpacing: 2, marginTop: 12 },
 });

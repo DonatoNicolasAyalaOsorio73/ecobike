@@ -106,7 +106,7 @@ export default function HistoryScreen() {
               </Text>
             </View>
             <View style={[styles.ptsPill, { backgroundColor: accents.gold.soft }]}>
-              <Text style={{ color: accents.gold.lip, fontWeight: "900", fontSize: 12.5 }}>+{item.pointsEarned}</Text>
+              <Text style={{ color: accents.gold.lip, fontWeight: "700", fontSize: 12.5 }}>+{item.pointsEarned}</Text>
             </View>
           </Pressable>
         </SwipeableRow>
@@ -170,14 +170,14 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1 },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 4, marginBottom: 8 },
-  header: { fontSize: 17, fontWeight: "800" },
+  header: { fontSize: 17, fontWeight: "700" },
   scroll: { paddingHorizontal: 20, paddingTop: 4 },
   sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginTop: 14, marginBottom: 8 },
-  monthLabel: { fontSize: 17, fontWeight: "900" },
+  monthLabel: { fontSize: 17, fontWeight: "700" },
   // Lightweight row (no blur) so long histories scroll smoothly on any phone.
-  row: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#FFFFFF", borderRadius: 18, borderWidth: 2, borderColor: "#EDF1EA", borderBottomWidth: 4, padding: 12, marginBottom: 10 },
+  row: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#FFFFFF", borderRadius: 18, borderWidth: 2, borderColor: "#EDF1EA", padding: 12, marginBottom: 10 },
   iconWrap: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", borderWidth: 2 },
-  date: { fontSize: 15, fontWeight: "800", textTransform: "capitalize" },
+  date: { fontSize: 15, fontWeight: "700", textTransform: "capitalize" },
   meta: { fontSize: 12.5, marginTop: 2 },
   ptsPill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
 });

@@ -36,7 +36,7 @@ interface Kpis {
 function Kpi({ accent, icon, value, label }: { accent: AccentName; icon: keyof typeof Ionicons.glyphMap; value: number | undefined; label: string }) {
   const a = accents[accent];
   return (
-    <View style={[styles.kpi, { borderColor: a.base, borderBottomColor: a.lip }]}>
+    <View style={[styles.kpi, { borderColor: a.base }]}>
       <Ionicons name={icon} size={16} color={a.base} />
       <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit>
         {value === undefined ? "…" : value.toLocaleString("es-CO")}
@@ -281,7 +281,7 @@ export default function AdminScreen() {
                     )}
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.ink, fontWeight: "800" }} numberOfLines={1}>
+                    <Text style={{ color: colors.ink, fontWeight: "700" }} numberOfLines={1}>
                       {s.name}
                     </Text>
                     <Text style={{ color: colors.inkSoft, fontSize: 12 }} numberOfLines={1}>
@@ -289,8 +289,8 @@ export default function AdminScreen() {
                     </Text>
                   </View>
                   <View style={{ alignItems: "flex-end", gap: 4 }}>
-                    <Text style={{ color: accents.gold.lip, fontWeight: "900" }}>{s.pointsRequired} pts</Text>
-                    <Text style={{ color: s.isActive === false ? colors.danger : accents.green.lip, fontSize: 11, fontWeight: "800" }}>
+                    <Text style={{ color: accents.gold.lip, fontWeight: "700" }}>{s.pointsRequired} pts</Text>
+                    <Text style={{ color: s.isActive === false ? colors.danger : accents.green.lip, fontSize: 11, fontWeight: "700" }}>
                       {s.isActive === false ? "INACTIVA" : "ACTIVA"}
                     </Text>
                   </View>
@@ -310,14 +310,14 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1, paddingHorizontal: 20 },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
-  header: { fontSize: 20, fontWeight: "800" },
+  header: { fontSize: 20, fontWeight: "700" },
   scroll: { paddingBottom: 60 },
   section: { fontSize: 16, fontWeight: "700", marginBottom: 12 },
   row: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   kpis: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
-  kpi: { flexBasis: "31%", flexGrow: 1, backgroundColor: "#fff", borderWidth: 2, borderBottomWidth: 4, borderRadius: 16, padding: 10, gap: 2 },
-  kpiValue: { fontSize: 18, fontWeight: "900", color: "#1F2A22" },
+  kpi: { flexBasis: "31%", flexGrow: 1, backgroundColor: "#fff", borderWidth: 1, borderRadius: 16, padding: 10, gap: 2 },
+  kpiValue: { fontSize: 18, fontWeight: "700", color: "#1F2A22" },
   kpiLabel: { fontSize: 10.5, fontWeight: "700", color: "#6B776F" },
-  storeRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#fff", borderWidth: 2, borderColor: "#EDF1EA", borderBottomWidth: 4, borderRadius: 18, padding: 12, marginTop: 10 },
+  storeRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#fff", borderWidth: 2, borderColor: "#EDF1EA", borderRadius: 18, padding: 12, marginTop: 10 },
   storeLogo: { width: 44, height: 44, borderRadius: 12, borderWidth: 2, alignItems: "center", justifyContent: "center", overflow: "hidden" },
 });

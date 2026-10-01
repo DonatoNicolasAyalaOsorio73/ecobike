@@ -248,9 +248,9 @@ export default function EditProfileScreen() {
             {/* Completion */}
             <GlassCard>
               <View style={styles.completionHead}>
-                <Text style={{ color: colors.ink, fontWeight: "900", fontSize: 16 }}>Perfil {Math.round(ratio * 100)}% completo</Text>
+                <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 16 }}>Perfil {Math.round(ratio * 100)}% completo</Text>
                 {ratio === 1 && (
-                  <Animated.View entering={ZoomIn.springify().damping(9)}>
+                  <Animated.View entering={ZoomIn.springify().damping(16)}>
                     <Ionicons name="ribbon" size={22} color={accents.gold.base} />
                   </Animated.View>
                 )}
@@ -350,7 +350,7 @@ export default function EditProfileScreen() {
           <View style={[styles.footer, { borderTopColor: colors.divider }]}>
             {confirmLeave ? (
               <Animated.View entering={FadeInDown.springify()} style={{ gap: 10 }}>
-                <Text style={{ color: colors.ink, fontWeight: "800", textAlign: "center" }}>¿Salir sin guardar los cambios?</Text>
+                <Text style={{ color: colors.ink, fontWeight: "700", textAlign: "center" }}>¿Salir sin guardar los cambios?</Text>
                 <View style={{ flexDirection: "row", gap: 10 }}>
                   <GlassButton label="Seguir editando" variant="secondary" onPress={() => setConfirmLeave(false)} style={{ flex: 1 }} />
                   <GlassButton
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1 },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 4 },
-  header: { fontSize: 17, fontWeight: "800" },
+  header: { fontSize: 17, fontWeight: "700" },
   scroll: { paddingHorizontal: 20, paddingTop: 12 },
   completionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
   photoBlock: { alignItems: "center", marginTop: 20 },
@@ -402,8 +402,8 @@ const styles = StyleSheet.create({
   avatarBusy: { backgroundColor: "rgba(0,0,0,0.4)", alignItems: "center", justifyContent: "center" },
   camera: { position: "absolute", right: 0, bottom: 4, width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", borderWidth: 3 },
   photoActions: { flexDirection: "row", gap: 18, marginTop: 10 },
-  photoLink: { fontWeight: "800", fontSize: 14 },
-  section: { fontSize: 18, fontWeight: "800", marginTop: 22, marginBottom: 10 },
-  fieldLabel: { fontSize: 12.5, fontWeight: "800", marginBottom: 8, marginLeft: 4 },
+  photoLink: { fontWeight: "700", fontSize: 14 },
+  section: { fontSize: 18, fontWeight: "700", marginTop: 22, marginBottom: 10 },
+  fieldLabel: { fontSize: 12.5, fontWeight: "700", marginBottom: 8, marginLeft: 4 },
   footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24, borderTopWidth: 1, backgroundColor: "rgba(255,255,255,0.92)" },
 });

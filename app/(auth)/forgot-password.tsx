@@ -108,6 +108,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1, paddingHorizontal: 24, paddingTop: 4 },
   center: { flex: 1, justifyContent: "center" },
   iconCircle: { width: 68, height: 68, borderRadius: 34, alignItems: "center", justifyContent: "center", borderWidth: 1, marginBottom: 16 },
-  title: { fontSize: 22, fontWeight: "800", textAlign: "center" },
+  title: { fontSize: 22, fontWeight: "700", textAlign: "center" },
   subtitle: { marginTop: 8, fontSize: 14, textAlign: "center", lineHeight: 20, marginBottom: 18, paddingHorizontal: 4 },
 });

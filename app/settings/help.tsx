@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1 },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 4 },
-  header: { fontSize: 17, fontWeight: "800" },
+  header: { fontSize: 17, fontWeight: "700" },
   scroll: { padding: 20, paddingBottom: 60 },
   q: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 14 },
 });

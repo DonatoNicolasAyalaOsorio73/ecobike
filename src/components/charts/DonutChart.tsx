@@ -64,7 +64,7 @@ export default function DonutChart({
             <Text style={{ color: colors.inkSoft, flex: 1, fontSize: 12 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
               {s.label}
             </Text>
-            <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 13 }}>
+            <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 13 }}>
               {total > 0 ? Math.round((s.value / total) * 100) : 0}%
             </Text>
           </View>
@@ -77,7 +77,7 @@ export default function DonutChart({
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: 14 },
   center: { alignItems: "center", justifyContent: "center" },
-  total: { fontSize: 24, fontWeight: "800" },
+  total: { fontSize: 24, fontWeight: "700" },
   legend: { flex: 1, gap: 10 },
   legendRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   dot: { width: 10, height: 10, borderRadius: 5 },

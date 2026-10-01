@@ -62,7 +62,7 @@ export default function RideOptionsMenu({ onSelect, onClose }: Props) {
                     <Ionicons name={o.icon as any} size={20} color={o.goal ? colors.primaryDark : colors.onPrimary} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 15 }}>{o.label}</Text>
+                    <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 15 }}>{o.label}</Text>
                     <Text style={{ color: colors.inkSoft, fontSize: 12.5, marginTop: 2 }}>{o.subtitle}</Text>
                   </View>
                   <Ionicons name="play-circle" size={26} color={colors.primaryDark} />
@@ -78,7 +78,7 @@ export default function RideOptionsMenu({ onSelect, onClose }: Props) {
 
 const styles = StyleSheet.create({
   sheet: { position: "absolute", left: 16, right: 82, bottom: 110, top: 90 }, // right: room for the control rail
-  title: { fontSize: 22, fontWeight: "800", marginBottom: 14, letterSpacing: -0.3 },
+  title: { fontSize: 22, fontWeight: "700", marginBottom: 14, letterSpacing: -0.3 },
   option: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
   icon: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", borderWidth: 1 },
 });

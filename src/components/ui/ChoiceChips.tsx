@@ -26,7 +26,7 @@ function Chip({ choice, selected, onPress, accent }: { choice: Choice; selected:
   const a = accents[accent];
   const scale = useSharedValue(1);
   useEffect(() => {
-    if (selected) scale.value = withSequence(withSpring(1.12, SPRING.press), withSpring(1, SPRING.bouncy));
+    if (selected) scale.value = withSequence(withSpring(0.96, SPRING.press), withSpring(1, SPRING.default));
   }, [selected, scale]);
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
@@ -44,8 +44,8 @@ function Chip({ choice, selected, onPress, accent }: { choice: Choice; selected:
         style={[
           styles.chip,
           selected
-            ? { backgroundColor: a.soft, borderColor: a.base, borderBottomColor: a.lip }
-            : { backgroundColor: "#FFFFFF", borderColor: "#E3E7E1", borderBottomColor: "#D5DBD2" },
+            ? { backgroundColor: a.soft, borderColor: a.base }
+            : { backgroundColor: "rgba(255,255,255,0.85)", borderColor: "rgba(20,40,25,0.08)" },
         ]}
       >
         {choice.icon ? <Ionicons name={choice.icon} size={16} color={selected ? a.lip : "#7A867D"} /> : null}
@@ -55,7 +55,7 @@ function Chip({ choice, selected, onPress, accent }: { choice: Choice; selected:
   );
 }
 
-/** Single-select chips with a 3D bottom edge and a pop on selection. */
+/** Single-select capsule chips (iOS filter-chip style). */
 export default function ChoiceChips({ choices, value, onChange, accent = "green", allowClear = true, accessibilityLabel }: Props) {
   return (
     <View style={styles.wrap} accessibilityRole="radiogroup" accessibilityLabel={accessibilityLabel}>
@@ -68,6 +68,6 @@ export default function ChoiceChips({ choices, value, onChange, accent = "green"
 
 const styles = StyleSheet.create({
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 14, borderWidth: 2, borderBottomWidth: 4 },
-  label: { fontSize: 13.5, fontWeight: "800" },
+  chip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1 },
+  label: { fontSize: 14, fontWeight: "600", letterSpacing: -0.1 },
 });
