@@ -18,6 +18,10 @@ module.exports = handler(["DELETE"], async (req) => {
     })
   );
 
+  // Release the username reservation so someone else can take it.
+  const claims = await db.collection("usernames").where("uid", "==", uid).get();
+  await Promise.all(claims.docs.map((c) => c.ref.delete()));
+
   await db.recursiveDelete(db.collection("usuarios").doc(uid));
   await db.collection("usuarios_public").doc(uid).delete();
   await a.storage().bucket().deleteFiles({ prefix: `avatars/${uid}/` }).catch(() => {});

@@ -103,6 +103,8 @@ test("chats: only participants read; messages are server-written only", async ()
 });
 
 test("everything else is closed", async () => {
+  await assertFails(setDoc(doc(as(ALICE), "usernames", "admin"), { uid: ALICE }));
+  await assertFails(getDoc(doc(as(ALICE), "usernames", "alice")));
   await assertFails(getDoc(doc(as(ALICE), "canjes", "x")));
   await assertFails(setDoc(doc(as(ALICE), "anything", "x"), { a: 1 }));
 });

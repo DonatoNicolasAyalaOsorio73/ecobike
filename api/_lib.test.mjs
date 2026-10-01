@@ -54,3 +54,12 @@ test("nextWeekly adds this week, resets on a new week, ignores past-week rides, 
   assert.equal(nextWeekly({ weekKey: thisWeek, weekPoints: 50 }, "2000-W01", 30), null);
   assert.equal(nextWeekly({ weekKey: thisWeek, weekPoints: 10 }, thisWeek, -40).weekPoints, 0);
 });
+
+const { slug } = createRequire(import.meta.url)("./me.js");
+
+test("username slug from email prefix is valid and bounded", () => {
+  assert.equal(slug("Ana.Bike"), "ana.bike");
+  assert.equal(slug("josé-pérez+test"), "jospreztest");
+  assert.match(slug("x"), /^[a-z0-9._]{3,20}$/);
+  assert.ok(slug("a".repeat(40)).length <= 16);
+});
