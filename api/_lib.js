@@ -84,7 +84,13 @@ function body(req) {
 // Wraps a handler with CORS, method check and uniform JSON errors.
 function handler(methods, fn) {
   return async (req, res) => {
+    // Correlation id: returned to the client and logged with errors so a
+    // user-reported problem can be found in Vercel logs / Sentry.
+    const requestId = req.headers["x-vercel-id"] || require("crypto").randomUUID();
+    res.setHeader("X-Request-Id", requestId);
+    res.setHeader("Cache-Control", "no-store");
     res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Expose-Headers", "X-Request-Id");
     res.setHeader("Access-Control-Allow-Methods", [...methods, "OPTIONS"].join(","));
     res.setHeader("Access-Control-Allow-Headers", "Authorization,Content-Type");
     if (req.method === "OPTIONS") return res.status(204).end();
@@ -98,10 +104,13 @@ function handler(methods, fn) {
     } catch (e) {
       const status = e.status || 500;
       if (status === 500) {
-        console.error(e);
+        console.error(JSON.stringify({ level: "error", requestId, method: req.method, url: req.url, message: e.message, stack: e.stack }));
         await reportError(e, req);
       }
-      res.status(status).json({ error: status === 500 && !e.status ? "Error interno del servidor." : e.message });
+      res.status(status).json({
+        error: status === 500 && !e.status ? "Error interno del servidor." : e.message,
+        ...(status >= 500 ? { requestId } : {}),
+      });
     }
   };
 }
