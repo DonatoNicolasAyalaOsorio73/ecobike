@@ -147,6 +147,7 @@ function RootLayout() {
                 <Stack.Screen name="history" options={{ presentation: "card" }} />
                 <Stack.Screen name="points/my-codes" options={{ presentation: "card" }} />
                 <Stack.Screen name="chat/[uid]" options={{ presentation: "card" }} />
+                <Stack.Screen name="friend/[uid]" options={{ presentation: "card" }} />
                 <Stack.Screen name="settings" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
               </Stack.Protected>
               <Stack.Screen name="legal/[doc]" options={{ presentation: "card" }} />

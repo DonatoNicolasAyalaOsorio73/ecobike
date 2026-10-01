@@ -66,6 +66,11 @@ test("guest tour: map, stats, rewards, friends, profile, settings", async ({ pag
   await page.getByRole("button", { name: "Volver" }).first().click();
   await expect(page.getByText("Mensajes", { exact: false }).first()).toBeVisible();
 
+  // Friend profile
+  await page.goto("/friend/demo_friend_laura");
+  await expect(page.getByText("Laura Gómez")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Enviar mensaje" })).toBeVisible();
+
   // Profile and settings
   await page.goto("/profile");
   await expect(page.getByText("Crea tu cuenta gratis")).toBeVisible();

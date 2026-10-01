@@ -393,6 +393,12 @@ export default function FriendsScreen() {
                     const confirming = confirmRemove === f.uid;
                     return (
                       <Animated.View key={f.uid} entering={FadeInUp.duration(360).delay(i * 40).springify().damping(18)} style={styles.friendRow}>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Ver perfil de ${f.displayName}`}
+                          onPress={() => router.push(`/friend/${f.uid}`)}
+                          style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", flex: 1 }, pressed && { opacity: 0.6 }]}
+                        >
                         <Avatar label={f.displayName} photoURL={f.photoURL} />
                         <View style={{ flex: 1, marginLeft: 12 }}>
                           <Text style={{ color: colors.ink, fontWeight: "600" }}>{f.displayName}</Text>
@@ -400,6 +406,7 @@ export default function FriendsScreen() {
                             @{f.username} · {f.points.toLocaleString("es-CO")} pts
                           </Text>
                         </View>
+                        </Pressable>
                         <Pressable
                           accessibilityRole="button"
                           accessibilityLabel={`Escribir a ${f.displayName}`}
