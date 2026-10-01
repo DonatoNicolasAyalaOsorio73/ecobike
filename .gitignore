@@ -34,5 +34,4 @@ yarn-error.*
 .claude/
 .vercel/
 
-.vercel
-.env*
+.env*.local
