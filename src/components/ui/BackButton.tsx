@@ -14,7 +14,8 @@ export default function BackButton({ onPress }: { onPress?: () => void }) {
   return (
     <Animated.View style={[styles.wrap, animatedStyle]}>
       <Pressable
-        onPress={onPress ?? (() => router.back())}
+        // Deep links / reloads have no history: fall back to home.
+        onPress={onPress ?? (() => (router.canGoBack() ? router.back() : router.replace("/")))}
         onPressIn={() => (scale.value = withSpring(0.9, { damping: 16, stiffness: 380 }))}
         onPressOut={() => (scale.value = withSpring(1, { damping: 16, stiffness: 380 }))}
         style={StyleSheet.absoluteFill}

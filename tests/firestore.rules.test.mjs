@@ -51,6 +51,9 @@ test("usuarios: owner edits profile fields but never points, role, friends or us
   await assertFails(updateDoc(doc(db, "usuarios", ALICE), { username: "admin" }));
   await assertFails(updateDoc(doc(db, "usuarios", BOB), { nombre: "hack" }));
   await assertFails(deleteDoc(doc(db, "usuarios", ALICE)));
+  await assertSucceeds(updateDoc(doc(db, "usuarios", ALICE), { bio: "Pedaleo a diario", fechaNacimiento: "1995-06-15", sexo: "Femenino" }));
+  await assertFails(updateDoc(doc(db, "usuarios", ALICE), { bio: "x".repeat(201) }));
+  await assertFails(updateDoc(doc(db, "usuarios", ALICE), { nombre: 42 }));
 });
 
 test("usuarios: sign-up must start at zero points and plain user role", async () => {

@@ -18,6 +18,14 @@ export interface UserProfile {
   photoURL: string | null;
   city: string | null;
   bikeType: string | null;
+  firstName: string;
+  lastName: string;
+  bio: string | null;
+  /** ISO "AAAA-MM-DD" (legacy field fechaNacimiento). */
+  birthDate: string | null;
+  gender: string | null;
+  experience: string | null;
+  ridingGoal: string | null;
   friends: string[];
   puntosAcumulados: number;
   role: "user" | "admin" | "partner";

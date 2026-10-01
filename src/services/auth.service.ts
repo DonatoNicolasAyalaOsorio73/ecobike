@@ -12,7 +12,7 @@ import {
   type User,
 } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as Crypto from "expo-crypto";
 import { Platform } from "react-native";
@@ -187,7 +187,9 @@ async function createUserProfileDoc(user: User, provider: AuthProvider, displayN
 
 export async function updateUserProfile(
   uid: string,
-  patch: Partial<Pick<UserProfile, "displayName" | "city" | "bikeType" | "photoURL">>
+  patch: Partial<
+    Pick<UserProfile, "displayName" | "firstName" | "lastName" | "city" | "bikeType" | "photoURL" | "bio" | "birthDate" | "gender" | "experience" | "ridingGoal">
+  >
 ) {
   requireFirebase();
   const update: Record<string, unknown> = { updatedAt: serverTimestamp() };
@@ -196,15 +198,24 @@ export async function updateUserProfile(
     update.nombre = nombre;
     update.apellido = apellido;
   }
+  // Legacy field names (nombre/apellido/fechaNacimiento/sexo) keep the old app compatible.
+  if (patch.firstName !== undefined) update.nombre = patch.firstName;
+  if (patch.lastName !== undefined) update.apellido = patch.lastName;
+  if (patch.bio !== undefined) update.bio = patch.bio;
+  if (patch.birthDate !== undefined) update.fechaNacimiento = patch.birthDate ?? "";
+  if (patch.gender !== undefined) update.sexo = patch.gender ?? "";
+  if (patch.experience !== undefined) update.nivelExperiencia = patch.experience;
+  if (patch.ridingGoal !== undefined) update.objetivo = patch.ridingGoal;
   if (patch.photoURL !== undefined) update.profileImageUrl = patch.photoURL;
   if (patch.city !== undefined) update.city = patch.city;
   if (patch.bikeType !== undefined) update.bikeType = patch.bikeType;
   await setDoc(doc(getDb(), USERS_COLLECTION, uid), update, { merge: true });
 
-  if (patch.displayName !== undefined || patch.photoURL !== undefined) {
-    const split = patch.displayName !== undefined ? splitName(patch.displayName) : undefined;
+  const nameChanged = patch.displayName !== undefined || patch.firstName !== undefined || patch.lastName !== undefined;
+  if (nameChanged || patch.photoURL !== undefined) {
     await syncPublicMirror(uid, {
-      ...(split ? { nombre: split.nombre, apellido: split.apellido } : {}),
+      ...(update.nombre !== undefined ? { nombre: update.nombre as string } : {}),
+      ...(update.apellido !== undefined ? { apellido: update.apellido as string } : {}),
       ...(patch.photoURL !== undefined ? { profileImageUrl: patch.photoURL } : {}),
     });
   }
@@ -241,6 +252,13 @@ export async function fetchUserProfile(uid: string): Promise<UserProfile | null>
     photoURL: data.profileImageUrl ?? null,
     city: data.city ?? null,
     bikeType: data.bikeType ?? null,
+    firstName: (data.nombre ?? data.nombres ?? "").trim(),
+    lastName: (data.apellido ?? "").trim(),
+    bio: data.bio ?? null,
+    birthDate: /^\d{4}-\d{2}-\d{2}$/.test(data.fechaNacimiento ?? "") ? data.fechaNacimiento : null,
+    gender: data.sexo || null,
+    experience: data.nivelExperiencia ?? null,
+    ridingGoal: data.objetivo ?? null,
     friends: data.amigos ?? [],
     puntosAcumulados: data.puntosAcumulados ?? 0,
     role: data.isAdmin === true ? "admin" : data.role ?? "user", // legacy docs use isAdmin
@@ -265,4 +283,11 @@ export async function reloadEmailVerification(): Promise<boolean> {
   await user.reload();
   await user.getIdToken(true);
   return user.emailVerified;
+}
+
+/** Removes the profile photo (Storage object + profile fields). */
+export async function removeProfilePhoto(uid: string) {
+  requireFirebase();
+  await deleteObject(ref(getFirebaseStorage(), `avatars/${uid}/photo.jpg`)).catch(() => {});
+  await updateUserProfile(uid, { photoURL: null });
 }

@@ -54,6 +54,13 @@ export async function searchUserByUsername(username: string): Promise<UserProfil
       photoURL: data.profileImageUrl ?? null,
       city: null,
       bikeType: null,
+      firstName: data.nombre ?? "",
+      lastName: data.apellido ?? "",
+      bio: null,
+      birthDate: null,
+      gender: null,
+      experience: null,
+      ridingGoal: null,
       friends: data.amigos ?? [],
       puntosAcumulados: data.puntosAcumulados ?? 0,
       role: "user",
@@ -123,4 +130,11 @@ export async function fetchPublicProfiles(uids: string[]): Promise<PublicProfile
       points: (d.puntosAcumulados as number | undefined) ?? 0,
     };
   });
+}
+
+/** Live availability check for the edit-profile username field. The server re-checks on save. */
+export async function isUsernameAvailable(username: string, myUid: string): Promise<boolean> {
+  if (!isFirebaseConfigured) return true;
+  const snap = await getDocs(query(collection(getDb(), PUBLIC_COLLECTION), where("username", "==", username.toLowerCase()), limit(2)));
+  return snap.docs.every((d) => d.id === myUid);
 }

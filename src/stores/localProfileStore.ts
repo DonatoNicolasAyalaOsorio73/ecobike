@@ -10,6 +10,13 @@ export interface LocalProfile {
   city: string;
   bikeType: string;
   photoUri: string | null;
+  firstName: string;
+  lastName: string;
+  bio: string;
+  birthDate: string | null;
+  gender: string;
+  experience: string;
+  ridingGoal: string;
 }
 
 function randomGuestHandle() {
@@ -22,6 +29,13 @@ const DEFAULTS: LocalProfile = {
   city: "",
   bikeType: "",
   photoUri: null,
+  firstName: "Ciclista",
+  lastName: "invitado",
+  bio: "",
+  birthDate: null,
+  gender: "",
+  experience: "",
+  ridingGoal: "",
 };
 
 async function readStorage(): Promise<Partial<LocalProfile> | null> {

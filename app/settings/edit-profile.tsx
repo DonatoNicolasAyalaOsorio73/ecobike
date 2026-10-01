@@ -1,110 +1,391 @@
-import React, { useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useNavigation } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import * as Haptics from "expo-haptics";
+import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import BackButton from "@/components/ui/BackButton";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassInput from "@/components/ui/GlassInput";
 import GlassButton from "@/components/ui/GlassButton";
+import ChoiceChips, { type Choice } from "@/components/ui/ChoiceChips";
+import DuoProgressBar from "@/components/ui/DuoProgressBar";
 import { useTheme } from "@/theme/useTheme";
+import { accents } from "@/theme/colors";
 import { useAuthStore } from "@/stores/authStore";
 import { useLocalProfileStore } from "@/stores/localProfileStore";
-import { updateUserProfile } from "@/services/auth.service";
+import { useToastStore } from "@/stores/toastStore";
+import { removeProfilePhoto, updateUserProfile, uploadProfilePhoto } from "@/services/auth.service";
+import { isUsernameAvailable } from "@/services/social.service";
 import { api } from "@/services/api";
+import {
+  BIO_MAX,
+  isoToBirthInput,
+  maskBirthDate,
+  parseBirthDate,
+  profileCompletion,
+  validateName,
+  validateUsername,
+  type ProfileFormValues,
+} from "@/utils/profileForm";
 
-const BIKE_TYPES = ["Urbana", "Montaña", "Ruta", "Eléctrica", "BMX"];
+const BIKES: Choice[] = [
+  { value: "Urbana", label: "Urbana", icon: "bicycle" },
+  { value: "Ruta", label: "Ruta", icon: "speedometer" },
+  { value: "Montaña", label: "Montaña", icon: "trail-sign" },
+  { value: "Eléctrica", label: "Eléctrica", icon: "flash" },
+  { value: "Plegable", label: "Plegable", icon: "git-compare" },
+  { value: "BMX", label: "BMX", icon: "flame" },
+];
+const EXPERIENCE: Choice[] = [
+  { value: "Principiante", label: "Principiante", icon: "leaf" },
+  { value: "Intermedio", label: "Intermedio", icon: "trending-up" },
+  { value: "Avanzado", label: "Avanzado", icon: "rocket" },
+];
+const GOALS: Choice[] = [
+  { value: "Movilidad", label: "Moverme por la ciudad", icon: "business" },
+  { value: "Salud", label: "Salud", icon: "heart" },
+  { value: "Deporte", label: "Entrenar", icon: "barbell" },
+  { value: "Planeta", label: "Cuidar el planeta", icon: "earth" },
+];
+const GENDERS: Choice[] = [
+  { value: "Femenino", label: "Femenino" },
+  { value: "Masculino", label: "Masculino" },
+  { value: "Otro", label: "Otro" },
+  { value: "Prefiero no decir", label: "Prefiero no decir" },
+];
+
+// Direct links / reloads have no history to go back to.
+const goBack = () => (router.canGoBack() ? router.back() : router.replace("/(tabs)/profile"));
+
+type UsernameState = "idle" | "checking" | "ok" | "taken" | "invalid";
 
 export default function EditProfileScreen() {
   const { colors } = useTheme();
+  const navigation = useNavigation();
   const firebaseUser = useAuthStore((s) => s.firebaseUser);
   const profile = useAuthStore((s) => s.profile);
   const refreshProfile = useAuthStore((s) => s.refreshProfile);
-  const localProfile = useLocalProfileStore();
+  const local = useLocalProfileStore();
+  const toast = useToastStore((s) => s.show);
+  const isGuest = !firebaseUser;
 
-  const [displayName, setDisplayName] = useState(profile?.displayName ?? localProfile.displayName);
-  const [city, setCity] = useState(profile?.city ?? localProfile.city ?? "");
-  const [bikeType, setBikeType] = useState(profile?.bikeType ?? localProfile.bikeType ?? "");
-  const [username, setUsername] = useState(profile?.username ?? "");
+  const initial: ProfileFormValues = useMemo(
+    () => ({
+      firstName: profile?.firstName ?? local.firstName ?? "",
+      lastName: profile?.lastName ?? local.lastName ?? "",
+      username: profile?.username ?? local.username,
+      bio: profile?.bio ?? local.bio ?? "",
+      birthDate: isoToBirthInput(profile?.birthDate ?? local.birthDate),
+      gender: profile?.gender ?? local.gender ?? "",
+      city: profile?.city ?? local.city ?? "",
+      bikeType: profile?.bikeType ?? local.bikeType ?? "",
+      experience: profile?.experience ?? local.experience ?? "",
+      ridingGoal: profile?.ridingGoal ?? local.ridingGoal ?? "",
+      hasPhoto: !!(profile?.photoURL ?? local.photoUri),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+  const [v, setV] = useState<ProfileFormValues>(initial);
+  const [photo, setPhoto] = useState<string | null>(profile?.photoURL ?? local.photoUri);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
+  const [usernameState, setUsernameState] = useState<UsernameState>("idle");
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const allowLeave = useRef(false);
 
-  const onSave = async () => {
-    setSaving(true);
-    setError(null);
+  const set = <K extends keyof ProfileFormValues>(k: K) => (value: ProfileFormValues[K]) => setV((s) => ({ ...s, [k]: value }));
+
+  const dirty = (Object.keys(initial) as (keyof ProfileFormValues)[]).some((k) => k !== "hasPhoto" && initial[k] !== v[k]);
+  const { ratio, nextHint } = profileCompletion({ ...v, hasPhoto: !!photo });
+  const birth = parseBirthDate(v.birthDate);
+  const errors = {
+    firstName: validateName(v.firstName, "nombre"),
+    lastName: v.lastName.trim() ? validateName(v.lastName, "apellido") : null,
+    username: isGuest ? null : validateUsername(v.username),
+    birthDate: birth.error,
+    bio: v.bio.length > BIO_MAX ? `Máximo ${BIO_MAX} caracteres.` : null,
+  };
+  const hasErrors = Object.values(errors).some(Boolean) || usernameState === "taken";
+
+  // Live username availability (debounced). The server re-validates on save.
+  useEffect(() => {
+    if (isGuest) return;
+    const wanted = v.username.trim().replace(/^@/, "").toLowerCase();
+    if (wanted === initial.username) return setUsernameState("idle");
+    if (validateUsername(wanted)) return setUsernameState("invalid");
+    setUsernameState("checking");
+    const t = setTimeout(() => {
+      isUsernameAvailable(wanted, firebaseUser!.uid)
+        .then((ok) => setUsernameState(ok ? "ok" : "taken"))
+        .catch(() => setUsernameState("idle"));
+    }, 450);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [v.username]);
+
+  // Unsaved-changes guard for the back button and swipe-back.
+  useEffect(() => {
+    const unsub = navigation.addListener("beforeRemove" as any, (e: any) => {
+      if (!dirty || allowLeave.current) return;
+      e.preventDefault();
+      setConfirmLeave(true);
+    });
+    return unsub;
+  }, [navigation, dirty]);
+
+  const pickPhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) return toast("Permite el acceso a tus fotos para cambiar tu imagen.", "error");
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.8 });
+    if (res.canceled || !res.assets[0]) return;
+    const uri = res.assets[0].uri;
+    if (isGuest) {
+      await local.update({ photoUri: uri });
+      return setPhoto(uri);
+    }
+    setPhotoBusy(true);
     try {
-      if (firebaseUser) {
-        const wanted = username.trim().replace(/^@/, "").toLowerCase();
-        if (wanted && wanted !== profile?.username) await api("me", "POST", { username: wanted });
-        await updateUserProfile(firebaseUser.uid, { displayName: displayName.trim(), city: city.trim(), bikeType });
+      setPhoto(await uploadProfilePhoto(firebaseUser!.uid, uri));
+      await refreshProfile();
+      toast("Foto actualizada.", "success");
+    } catch {
+      toast("No se pudo subir la foto.", "error");
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const deletePhoto = async () => {
+    setPhotoBusy(true);
+    try {
+      if (isGuest) await local.update({ photoUri: null });
+      else {
+        await removeProfilePhoto(firebaseUser!.uid);
         await refreshProfile();
-      } else {
-        await localProfile.update({ displayName: displayName.trim() || "Ciclista invitado", city: city.trim(), bikeType });
       }
-      router.back();
-    } catch (err: any) {
-      setError(err?.message ?? "No se pudo guardar.");
+      setPhoto(null);
+    } catch {
+      toast("No se pudo quitar la foto.", "error");
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const save = async () => {
+    setShowErrors(true);
+    if (hasErrors) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      return toast("Revisa los campos marcados.", "error");
+    }
+    setSaving(true);
+    const data = {
+      firstName: v.firstName.trim(),
+      lastName: v.lastName.trim(),
+      bio: v.bio.trim(),
+      birthDate: birth.iso,
+      gender: v.gender || null,
+      city: v.city.trim(),
+      bikeType: v.bikeType,
+      experience: v.experience || null,
+      ridingGoal: v.ridingGoal || null,
+    };
+    try {
+      if (isGuest) {
+        await local.update({
+          ...data,
+          displayName: `${data.firstName} ${data.lastName}`.trim() || "Ciclista invitado",
+          gender: data.gender ?? "",
+          experience: data.experience ?? "",
+          ridingGoal: data.ridingGoal ?? "",
+        });
+      } else {
+        const wanted = v.username.trim().replace(/^@/, "").toLowerCase();
+        if (wanted !== initial.username) await api("me", "POST", { username: wanted });
+        await updateUserProfile(firebaseUser!.uid, data);
+        await refreshProfile();
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      setSaved(true);
+      allowLeave.current = true;
+      setTimeout(() => goBack(), 650);
+    } catch (e: any) {
+      toast(e?.message ?? "No se pudo guardar.", "error");
     } finally {
       setSaving(false);
     }
   };
 
+  const usernameRight =
+    usernameState === "checking" ? (
+      <ActivityIndicator size="small" color={colors.inkSoft} />
+    ) : usernameState === "ok" ? (
+      <Ionicons name="checkmark-circle" size={20} color={accents.green.base} />
+    ) : usernameState === "taken" ? (
+      <Ionicons name="close-circle" size={20} color={colors.danger} />
+    ) : null;
+
   return (
     <View style={styles.screen}>
       <BackgroundBlobs />
       <SafeAreaView style={styles.safe} edges={["top"]}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-          <View style={styles.headerRow}>
-            <BackButton />
-            <Text style={[styles.header, { color: colors.ink }]}>Editar perfil</Text>
-            <View style={{ width: 44 }} />
-          </View>
+        <View style={styles.headerRow}>
+          <BackButton />
+          <Text style={[styles.header, { color: colors.ink }]} accessibilityRole="header">
+            Editar perfil
+          </Text>
+          <View style={{ width: 44 }} />
+        </View>
 
-          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            {/* Completion */}
             <GlassCard>
-              <GlassInput icon="person-outline" placeholder="Nombre para mostrar" value={displayName} onChangeText={setDisplayName} autoCapitalize="words" />
-              {firebaseUser && (
+              <View style={styles.completionHead}>
+                <Text style={{ color: colors.ink, fontWeight: "900", fontSize: 16 }}>Perfil {Math.round(ratio * 100)}% completo</Text>
+                {ratio === 1 && (
+                  <Animated.View entering={ZoomIn.springify().damping(9)}>
+                    <Ionicons name="ribbon" size={22} color={accents.gold.base} />
+                  </Animated.View>
+                )}
+              </View>
+              <DuoProgressBar value={ratio} accent={ratio === 1 ? "gold" : "green"} />
+              <Text style={{ color: colors.inkSoft, fontSize: 12.5, marginTop: 8 }}>{nextHint ? `Siguiente: ${nextHint.toLowerCase()}.` : "¡Perfil completo! Así tus amigos te reconocen mejor."}</Text>
+            </GlassCard>
+
+            {/* Photo */}
+            <Animated.View entering={FadeInDown.delay(60).springify()} style={styles.photoBlock}>
+              <Pressable onPress={pickPhoto} accessibilityRole="button" accessibilityLabel="Cambiar foto de perfil" style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.95 : 1 }] })}>
+                <View style={[styles.avatar, { borderColor: accents.green.base, backgroundColor: accents.green.soft }]}>
+                  {photo ? <Image source={{ uri: photo }} style={styles.avatarImg} /> : <Ionicons name="person" size={48} color={accents.green.lip} />}
+                  {photoBusy && (
+                    <View style={[StyleSheet.absoluteFill, styles.avatarBusy]}>
+                      <ActivityIndicator color="#fff" />
+                    </View>
+                  )}
+                </View>
+                <View style={[styles.camera, { backgroundColor: accents.green.base, borderColor: "#fff" }]}>
+                  <Ionicons name="camera" size={16} color="#fff" />
+                </View>
+              </Pressable>
+              <View style={styles.photoActions}>
+                <Text style={[styles.photoLink, { color: accents.green.lip }]} onPress={pickPhoto} accessibilityRole="button">
+                  {photo ? "Cambiar foto" : "Agregar foto"}
+                </Text>
+                {photo && (
+                  <Text style={[styles.photoLink, { color: colors.danger }]} onPress={deletePhoto} accessibilityRole="button">
+                    Quitar
+                  </Text>
+                )}
+              </View>
+            </Animated.View>
+
+            <Section title="Información básica" delay={100} />
+            <GlassCard entranceDelay={100}>
+              <GlassInput label="Nombre" icon="person-outline" value={v.firstName} onChangeText={set("firstName")} autoCapitalize="words" errorText={showErrors ? errors.firstName : null} />
+              <GlassInput label="Apellido" icon="people-outline" value={v.lastName} onChangeText={set("lastName")} autoCapitalize="words" errorText={showErrors ? errors.lastName : null} />
+              {!isGuest && (
                 <GlassInput
+                  label="Nombre de usuario"
                   icon="at-outline"
-                  placeholder="Nombre de usuario"
-                  value={username}
-                  onChangeText={setUsername}
+                  value={v.username}
+                  onChangeText={(t) => set("username")(t.replace(/\s/g, "").toLowerCase())}
                   autoCapitalize="none"
                   autoCorrect={false}
-                  errorText={error}
+                  right={usernameRight}
+                  errorText={usernameState === "taken" ? "Ese nombre de usuario ya está en uso." : usernameState === "invalid" || showErrors ? errors.username : null}
+                  hint={usernameState === "ok" ? "¡Disponible!" : "Así te encuentran tus amigos."}
                 />
               )}
-              <GlassInput icon="location-outline" placeholder="Ciudad" value={city} onChangeText={setCity} autoCapitalize="words" />
+              <GlassInput
+                label="Biografía"
+                icon="chatbox-ellipses-outline"
+                value={v.bio}
+                onChangeText={set("bio")}
+                placeholder="Ej: Pedaleo al trabajo todos los días"
+                multiline
+                maxLength={BIO_MAX + 20}
+                right={<Text style={{ color: v.bio.length > BIO_MAX ? colors.danger : colors.inkFaint, fontSize: 11.5, fontWeight: "700" }}>{v.bio.length}/{BIO_MAX}</Text>}
+                errorText={errors.bio}
+              />
             </GlassCard>
 
-            <Text style={[styles.sectionLabel, { color: colors.inkFaint }]}>TIPO DE BICICLETA</Text>
-            <GlassCard>
-              <View style={styles.pillRow}>
-                {BIKE_TYPES.map((type) => {
-                  const active = bikeType === type;
-                  return (
-                    <Pressable
-                      key={type}
-                      onPress={() => setBikeType(active ? "" : type)}
-                      style={[
-                        styles.pill,
-                        { backgroundColor: active ? colors.glassGreenFill : "transparent", borderColor: active ? colors.glassGreenBorder : colors.divider },
-                      ]}
-                    >
-                      {active && <Ionicons name="checkmark" size={13} color={colors.primaryDark} style={{ marginRight: 4 }} />}
-                      <Text style={{ color: active ? colors.primaryDark : colors.inkSoft, fontSize: 12.5, fontWeight: "700" }}>{type}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+            <Section title="Sobre ti" delay={160} />
+            <GlassCard entranceDelay={160}>
+              <GlassInput
+                label="Fecha de nacimiento"
+                icon="calendar-outline"
+                value={v.birthDate}
+                onChangeText={(t) => set("birthDate")(maskBirthDate(t))}
+                placeholder="DD/MM/AAAA"
+                keyboardType="number-pad"
+                maxLength={10}
+                errorText={v.birthDate.length === 10 || showErrors ? errors.birthDate : null}
+                hint="Opcional. No se muestra a otros usuarios."
+              />
+              <GlassInput label="Ciudad" icon="location-outline" value={v.city} onChangeText={set("city")} autoCapitalize="words" placeholder="Ej: Bogotá" />
+              <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>Género</Text>
+              <ChoiceChips choices={GENDERS} value={v.gender} onChange={set("gender")} accent="purple" accessibilityLabel="Género" />
             </GlassCard>
 
-            <GlassButton label="Guardar cambios" icon="checkmark-outline" variant="primary" onPress={onSave} loading={saving} style={{ marginTop: 20 }} />
+            <Section title="Tu bicicleta" delay={220} />
+            <GlassCard entranceDelay={220}>
+              <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>Tipo</Text>
+              <ChoiceChips choices={BIKES} value={v.bikeType} onChange={set("bikeType")} accent="green" accessibilityLabel="Tipo de bicicleta" />
+              <Text style={[styles.fieldLabel, { color: colors.inkSoft, marginTop: 16 }]}>Nivel</Text>
+              <ChoiceChips choices={EXPERIENCE} value={v.experience} onChange={set("experience")} accent="blue" accessibilityLabel="Nivel" />
+              <Text style={[styles.fieldLabel, { color: colors.inkSoft, marginTop: 16 }]}>¿Para qué pedaleas?</Text>
+              <ChoiceChips choices={GOALS} value={v.ridingGoal} onChange={set("ridingGoal")} accent="orange" accessibilityLabel="Objetivo" />
+            </GlassCard>
+
+            <View style={{ height: 120 }} />
           </ScrollView>
+
+          <View style={[styles.footer, { borderTopColor: colors.divider }]}>
+            {confirmLeave ? (
+              <Animated.View entering={FadeInDown.springify()} style={{ gap: 10 }}>
+                <Text style={{ color: colors.ink, fontWeight: "800", textAlign: "center" }}>¿Salir sin guardar los cambios?</Text>
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <GlassButton label="Seguir editando" variant="secondary" onPress={() => setConfirmLeave(false)} style={{ flex: 1 }} />
+                  <GlassButton
+                    label="Descartar"
+                    variant="danger"
+                    onPress={() => {
+                      allowLeave.current = true;
+                      goBack();
+                    }}
+                    style={{ flex: 1 }}
+                  />
+                </View>
+              </Animated.View>
+            ) : (
+              <GlassButton
+                label={saved ? "¡Guardado!" : "Guardar cambios"}
+                icon={saved ? "checkmark-circle" : "save-outline"}
+                onPress={save}
+                loading={saving}
+                disabled={!dirty && !saved}
+              />
+            )}
+          </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
+  );
+}
+
+function Section({ title, delay }: { title: string; delay: number }) {
+  const { colors } = useTheme();
+  return (
+    <Animated.Text entering={FadeInDown.delay(delay).springify()} style={[styles.section, { color: colors.ink }]} accessibilityRole="header">
+      {title}
+    </Animated.Text>
   );
 }
 
@@ -113,8 +394,16 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 4 },
   header: { fontSize: 17, fontWeight: "800" },
-  scroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 60 },
-  sectionLabel: { fontSize: 11.5, fontWeight: "700", letterSpacing: 0.5, marginBottom: 8, marginTop: 18 },
-  pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  pill: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1 },
+  scroll: { paddingHorizontal: 20, paddingTop: 12 },
+  completionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
+  photoBlock: { alignItems: "center", marginTop: 20 },
+  avatar: { width: 112, height: 112, borderRadius: 56, borderWidth: 4, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  avatarImg: { width: "100%", height: "100%" },
+  avatarBusy: { backgroundColor: "rgba(0,0,0,0.4)", alignItems: "center", justifyContent: "center" },
+  camera: { position: "absolute", right: 0, bottom: 4, width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", borderWidth: 3 },
+  photoActions: { flexDirection: "row", gap: 18, marginTop: 10 },
+  photoLink: { fontWeight: "800", fontSize: 14 },
+  section: { fontSize: 18, fontWeight: "800", marginTop: 22, marginBottom: 10 },
+  fieldLabel: { fontSize: 12.5, fontWeight: "800", marginBottom: 8, marginLeft: 4 },
+  footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24, borderTopWidth: 1, backgroundColor: "rgba(255,255,255,0.92)" },
 });

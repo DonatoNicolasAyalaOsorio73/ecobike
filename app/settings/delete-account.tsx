@@ -67,7 +67,7 @@ export default function DeleteAccountScreen() {
                 style={{ width: "100%" }}
               />
             )}
-            <GlassButton label="Cancelar" variant="secondary" onPress={() => router.back()} style={{ width: "100%", marginTop: 10 }} />
+            <GlassButton label="Cancelar" variant="secondary" onPress={() => (router.canGoBack() ? router.back() : router.replace("/settings"))} style={{ width: "100%", marginTop: 10 }} />
           </GlassCard>
         </View>
       </SafeAreaView>

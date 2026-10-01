@@ -70,6 +70,8 @@ export default function ProfileScreen() {
   const photoUrl = profile?.photoURL ?? localProfile.photoUri;
   const city = profile?.city ?? localProfile.city;
   const bikeType = profile?.bikeType ?? localProfile.bikeType;
+  const bio = profile?.bio ?? localProfile.bio;
+  const experience = profile?.experience ?? localProfile.experience;
   const { level, nextLevelAt } = levelForPoints(points);
   const floor = LEVEL_FLOOR[level - 1] ?? 0;
   const levelProgress = nextLevelAt ? (points - floor) / (nextLevelAt - floor) : 1;
@@ -137,11 +139,15 @@ export default function ProfileScreen() {
 
             <Text style={[styles.name, { color: colors.ink }]}>{displayName}</Text>
             <Text style={{ color: colors.inkSoft, fontSize: 13.5, marginTop: 2 }}>@{username}</Text>
+            {bio ? (
+              <Text style={{ color: colors.ink, fontSize: 14, marginTop: 10, textAlign: "center", lineHeight: 20, paddingHorizontal: 8 }}>{bio}</Text>
+            ) : null}
 
             <View style={styles.chips}>
               <Chip icon="trophy" text={`Nivel ${level} · ${levelTitle}`} strong />
               {city ? <Chip icon="location-outline" text={city} /> : null}
               {bikeType ? <Chip icon="bicycle-outline" text={bikeType} /> : null}
+              {experience ? <Chip icon="trending-up" text={experience} /> : null}
             </View>
             <Text style={{ color: colors.inkFaint, fontSize: 12, marginTop: 8 }}>
               {nextLevelAt ? `${(nextLevelAt - points).toLocaleString("es-CO")} pts para el nivel ${level + 1}` : "Nivel máximo alcanzado"}

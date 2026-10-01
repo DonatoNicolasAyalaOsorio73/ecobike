@@ -21,6 +21,15 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys();
     }
 
+    // Bounded, typed self-edited profile fields (edit-profile screen).
+    function validProfileFields() {
+      let d = request.resource.data;
+      return d.get('bio', '') is string && d.get('bio', '').size() <= 200
+        && d.get('nombre', '') is string && d.get('nombre', '').size() <= 60
+        && d.get('apellido', '') is string && d.get('apellido', '').size() <= 60
+        && d.get('city', '') is string && d.get('city', '').size() <= 80;
+    }
+
     function publicFields() {
       return ['username', 'nombre', 'apellido', 'profileImageUrl', 'puntosAcumulados', 'amigos', 'buscable'];
     }
@@ -37,7 +46,7 @@ service cloud.firestore {
         && request.resource.data.get('amigos', []).size() == 0
         && request.resource.data.get('solicitudesPendientes', []).size() == 0;
 
-      allow update: if isOwner(uid) && !changes().hasAny(serverOnlyUserFields());
+      allow update: if isOwner(uid) && !changes().hasAny(serverOnlyUserFields()) && validProfileFields();
       allow delete: if false; // api/account.js
 
       // Redemption codes — created by api/redeem.js.
