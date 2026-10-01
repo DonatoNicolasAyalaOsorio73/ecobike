@@ -9,3 +9,10 @@ test("rideShareText includes distance, time, points and CO2", () => {
   assert.match(t, /CO₂/);
   assert.match(t, /https:\/\//);
 });
+
+import { inviteText } from "../shareText.ts";
+
+test("inviteText includes the handle only when known", () => {
+  assert.match(inviteText("ana.bike"), /@ana\.bike/);
+  assert.doesNotMatch(inviteText(null), /@/);
+});

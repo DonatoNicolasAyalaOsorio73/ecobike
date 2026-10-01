@@ -9,3 +9,9 @@ export function rideShareText(r: { distanceMeters: number; durationSeconds: numb
     `y gané ${r.pointsEarned} puntos. Evité ${co2.toFixed(2)} kg de CO₂. ¡Súmate! https://ecobike-demo.vercel.app`
   );
 }
+
+/** Invite message with the user's handle so friends can find them. */
+export function inviteText(username: string | null | undefined): string {
+  const handle = username ? ` Búscame como @${username}` : "";
+  return `Pedaleemos juntos en EcoBike: gana puntos por cada km y canjéalos en tiendas.${handle}. https://ecobike-demo.vercel.app`;
+}

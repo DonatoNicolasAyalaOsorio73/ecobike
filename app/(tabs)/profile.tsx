@@ -31,6 +31,8 @@ import { uploadProfilePhoto } from "@/services/auth.service";
 import { listFriendUids } from "@/services/social.service";
 import { ACHIEVEMENTS } from "@/types/achievement";
 import { DEMO_FRIENDS } from "@/utils/demoData";
+import { shareText } from "@/services/share";
+import { inviteText } from "@/utils/shareText";
 
 const LEVEL_TITLES = ["Biker Iniciante", "Biker Bronce", "Biker Plata", "Biker Oro", "Biker Platino", "Biker Diamante", "Biker Élite", "Leyenda EcoBike"];
 const LEVEL_FLOOR = [0, 100, 300, 700, 1500, 3000, 6000, 12000];
@@ -186,6 +188,16 @@ export default function ProfileScreen() {
             <Action icon="time-outline" label="Historial" onPress={() => router.push("/history")} delay={40} />
             <Action icon="qr-code-outline" label="Mis códigos" onPress={() => router.push("/points/my-codes")} delay={80} />
             <Action icon="stats-chart-outline" label="Estadísticas" onPress={() => router.push("/(tabs)/stats")} delay={120} />
+            <Action
+              icon="person-add-outline"
+              label="Invitar amigos"
+              onPress={async () => {
+                const r = await shareText(inviteText(username));
+                if (r === "copied") toast("Invitación copiada al portapapeles.", "success");
+              }}
+              delay={160}
+            />
+            <Action icon="help-buoy-outline" label="Ayuda" onPress={() => router.push("/settings/help")} delay={200} />
           </View>
 
           <Text style={[styles.section, { color: colors.ink }]}>Tu racha</Text>

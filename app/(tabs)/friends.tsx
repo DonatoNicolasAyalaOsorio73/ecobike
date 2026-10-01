@@ -28,6 +28,8 @@ import {
 } from "@/services/social.service";
 import { subscribeChats, type ChatSummary } from "@/services/chat.service";
 import { DEMO_FRIENDS } from "@/utils/demoData";
+import { shareText } from "@/services/share";
+import { inviteText } from "@/utils/shareText";
 import { daysLeftInWeek } from "@/utils/week";
 import { ridesInPeriod } from "@/utils/rideStats";
 import { accents } from "@/theme/colors";
@@ -383,6 +385,17 @@ export default function FriendsScreen() {
                   ))}
                 </>
               )}
+
+              <GlassButton
+                label="Invitar amigos"
+                icon="share-social-outline"
+                variant="secondary"
+                onPress={async () => {
+                  const r = await shareText(inviteText(me?.username));
+                  if (r === "copied") setMessage("Invitación copiada al portapapeles.");
+                }}
+                style={{ marginTop: 14 }}
+              />
 
               <Text style={[styles.sectionLabel, { color: colors.inkFaint }]}>TUS AMIGOS ({friends.length})</Text>
               <GlassCard>
