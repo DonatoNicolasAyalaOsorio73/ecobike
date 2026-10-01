@@ -1,0 +1,25 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    // No `baseUrl`: TypeScript 6 deprecates it, and since TS 5 `paths`
+    // entries already resolve relative to this file's directory.
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    // Lets `tsc` resolve db.native.ts/db.web.ts (etc.) the same way Metro
+    // does at bundle time. tsc itself isn't platform-aware, so this always
+    // picks the ".native" variant for a single `tsc --noEmit` run — fine for
+    // typechecking since both variants are kept API-identical on purpose.
+    "moduleSuffixes": [".native", ".web", ""],
+    // Only the node:test files under src/utils/__tests__ use explicit ".ts"
+    // import extensions (Node's ESM loader requires them; Metro doesn't).
+    "allowImportingTsExtensions": true,
+    // The unit tests import node:test / node:assert. Expo's base config
+    // doesn't include Node's globals, and TypeScript 6 errors on the
+    // unresolved builtin rather than silently allowing it.
+    "types": ["node"]
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "exclude": ["node_modules"]
+}

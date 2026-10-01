@@ -1,56 +1,73 @@
-# EcoBike — Expo / React Native ("Liquid Glass" UI)
+# EcoBike — Next Generation
 
-Recreación fiel de las 3 pantallas (Bienvenida, Registro, Recuperar
-contraseña) usando el lenguaje visual "Liquid Glass" de iOS: superficies
-traslúcidas con `expo-blur`, degradados suaves con `expo-linear-gradient`,
-bordes de brillo y sombras difusas sobre un fondo con "blobs" verdes
-desenfocados. Incluye también una pantalla de Inicio de sesión (no estaba
-en las capturas, pero es necesaria porque los otros 3 flujos enlazan a
-ella).
+A modern, Apple-first cycling companion app: track rides with GPS, see your
+stats and streaks, earn achievements, and compare progress with friends —
+built with Expo, TypeScript, and a "Liquid Glass" visual language on top of
+the original EcoBike brand (`#ADF14B`, leaf + bicycle mark).
 
-## Instalar y correr
+This is a full rebuild of an earlier 4-screen visual mockup into a real,
+working app. See [ARCHITECTURE.md](ARCHITECTURE.md) for what changed and why.
+
+## Status
+
+Works fully offline today, in **local demo mode**, with no account required
+("Explorar sin cuenta" on the welcome screen):
+
+- Ride tracking (start/pause/resume/finish) with live GPS distance, speed,
+  duration, elevation
+- Ride history, stats dashboard, gamification (points/levels/streaks/achievements)
+- Settings: theme, units, privacy toggles, biometric unlock
+
+Gated behind **your own Firebase project** (see [ENVIRONMENT.md](ENVIRONMENT.md)):
+email/password + Google + Apple sign-in, cloud sync, friends/leaderboard.
+
+Gated behind **a native build** (EAS or `expo prebuild`, not Expo Go): Sign
+in with Apple, and native Apple/Google Maps via `expo-maps`. Everything else
+runs in Expo Go.
+
+## Quick start
 
 ```bash
 npm install
 npx expo start
 ```
 
-Luego abre la app en el simulador de iOS, Android, o escanea el QR con
-Expo Go. Está pensada primero para iOS (donde el efecto de vidrio se ve
-mejor), pero funciona igual en Android y Web.
+Press `w` for web, or scan the QR code with Expo Go for iOS/Android. Web and
+Expo Go work with zero configuration in demo mode.
 
-## Estructura
+To enable real accounts, cloud sync, and social features, copy `.env.example`
+to `.env` and fill in your Firebase project — see [ENVIRONMENT.md](ENVIRONMENT.md).
+
+## Project structure
 
 ```
-App.js                          Navegación (stack: Welcome → Login/Register/ForgotPassword)
+app/                    expo-router screens (file-based routing)
+  (auth)/                 welcome, login, register, forgot-password
+  (tabs)/                 home, map, history, stats, profile
+  settings/               settings, friends, delete-account
+  ride/[id].tsx           ride detail
 src/
-  theme/colors.js                Paleta y tokens (glass fills, verdes, sombras)
-  components/
-    BackgroundBlobs.js           Fondo con blobs verdes desenfocados
-    GlassInput.js                Input de vidrio con ícono + toggle de contraseña
-    GlassButton.js                Botón primario (gradiente verde) y secundario (glass blanco)
-    SocialRow.js                  Fila "O continúa con" + círculos Google/Apple/Facebook
-    BackButton.js                  Botón circular de regreso
-    Logo.js                        Logotipo eco BIKE (hoja + bicicleta, sin assets)
-  screens/
-    WelcomeScreen.js               Pantalla 1
-    RegisterScreen.js              Pantalla 2
-    ForgotPasswordScreen.js        Pantalla 3
-    LoginScreen.js                 Bonus, estilo consistente
+  components/ui/          Liquid Glass primitives (GlassCard, GlassButton, …)
+  components/map/          RideMap.native.tsx (expo-maps) / RideMap.web.tsx (Leaflet)
+  services/               firebase.ts, auth.service.ts, db (SQLite/web), rides/social
+  stores/                 zustand: auth, ride tracking, settings
+  hooks/                  useRideTracker pieces, biometrics, Google auth, stats
+  theme/                  color tokens + light/dark hook
+  types/, utils/          domain types, geo math, gamification rules
 ```
 
-## Notas de diseño
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the reasoning behind these choices,
+[SECURITY.md](SECURITY.md) for the security/privacy model, and
+[DEVELOPMENT.md](DEVELOPMENT.md) for day-to-day scripts and testing on each
+platform.
 
-- El efecto "liquid glass" se logra combinando `BlurView` (expo-blur) con
-  rellenos blancos semitransparentes (`rgba(255,255,255,0.45–0.65)`) y
-  bordes de 1px casi blancos (`rgba(255,255,255,0.8–0.9)`) que simulan el
-  brillo de refracción del vidrio.
-- El botón primario usa un degradado verde claro → verde (`LinearGradient`)
-  en vez de un verde plano, para que combine con el resto de superficies
-  de vidrio.
-- Todo el logo e íconos usan `@expo/vector-icons` (Ionicons /
-  MaterialCommunityIcons / AntDesign / FontAwesome), así que no se
-  necesitan imágenes ni fuentes externas para correr el proyecto.
-- Los inputs, tarjetas y botones son componentes reutilizables en
-  `src/components`, pensados para extenderse a otras pantallas
-  (perfil, canje de puntos, etc.).
+## Scripts
+
+```bash
+npm start            # expo start
+npm run ios          # expo start --ios
+npm run android      # expo start --android
+npm run web          # expo start --web
+npm run typecheck    # tsc --noEmit
+npm test             # runs geo.ts / gamification.ts self-checks (node:test)
+```
