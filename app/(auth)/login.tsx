@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import BackButton from "@/components/ui/BackButton";
 import GlassInput from "@/components/ui/GlassInput";
+import { validateEmail } from "@/utils/profileForm";
 import GlassButton from "@/components/ui/GlassButton";
 import GlassCard from "@/components/ui/GlassCard";
 import Logo from "@/components/ui/Logo";
@@ -26,8 +27,9 @@ export default function LoginScreen() {
       setError("Esta app no tiene un proyecto de Firebase configurado todavía — usa \"Explorar sin cuenta\" para probarla ahora.");
       return;
     }
-    if (!email.trim() || !password) {
-      setError("Ingresa tu correo y contraseña.");
+    const emailError = validateEmail(email);
+    if (emailError || !password) {
+      setError(emailError ?? "Ingresa tu contraseña.");
       return;
     }
     setLoading(true);

@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import BackButton from "@/components/ui/BackButton";
 import GlassInput from "@/components/ui/GlassInput";
+import { validateEmail } from "@/utils/profileForm";
 import GlassButton from "@/components/ui/GlassButton";
 import GlassCard from "@/components/ui/GlassCard";
 import { useTheme } from "@/theme/useTheme";
@@ -24,8 +25,9 @@ export default function ForgotPasswordScreen() {
       setError("Esta app no tiene un proyecto de Firebase configurado todavía.");
       return;
     }
-    if (!email.trim()) {
-      setError("Ingresa tu correo electrónico.");
+    const emailError = validateEmail(email);
+    if (emailError) {
+      setError(emailError);
       return;
     }
     setLoading(true);
