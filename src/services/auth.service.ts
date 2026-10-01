@@ -175,8 +175,8 @@ async function createUserProfileDoc(user: User, provider: AuthProvider, displayN
     providers: [provider],
   });
 
+  // username is set by the server (api/me.js) once it is reserved.
   await syncPublicMirror(user.uid, {
-    username,
     nombre,
     apellido,
     profileImageUrl: user.photoURL,

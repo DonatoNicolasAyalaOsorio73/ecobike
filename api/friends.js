@@ -1,12 +1,12 @@
 // POST /api/friends { action: "request" | "accept" | "reject" | "remove", uid }
 // Friendship touches two users' documents, which clients can't do under the
 // rules — so both sides are written here atomically.
-const { admin, httpError, requireUser, body, handler, sendPush } = require("./_lib");
+const { admin, httpError, requireUser, body, handler, sendPush, isDocId } = require("./_lib");
 
 module.exports = handler(["POST"], async (req) => {
   const me = (await requireUser(req)).uid;
   const { action, uid: other } = body(req);
-  if (typeof other !== "string" || !other || other === me) throw httpError(400, "Usuario inválido.");
+  if (!isDocId(other) || other === me) throw httpError(400, "Usuario inválido.");
   if (!["request", "accept", "reject", "remove"].includes(action)) throw httpError(400, "Acción inválida.");
 
   const db = admin().firestore();

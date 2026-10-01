@@ -124,6 +124,7 @@ const MIN_DISTANCE_M = 200;
 const MAX_DISTANCE_M = 200_000;
 const MAX_AVG_KMH = 45; // faster than this is a car, not a bike
 const MAX_RIDES_PER_DAY = 20;
+const MAX_RIDE_DURATION_S = 12 * 3600; // also bounds the overlap-check window in api/rides.js
 // ponytail: plausibility checks on the summary only; the GPS polyline stays on
 // the device for privacy. Upgrade path: upload the polyline and re-measure it
 // server-side if cheating shows up in practice.
@@ -139,6 +140,7 @@ function validateRide(r, now = Date.now()) {
   if (endedAt <= startedAt || endedAt > now + 5 * 60_000) return { error: "Fechas del recorrido inválidas." };
   if (startedAt < now - 30 * 24 * 3600_000) return { error: "El recorrido es demasiado antiguo para sincronizar." };
   if (durationSeconds <= 0 || durationSeconds > (endedAt - startedAt) / 1000 + 60) return { error: "Duración inválida." };
+  if (endedAt - startedAt > MAX_RIDE_DURATION_S * 1000) return { error: "El recorrido es demasiado largo." };
   if (distanceMeters < 0 || distanceMeters > MAX_DISTANCE_M) return { error: "Distancia fuera de rango." };
   const avgKmh = distanceMeters / 1000 / (durationSeconds / 3600);
   if (avgKmh > MAX_AVG_KMH) return { error: "Velocidad media no plausible para bicicleta." };
@@ -202,8 +204,19 @@ function cleanMessage(text) {
   return { text: t };
 }
 
+// Firestore document ids from clients: a "/" would address a different path
+// (or throw a 500), so every id taken from a request body goes through this.
+function isDocId(v) {
+  return typeof v === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(v);
+}
+
+/** Display-only numbers from the client, clamped so a bogus value cannot skew stats. */
+function clampNum(v, max) {
+  return typeof v === "number" && Number.isFinite(v) ? Math.min(Math.max(v, 0), max) : 0;
+}
+
 function redemptionCode() {
   return require("crypto").randomBytes(6).toString("hex").toUpperCase();
 }
 
-module.exports = { weekKey, chatIdFor, cleanMessage, MAX_MESSAGE_LENGTH, sendPush, admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };
+module.exports = { isDocId, clampNum, MAX_RIDE_DURATION_S, weekKey, chatIdFor, cleanMessage, MAX_MESSAGE_LENGTH, sendPush, admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };

@@ -14,7 +14,7 @@ service cloud.firestore {
 
     // Fields only the server may change on usuarios/{uid}.
     function serverOnlyUserFields() {
-      return ['puntosAcumulados', 'role', 'isAdmin', 'amigos', 'solicitudesPendientes', 'cuentaActiva', 'username'];
+      return ['puntosAcumulados', 'role', 'isAdmin', 'amigos', 'solicitudesPendientes', 'cuentaActiva', 'username', 'storeId'];
     }
 
     function changes() {
@@ -28,6 +28,19 @@ service cloud.firestore {
         && d.get('nombre', '') is string && d.get('nombre', '').size() <= 60
         && d.get('apellido', '') is string && d.get('apellido', '').size() <= 60
         && d.get('city', '') is string && d.get('city', '').size() <= 80;
+    }
+
+    // Profile photos other users see: our Storage bucket or the Google
+    // account photo only — never an arbitrary (tracking/abusive) URL.
+    function validPhoto(d) {
+      return d.get('profileImageUrl', null) == null
+        || (d.profileImageUrl is string && d.profileImageUrl.size() <= 2000
+            && d.profileImageUrl.matches('^https://(firebasestorage[.]googleapis[.]com|lh[0-9][.]googleusercontent[.]com)/.*'));
+    }
+
+    function validPublicNames(d) {
+      return d.get('nombre', '') is string && d.get('nombre', '').size() <= 60
+        && d.get('apellido', '') is string && d.get('apellido', '').size() <= 60;
     }
 
     function publicFields() {
@@ -44,7 +57,8 @@ service cloud.firestore {
         && request.resource.data.get('role', 'user') == 'user'
         && request.resource.data.get('isAdmin', false) == false
         && request.resource.data.get('amigos', []).size() == 0
-        && request.resource.data.get('solicitudesPendientes', []).size() == 0;
+        && request.resource.data.get('solicitudesPendientes', []).size() == 0
+        && !('storeId' in request.resource.data);
 
       allow update: if isOwner(uid) && !changes().hasAny(serverOnlyUserFields()) && validProfileFields();
       allow delete: if false; // api/account.js
@@ -68,12 +82,16 @@ service cloud.firestore {
       allow read: if isAuth();
       allow create: if isOwner(uid)
         && request.resource.data.keys().hasOnly(publicFields())
+        && !('username' in request.resource.data) // reserved + written by api/me.js only
+        && validPhoto(request.resource.data) && validPublicNames(request.resource.data)
         && request.resource.data.get('puntosAcumulados', 0) == 0
         && request.resource.data.get('weekPoints', 0) == 0
         && request.resource.data.get('amigos', []).size() == 0;
       allow update: if isOwner(uid)
         && request.resource.data.keys().hasOnly(publicFields())
         && request.resource.data.get('buscable', true) is bool
+        && (!changes().hasAny(['profileImageUrl']) || validPhoto(request.resource.data))
+        && (!changes().hasAny(['nombre', 'apellido']) || validPublicNames(request.resource.data))
         && !changes().hasAny(['puntosAcumulados', 'amigos', 'username', 'weekKey', 'weekPoints']);
       allow delete: if false;
     }

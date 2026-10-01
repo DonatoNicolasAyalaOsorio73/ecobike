@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-const { validateRide } = createRequire(import.meta.url)("./_lib.js");
+const { validateRide, isDocId, clampNum } = createRequire(import.meta.url)("./_lib.js");
 
 const now = 1_800_000_000_000;
 const ride = (o = {}) => ({ id: "ride_abc123", startedAt: now - 3600_000, endedAt: now, distanceMeters: 15_000, durationSeconds: 3600, ...o });
@@ -62,4 +62,22 @@ test("username slug from email prefix is valid and bounded", () => {
   assert.equal(slug("josé-pérez+test"), "jospreztest");
   assert.match(slug("x"), /^[a-z0-9._]{3,20}$/);
   assert.ok(slug("a".repeat(40)).length <= 16);
+});
+
+test("rejects rides longer than 12 h (bounds the overlap check)", () => {
+  const start = now - 13 * 3600_000;
+  assert.match(validateRide(ride({ startedAt: start, durationSeconds: 3600 }), now).error, /largo/);
+});
+
+test("isDocId blocks path traversal and junk ids", () => {
+  assert.equal(isDocId("abcDEF_12-3"), true);
+  for (const bad of ["", "a/b", "../x", "a b", 42, null, undefined, "x".repeat(129)]) assert.equal(isDocId(bad), false, String(bad));
+});
+
+test("clampNum bounds client display numbers", () => {
+  assert.equal(clampNum(1e308, 60), 60);
+  assert.equal(clampNum(-5, 60), 0);
+  assert.equal(clampNum("12", 60), 0);
+  assert.equal(clampNum(Number.NaN, 60), 0);
+  assert.equal(clampNum(24.5, 60), 24.5);
 });

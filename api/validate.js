@@ -8,8 +8,10 @@ module.exports = handler(["POST"], async (req) => {
   const user = await requireUser(req);
   const db = admin().firestore();
   const caller = (await db.collection("usuarios").doc(user.uid).get()).data() || {};
-  const allowed = user.admin === true || caller.isAdmin === true || ["admin", "partner"].includes(caller.role);
-  if (!allowed) throw httpError(403, "Solo tiendas aliadas o administradores pueden validar códigos.");
+  const isAdmin = user.admin === true || caller.isAdmin === true || caller.role === "admin";
+  if (!isAdmin && caller.role !== "partner") throw httpError(403, "Solo tiendas aliadas o administradores pueden validar códigos.");
+  // Partners are bound to one store: they must not see or burn other stores' codes.
+  if (!isAdmin && !caller.storeId) throw httpError(403, "Tu cuenta de tienda no tiene una tienda asignada. Pide al administrador que la asigne.");
 
   const { code, confirm } = body(req);
   const clean = typeof code === "string" ? code.trim().toUpperCase() : "";
@@ -23,6 +25,7 @@ module.exports = handler(["POST"], async (req) => {
   return db.runTransaction(async (tx) => {
     const doc = await tx.get(ref);
     const d = doc.data();
+    if (!isAdmin && d.rewardId !== caller.storeId) throw httpError(403, "Este código pertenece a otra tienda.");
     const result = { code: clean, store: d.store ?? "Recompensa", status: d.status ?? "active" };
     if (!confirm) return result;
     if (d.status === "used") throw httpError(409, "Este código ya fue usado.");

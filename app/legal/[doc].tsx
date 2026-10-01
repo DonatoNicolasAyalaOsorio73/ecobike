@@ -35,7 +35,7 @@ const DOCS: Record<string, { title: string; sections: Section[] }> = {
       ["Qué ven otros usuarios", "Tu nombre, nombre de usuario, foto, puntos y lista de amigos. Tu correo, fecha de nacimiento y recorridos no son visibles para otros."],
       [
         "Tus derechos",
-        "Puedes editar tu perfil en Ajustes. Puedes eliminar tu cuenta en Ajustes > Eliminar cuenta: borra de forma permanente tu perfil, recorridos, códigos, foto y vínculos de amistad, y también los datos guardados en el dispositivo.",
+        "Puedes editar tu perfil en Ajustes. Puedes eliminar tu cuenta en Ajustes > Eliminar cuenta: borra de forma permanente tu perfil, recorridos, códigos, foto, vínculos de amistad y conversaciones (para ambas personas), y también los datos guardados en el dispositivo.",
       ],
       ["Menores", "EcoBike no está dirigida a menores de 13 años."],
       ["Cambios", "Si cambiamos esta política te lo indicaremos en la app. Última actualización: " + UPDATED + "."],

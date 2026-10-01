@@ -1,8 +1,10 @@
 // The exact field allowlist mirrored to `usuarios_public/{uid}` (see
 // auth.service.ts and firestore.rules `hasOnly([...])`) — kept in one place
 // so this file and the rules can't silently drift apart.
+// "username" is deliberately absent: only the server writes it, after
+// reserving it in usernames/{name} (api/me.js), so a client can't
+// impersonate a handle it never reserved.
 export const PUBLIC_MIRROR_FIELDS = [
-  "username",
   "nombre",
   "apellido",
   "profileImageUrl",
@@ -12,7 +14,6 @@ export const PUBLIC_MIRROR_FIELDS = [
 ] as const;
 
 export function publicMirrorFields(data: {
-  username?: string;
   nombre?: string;
   apellido?: string;
   profileImageUrl?: string | null;

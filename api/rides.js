@@ -2,7 +2,7 @@
 //                           Idempotent: re-sending the same ride id never awards twice.
 // DELETE /api/rides {id}  — delete one of my rides and take back its points
 //                           (never below 0), so deleting can't be used to farm.
-const { admin, httpError, requireUser, body, handler, validateRide, weekKey, MAX_RIDES_PER_DAY } = require("./_lib");
+const { admin, httpError, requireUser, body, handler, validateRide, weekKey, isDocId, clampNum, MAX_RIDES_PER_DAY, MAX_RIDE_DURATION_S } = require("./_lib");
 
 /** Weekly league points after adding `delta` for a ride in `rideWeek` (resets when the week changes). */
 function nextWeekly(pub, rideWeek, delta) {
@@ -24,28 +24,40 @@ module.exports = handler(["POST", "DELETE"], async (req) => {
   const userRef = db.collection("usuarios").doc(user.uid);
   const rideRef = userRef.collection("rides").doc(ride.id);
 
-  const dayAgo = Date.now() - 24 * 3600_000;
-  const recent = await userRef.collection("rides").where("startedAt", ">=", dayAgo).count().get();
-  const points = recent.data().count >= MAX_RIDES_PER_DAY ? 0 : v.points;
+  const { Timestamp } = require("firebase-admin/firestore");
+  const rides = userRef.collection("rides");
+  // Daily cap counts by SERVER time (createdAt). Counting by the client's
+  // startedAt let a backdated ride skip the cap entirely.
+  const recentQ = rides.where("createdAt", ">=", Timestamp.fromMillis(Date.now() - 24 * 3600_000)).select().limit(MAX_RIDES_PER_DAY);
+  // A rider can't be on two rides at once: any stored ride whose time range
+  // intersects this one means a duplicate or a fabricated ride.
+  const overlapQ = rides
+    .where("startedAt", ">=", v.startedAt - MAX_RIDE_DURATION_S * 1000)
+    .where("startedAt", "<", v.endedAt)
+    .select("endedAt");
 
   const pubRef = db.collection("usuarios_public").doc(user.uid);
+  // Queries run inside the transaction so two concurrent requests can't both pass the checks.
   return db.runTransaction(async (tx) => {
-    const [existing, userSnap, pubSnap] = await Promise.all([tx.get(rideRef), tx.get(userRef), tx.get(pubRef)]);
+    const [existing, userSnap, pubSnap, recent, around] = await Promise.all([tx.get(rideRef), tx.get(userRef), tx.get(pubRef), tx.get(recentQ), tx.get(overlapQ)]);
     if (!userSnap.exists) throw httpError(404, "Perfil de usuario no encontrado.");
     if (existing.exists) {
       return { pointsEarned: existing.data().pointsEarned ?? 0, balance: userSnap.data().puntosAcumulados ?? 0, duplicate: true };
     }
-    const num = (x) => (typeof x === "number" && Number.isFinite(x) ? x : 0);
+    if (around.docs.some((d) => (d.data().endedAt ?? 0) > v.startedAt)) {
+      throw httpError(409, "Este recorrido se superpone con otro ya registrado.");
+    }
+    const points = recent.size >= MAX_RIDES_PER_DAY ? 0 : v.points;
     tx.set(rideRef, {
       userId: user.uid,
       startedAt: v.startedAt,
       endedAt: v.endedAt,
       distanceMeters: v.distanceMeters,
       durationSeconds: v.durationSeconds,
-      avgSpeedKmh: num(ride.avgSpeedKmh),
-      maxSpeedKmh: num(ride.maxSpeedKmh),
-      elevationGainMeters: num(ride.elevationGainMeters),
-      caloriesKcal: num(ride.caloriesKcal),
+      avgSpeedKmh: clampNum(ride.avgSpeedKmh, 60),
+      maxSpeedKmh: clampNum(ride.maxSpeedKmh, 120),
+      elevationGainMeters: clampNum(ride.elevationGainMeters, 10_000),
+      caloriesKcal: clampNum(ride.caloriesKcal, 20_000),
       pointsEarned: points,
       createdAt: FieldValue.serverTimestamp(),
     });
@@ -58,7 +70,7 @@ module.exports = handler(["POST", "DELETE"], async (req) => {
 });
 
 async function deleteRide(uid, id) {
-  if (typeof id !== "string" || !/^[\w-]{6,80}$/.test(id)) throw httpError(400, "id de recorrido inválido.");
+  if (!isDocId(id)) throw httpError(400, "id de recorrido inválido.");
   const db = admin().firestore();
   const { FieldValue } = require("firebase-admin/firestore");
   const userRef = db.collection("usuarios").doc(uid);

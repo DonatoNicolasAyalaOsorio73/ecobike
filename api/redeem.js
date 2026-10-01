@@ -1,6 +1,6 @@
 // POST /api/redeem { rewardId } — spend points on a store reward.
 // The price is read from tiendas/{rewardId} on the server, never from the client.
-const { admin, httpError, requireUser, body, handler, redemptionCode } = require("./_lib");
+const { admin, httpError, requireUser, body, handler, redemptionCode, isDocId } = require("./_lib");
 
 module.exports = handler(["POST"], async (req) => {
   const user = await requireUser(req);
@@ -10,7 +10,7 @@ module.exports = handler(["POST"], async (req) => {
     throw httpError(403, "Verifica tu correo para canjear recompensas.");
   }
   const { rewardId } = body(req);
-  if (typeof rewardId !== "string" || !rewardId) throw httpError(400, "Falta rewardId.");
+  if (!isDocId(rewardId)) throw httpError(400, "Recompensa inválida.");
 
   const db = admin().firestore();
   const { FieldValue } = require("firebase-admin/firestore");

@@ -50,7 +50,7 @@ export default function DeleteAccountScreen() {
             </View>
             <Text style={[styles.title, { color: colors.ink }]}>Eliminar cuenta</Text>
             <Text style={[styles.subtitle, { color: colors.inkSoft }]}>
-              Esto elimina tu cuenta y todos tus recorridos guardados en este dispositivo de forma permanente. Esta acción no se puede deshacer.
+              Esto elimina de forma permanente tu cuenta, tus recorridos, puntos, códigos, amigos y conversaciones (también para tus amigos). Esta acción no se puede deshacer.
             </Text>
 
             {error && <Text style={{ color: colors.danger, fontSize: 12.5, textAlign: "center", marginBottom: 10 }}>{error}</Text>}

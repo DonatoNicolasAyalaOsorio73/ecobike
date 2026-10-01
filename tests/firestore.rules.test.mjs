@@ -108,3 +108,24 @@ test("everything else is closed", async () => {
   await assertFails(getDoc(doc(as(ALICE), "canjes", "x")));
   await assertFails(setDoc(doc(as(ALICE), "anything", "x"), { a: 1 }));
 });
+
+test("security: a partner store binding can't be self-assigned", async () => {
+  await assertFails(updateDoc(doc(as(ALICE), "usuarios", ALICE), { storeId: "t1" }));
+  await assertFails(setDoc(doc(as("dave"), "usuarios", "dave"), { nombre: "Dave", puntosAcumulados: 0, role: "user", storeId: "t1" }));
+});
+
+test("security: the public mirror can't claim an unreserved username", async () => {
+  const erin = as("erin");
+  await assertFails(setDoc(doc(erin, "usuarios_public", "erin"), { username: "admin", nombre: "Erin", puntosAcumulados: 0, amigos: [] }));
+  await assertSucceeds(setDoc(doc(erin, "usuarios_public", "erin"), { nombre: "Erin", puntosAcumulados: 0, amigos: [] }));
+});
+
+test("security: public photos only from our bucket or Google, names bounded", async () => {
+  const db = as(ALICE);
+  await assertFails(updateDoc(doc(db, "usuarios_public", ALICE), { profileImageUrl: "https://evil.example/track.gif" }));
+  await assertFails(updateDoc(doc(db, "usuarios_public", ALICE), { profileImageUrl: "javascript:alert(1)" }));
+  await assertSucceeds(updateDoc(doc(db, "usuarios_public", ALICE), { profileImageUrl: "https://firebasestorage.googleapis.com/v0/b/x/o/avatars%2Falice.jpg" }));
+  await assertSucceeds(updateDoc(doc(db, "usuarios_public", ALICE), { profileImageUrl: "https://lh3.googleusercontent.com/a/abc" }));
+  await assertSucceeds(updateDoc(doc(db, "usuarios_public", ALICE), { profileImageUrl: null }));
+  await assertFails(updateDoc(doc(db, "usuarios_public", ALICE), { nombre: "x".repeat(61) }));
+});

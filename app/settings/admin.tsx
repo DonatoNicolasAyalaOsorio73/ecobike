@@ -10,6 +10,7 @@ import GlassButton from "@/components/ui/GlassButton";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthStore } from "@/stores/authStore";
 import { api } from "@/services/api";
+import ChoiceChips from "@/components/ui/ChoiceChips";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { accents, elevation, type AccentName } from "@/theme/colors";
 import QrScanner from "@/components/QrScanner";
@@ -64,12 +65,13 @@ export default function AdminScreen() {
 
   const [roleUser, setRoleUser] = useState("");
   const [roleMsg, setRoleMsg] = useState<string | null>(null);
+  const [roleStore, setRoleStore] = useState("");
   const setRole = async (role: "user" | "partner") => {
     setBusy(true);
     setRoleMsg(null);
     try {
-      const r = await api<{ username: string; role: string }>("roles", "POST", { username: roleUser, role });
-      setRoleMsg(`@${r.username} ahora es ${r.role === "partner" ? "tienda aliada" : "usuario normal"}.`);
+      const r = await api<{ username: string; role: string; store?: string }>("roles", "POST", { username: roleUser, role, ...(role === "partner" ? { storeId: roleStore } : {}) });
+      setRoleMsg(`@${r.username} ahora es ${r.role === "partner" ? `partner de ${r.store}` : "usuario normal"}.`);
       setRoleUser("");
     } catch (e: any) {
       setRoleMsg(e.message);
@@ -222,9 +224,20 @@ export default function AdminScreen() {
                 Los partners pueden validar códigos de canje en su tienda. No pueden editar el catálogo.
               </Text>
               <GlassInput icon="person-outline" placeholder="@usuario" value={roleUser} onChangeText={setRoleUser} autoCapitalize="none" autoCorrect={false} />
+              {/* A partner validates codes of ONE store only (enforced in api/validate.js). */}
+              <Text style={{ color: colors.inkSoft, fontSize: 12.5, marginBottom: 8 }}>Tienda del partner</Text>
+              <View style={{ marginBottom: 12 }}>
+                <ChoiceChips
+                  accessibilityLabel="Tienda del partner"
+                  allowClear={false}
+                  value={roleStore}
+                  onChange={setRoleStore}
+                  choices={stores.filter((st) => st.isActive !== false).map((st) => ({ value: st.id, label: st.name }))}
+                />
+              </View>
               {roleMsg && <Text style={{ color: colors.inkSoft, marginBottom: 10 }}>{roleMsg}</Text>}
               <View style={{ flexDirection: "row", gap: 8 }}>
-                <GlassButton label="Hacer partner" icon="storefront-outline" onPress={() => setRole("partner")} loading={busy} style={{ flex: 1 }} />
+                <GlassButton label="Hacer partner" icon="storefront-outline" onPress={() => setRole("partner")} loading={busy} disabled={!roleStore} style={{ flex: 1 }} />
                 <GlassButton label="Quitar" icon="close" variant="secondary" onPress={() => setRole("user")} style={{ flex: 1 }} />
               </View>
             </GlassCard>

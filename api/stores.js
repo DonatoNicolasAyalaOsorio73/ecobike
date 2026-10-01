@@ -3,13 +3,17 @@
 // POST /api/stores  { name, description?, logo?, pointsRequired }   → create
 // PUT  /api/stores  { id, name?, description?, logo?, pointsRequired?, isActive? } → update
 // Admin = custom claim admin:true, or usuarios/{uid}.role == "admin" / isAdmin == true.
-const { admin, httpError, requireUser, isAdminUser, body, handler } = require("./_lib");
+const { admin, httpError, requireUser, isAdminUser, body, handler, isDocId } = require("./_lib");
 
 function clean(input, creating) {
   const out = {};
   if (typeof input.name === "string" && input.name.trim()) out.name = input.name.trim().slice(0, 80);
   if (typeof input.description === "string") out.description = input.description.trim().slice(0, 500);
-  if (typeof input.logo === "string") out.logo = input.logo.trim().slice(0, 1000);
+  if (typeof input.logo === "string") {
+    const logo = input.logo.trim().slice(0, 1000);
+    if (logo && !/^https:\/\//.test(logo)) throw httpError(400, "El logo debe ser una URL https.");
+    out.logo = logo;
+  }
   if (typeof input.isActive === "boolean") out.isActive = input.isActive;
   if (input.pointsRequired !== undefined && input.pointsRequired !== "") {
     const n = Number(input.pointsRequired);
@@ -35,7 +39,7 @@ module.exports = handler(["GET", "POST", "PUT"], async (req) => {
     const ref = await col.add(data);
     return { store: { id: ref.id, ...data } };
   }
-  if (typeof input.id !== "string" || !input.id) throw httpError(400, "Falta el id de la tienda.");
+  if (!isDocId(input.id)) throw httpError(400, "Falta el id de la tienda.");
   const update = clean(input, false);
   if (!Object.keys(update).length) throw httpError(400, "No hay campos válidos para actualizar.");
   const ref = col.doc(input.id);

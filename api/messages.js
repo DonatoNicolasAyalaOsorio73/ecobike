@@ -3,7 +3,7 @@
 //   { action: "read", with }      → reset my unread counter for that chat
 // Clients read chats/messages live from Firestore (owner-only rules) but never
 // write them: the server checks friendship, validates text and rate-limits.
-const { admin, httpError, requireUser, body, handler, sendPush, chatIdFor, cleanMessage } = require("./_lib");
+const { admin, httpError, requireUser, body, handler, sendPush, chatIdFor, cleanMessage, isDocId } = require("./_lib");
 
 const MAX_PER_MINUTE = 20;
 
@@ -14,7 +14,7 @@ module.exports = handler(["POST"], async (req) => {
   const { FieldValue, Timestamp } = require("firebase-admin/firestore");
 
   if (input.action === "read") {
-    if (typeof input.with !== "string" || !input.with) throw httpError(400, "Chat inválido.");
+    if (!isDocId(input.with)) throw httpError(400, "Chat inválido.");
     const ref = db.collection("chats").doc(chatIdFor(me, input.with));
     const snap = await ref.get();
     if (!snap.exists) return { ok: true };
@@ -25,7 +25,7 @@ module.exports = handler(["POST"], async (req) => {
 
   if (input.action !== "send") throw httpError(400, "Acción inválida.");
   const to = input.to;
-  if (typeof to !== "string" || !to || to === me) throw httpError(400, "Destinatario inválido.");
+  if (!isDocId(to) || to === me) throw httpError(400, "Destinatario inválido.");
   const msg = cleanMessage(input.text);
   if (msg.error) throw httpError(400, msg.error);
 

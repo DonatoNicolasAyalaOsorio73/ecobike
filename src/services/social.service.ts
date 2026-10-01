@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, limit, query, where } from "firebase/firestore";
+import { collection, doc, documentId, getDoc, getDocs, limit, query, where } from "firebase/firestore";
 import { getDb, isFirebaseConfigured } from "./firebase";
 import { api } from "./api";
 import { weekKey } from "@/utils/week";
@@ -121,9 +121,17 @@ export interface PublicProfile {
 /** Names/photos for a list of uids, from the public mirror (missing docs fall back to the uid). */
 export async function fetchPublicProfiles(uids: string[]): Promise<PublicProfile[]> {
   if (!isFirebaseConfigured || uids.length === 0) return [];
-  const snaps = await Promise.all(uids.map((u) => getDoc(doc(getDb(), PUBLIC_COLLECTION, u)).catch(() => null)));
-  return snaps.map((snap, i) => {
-    const d = snap?.data() ?? {};
+  // One `in` query per 30 uids (Firestore limit) instead of one read per friend.
+  const byId = new Map<string, Record<string, unknown>>();
+  const chunks = Array.from({ length: Math.ceil(uids.length / 30) }, (_, i) => uids.slice(i * 30, i * 30 + 30));
+  await Promise.all(
+    chunks.map(async (ids) => {
+      const snap = await getDocs(query(collection(getDb(), PUBLIC_COLLECTION), where(documentId(), "in", ids))).catch(() => null);
+      snap?.docs.forEach((d) => byId.set(d.id, d.data()));
+    })
+  );
+  return uids.map((uid, i) => {
+    const d: Record<string, any> = byId.get(uid) ?? {};
     const username = (d.username as string | undefined) ?? uids[i].slice(0, 8);
     return {
       uid: uids[i],
