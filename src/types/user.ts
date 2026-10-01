@@ -59,6 +59,8 @@ export interface UserSettings {
   gpsAccuracy: GpsAccuracy;
   /** Local reminder every Sunday evening to check the weekly goal (native). */
   weeklyReminder: boolean;
+  /** First-run personalization finished (or skipped) on this device. */
+  onboardingDone: boolean;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -72,6 +74,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   keepScreenOn: true,
   gpsAccuracy: "high",
   weeklyReminder: false,
+  onboardingDone: false,
 };
 
 /** Account-level preferences stored on the server (usuarios/{uid}), shared by all devices. */

@@ -35,6 +35,7 @@ function Chip({ choice, selected, onPress, accent }: { choice: Choice; selected:
       <Pressable
         accessibilityRole="radio"
         accessibilityState={{ checked: selected }}
+        aria-checked={selected}
         accessibilityLabel={choice.label}
         onPress={() => {
           Haptics.selectionAsync().catch(() => {});

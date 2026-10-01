@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { ReduceMotion, ReducedMotionConfig } from "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
@@ -126,6 +127,8 @@ function RootLayout() {
         <SafeAreaProvider>
           <WebAppShell>
             <StatusBar style="dark" />
+            {/* Honor the OS "reduce motion" accessibility setting app-wide. */}
+            <ReducedMotionConfig mode={ReduceMotion.System} />
             <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
               <Stack.Screen name="index" />
               <Stack.Protected guard={status === "signedOut"}>
@@ -133,6 +136,7 @@ function RootLayout() {
               </Stack.Protected>
               <Stack.Protected guard={status === "signedIn"}>
                 <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="onboarding" options={{ animation: "fade", gestureEnabled: false }} />
                 <Stack.Screen name="ride/[id]" options={{ presentation: "card" }} />
                 <Stack.Screen name="history" options={{ presentation: "card" }} />
                 <Stack.Screen name="points/my-codes" options={{ presentation: "card" }} />

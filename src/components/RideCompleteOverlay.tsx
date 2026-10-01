@@ -15,6 +15,7 @@ import { formatDuration } from "@/utils/format";
 import { goalLabel, type RideGoal } from "@/utils/rideGoals";
 import type { Ride } from "@/types/ride";
 import type { AchievementDef } from "@/types/achievement";
+import { levelForPoints } from "@/utils/gamification";
 
 interface Props {
   ride: Ride;
@@ -23,6 +24,8 @@ interface Props {
   goal: RideGoal | null;
   goalReached: boolean;
   unlocked: AchievementDef[];
+  /** Balance before this ride, to celebrate a level-up. */
+  pointsBefore: number;
   onClose: () => void;
 }
 
@@ -37,7 +40,9 @@ function StatBox({ accent, label, children, delay }: { accent: AccentName; label
 }
 
 /** Full-screen "ride complete" celebration (Duolingo lesson-complete style). */
-export default function RideCompleteOverlay({ ride, streak, pointsToday, goal, goalReached, unlocked, onClose }: Props) {
+export default function RideCompleteOverlay({ ride, streak, pointsToday, goal, goalReached, unlocked, pointsBefore, onClose }: Props) {
+  const levelBefore = levelForPoints(pointsBefore).level;
+  const levelAfter = levelForPoints(pointsBefore + ride.pointsEarned).level;
   const dailyGoal = useSettingsStore((s) => s.dailyGoalPoints);
   const units = useSettingsStore((s) => s.units);
   const km = ride.distanceMeters / 1000;
@@ -69,6 +74,16 @@ export default function RideCompleteOverlay({ ride, streak, pointsToday, goal, g
               <AnimatedNumber value={ride.pointsEarned} style={[styles.boxValue, { color: accents.gold.lip }]} format={(v) => `+${v}`} />
             </StatBox>
           </View>
+
+          {levelAfter > levelBefore && (
+            <Animated.View entering={ZoomIn.delay(640).springify().damping(8)} style={[styles.levelUp, { backgroundColor: accents.purple.soft, borderColor: accents.purple.base }]}>
+              <Ionicons name="arrow-up-circle" size={30} color={accents.purple.base} />
+              <View>
+                <Text style={[styles.levelUpKicker, { color: accents.purple.lip }]}>¡SUBISTE DE NIVEL!</Text>
+                <Text style={styles.levelUpText}>Ahora eres nivel {levelAfter}</Text>
+              </View>
+            </Animated.View>
+          )}
 
           <Animated.View entering={FadeInDown.delay(680).springify()} style={styles.streakRow}>
             <Flame size={30} lit={streak > 0} />
@@ -132,6 +147,9 @@ const styles = StyleSheet.create({
   boxBody: { backgroundColor: "#fff", paddingVertical: 14, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 3, borderRadius: 13, minHeight: 64 },
   boxValue: { fontSize: 24, fontWeight: "900" },
   boxUnit: { fontSize: 13, fontWeight: "800", alignSelf: "flex-end", marginBottom: 3 },
+  levelUp: { flexDirection: "row", alignItems: "center", gap: 12, alignSelf: "stretch", marginTop: 20, padding: 14, borderRadius: 18, borderWidth: 2 },
+  levelUpKicker: { fontWeight: "900", fontSize: 11.5, letterSpacing: 0.6 },
+  levelUpText: { color: "#1F2A22", fontWeight: "900", fontSize: 17, marginTop: 2 },
   streakRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 24 },
   streakText: { fontSize: 18, fontWeight: "900", color: accents.orange.base },
   goalBlock: { alignSelf: "stretch", marginTop: 22 },

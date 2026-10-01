@@ -57,6 +57,13 @@ export default function MapScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [idleCenter, setIdleCenter] = useState<LatLng | null>(null);
   const [recenterKey, setRecenterKey] = useState(0);
+  // Points when the ride started → detect a level-up on completion without
+  // waiting for the server sync to refresh the balance.
+  const startPoints = React.useRef(availablePoints);
+  useEffect(() => {
+    if (status === "ACTIVE" && ride && ride.durationSeconds < 2) startPoints.current = availablePoints;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
 
   useEffect(() => {
     if (userId && status === "IDLE") recoverInProgressRide(userId);
@@ -210,6 +217,7 @@ export default function MapScreen() {
           goal={goal}
           goalReached={goalReached}
           unlocked={justUnlocked}
+          pointsBefore={startPoints.current}
           onClose={() => {
             clearJustUnlocked();
             discardRide();
