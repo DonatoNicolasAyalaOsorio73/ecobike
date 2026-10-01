@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import Animated, { FadeInUp } from "react-native-reanimated";
+import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
@@ -23,6 +23,7 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { useToastStore } from "@/stores/toastStore";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useRiderStats } from "@/hooks/useRiderStats";
+import { dueCount } from "@/utils/maintenance";
 import { useAvailablePoints } from "@/hooks/useAvailablePoints";
 import { distanceThisWeek, environmentalImpact } from "@/utils/rideStats";
 import { levelForPoints } from "@/utils/gamification";
@@ -79,6 +80,8 @@ export default function ProfileScreen() {
   const levelProgress = nextLevelAt ? (points - floor) / (nextLevelAt - floor) : 1;
   const levelTitle = LEVEL_TITLES[Math.min(level - 1, LEVEL_TITLES.length - 1)];
   const co2 = environmentalImpact(stats.totalDistanceMeters).co2Kg;
+  const maintenance = useSettingsStore((s) => s.maintenance);
+  const bikeDue = Object.keys(maintenance).length ? dueCount(stats.totalDistanceMeters / 1000, maintenance) : 0;
   const weekKm = distanceThisWeek(rides) / 1000;
   const memberSince = profile?.createdAt ? format(new Date(profile.createdAt), "MMMM yyyy", { locale: es }) : null;
   const recentDefs = useMemo(
@@ -179,12 +182,30 @@ export default function ProfileScreen() {
             </GlassCard>
           )}
 
+          {bikeDue > 0 && (
+            <Pressable accessibilityRole="button" onPress={() => router.push("/settings/maintenance")} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+              <GlassCard style={[styles.ctaRow, { marginTop: 14 }]}>
+                <View style={styles.bikeBadge}>
+                  <Ionicons name="construct" size={18} color={colors.primaryDark} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.ink, fontWeight: "700" }}>Tu bici necesita atención</Text>
+                  <Text style={{ color: colors.inkSoft, fontSize: 12.5, marginTop: 2 }}>
+                    {bikeDue} {bikeDue === 1 ? "pieza toca" : "piezas tocan"} revisión según tus kilómetros.
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.inkFaint} />
+              </GlassCard>
+            </Pressable>
+          )}
+
           <View style={{ marginHorizontal: -20, marginTop: 14 }}>
             <EmailVerifyBanner />
           </View>
 
-          <View style={styles.actions}>
-            <Action icon="create-outline" label="Editar perfil" onPress={() => router.push("/settings/edit-profile")} delay={0} />
+          {/* iOS grouped list instead of a tile grid: denser, scannable, no orphan tile. */}
+          <GlassCard style={styles.actions} containerStyle={{ marginTop: 14 }}>
+            <Action first icon="create-outline" label="Editar perfil" onPress={() => router.push("/settings/edit-profile")} delay={0} />
             <Action icon="time-outline" label="Historial" onPress={() => router.push("/history")} delay={40} />
             <Action icon="qr-code-outline" label="Mis códigos" onPress={() => router.push("/points/my-codes")} delay={80} />
             <Action icon="stats-chart-outline" label="Estadísticas" onPress={() => router.push("/(tabs)/stats")} delay={120} />
@@ -197,8 +218,9 @@ export default function ProfileScreen() {
               }}
               delay={160}
             />
+            <Action icon="construct-outline" label="Mi bici" onPress={() => router.push("/settings/maintenance")} delay={180} />
             <Action icon="help-buoy-outline" label="Ayuda" onPress={() => router.push("/settings/help")} delay={200} />
-          </View>
+          </GlassCard>
 
           <Text style={[styles.section, { color: colors.ink }]}>Tu racha</Text>
           <StreakCard rides={rides} />
@@ -278,17 +300,22 @@ function ProfileStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Action({ icon, label, onPress, delay }: { icon: any; label: string; onPress: () => void; delay: number }) {
+function Action({ icon, label, onPress, delay, first }: { icon: any; label: string; onPress: () => void; delay: number; first?: boolean }) {
   const { colors } = useTheme();
   return (
-    <Animated.View entering={FadeInUp.delay(delay).springify().damping(18)} style={styles.actionWrap}>
-      <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.96 : 1 }] })}>
-        <GlassCard style={styles.action}>
-          <View style={[styles.actionIcon, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
-            <Ionicons name={icon} size={20} color={colors.primaryDark} />
-          </View>
-          <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 13, marginTop: 8 }}>{label}</Text>
-        </GlassCard>
+    <Animated.View entering={FadeIn.duration(240).delay(delay)}>
+      {!first && <View style={[styles.actionSep, { backgroundColor: colors.divider }]} />}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        onPress={onPress}
+        style={({ pressed, hovered }: any) => [styles.action, { opacity: pressed ? 0.55 : hovered ? 0.8 : 1 }]}
+      >
+        <View style={styles.actionIcon}>
+          <Ionicons name={icon} size={17} color={colors.primaryDark} />
+        </View>
+        <Text style={{ color: colors.ink, fontWeight: "500", fontSize: 16, flex: 1 }}>{label}</Text>
+        <Ionicons name="chevron-forward" size={17} color={colors.inkFaint} />
       </Pressable>
     </Animated.View>
   );
@@ -308,6 +335,7 @@ function InfoRow({ icon, label, value, last }: { icon: any; label: string; value
 }
 
 const styles = StyleSheet.create({
+  bikeBadge: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#ADF14B" },
   screen: { flex: 1 },
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 20, paddingTop: 8 },
@@ -324,10 +352,10 @@ const styles = StyleSheet.create({
   chip: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
   statsRow: { flexDirection: "row", alignSelf: "stretch", marginTop: 18, paddingTop: 16, borderTopWidth: 1 },
   ctaRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  actions: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 14 },
-  actionWrap: { width: "47%", flexGrow: 1 },
-  action: { alignItems: "flex-start" },
-  actionIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", borderWidth: 1 },
+  actions: { paddingVertical: 2, paddingHorizontal: 14 },
+  actionSep: { position: "absolute", top: 0, left: 44, right: 0, height: StyleSheet.hairlineWidth },
+  action: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 11 },
+  actionIcon: { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "#ADF14B" },
   section: { fontSize: 18, fontWeight: "700", marginTop: 22, marginBottom: 10 },
   weekRow: { flexDirection: "row", alignItems: "baseline", gap: 8, marginBottom: 10 },
   weekValue: { fontSize: 28, fontWeight: "700", letterSpacing: -0.5 },
