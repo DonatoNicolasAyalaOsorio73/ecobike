@@ -20,9 +20,21 @@ function track(rand: () => number, startedAt: number, distanceMeters: number, du
   let lng = BOGOTA.lng + (rand() - 0.5) * 0.06;
   let heading = rand() * Math.PI * 2;
   let alt = 2560 + rand() * 40;
+  // Pace varies smoothly (traffic lights, hills, sprints) but the total
+  // duration is preserved: per-step time weights normalized to the ride.
+  const weights: number[] = [];
+  let w = 1;
+  for (let i = 0; i < steps; i++) {
+    w = Math.max(0.6, Math.min(1.6, w + (rand() - 0.5) * 0.25));
+    weights.push(w);
+  }
+  const scale = (durationSeconds * 1000) / weights.reduce((x, y) => x + y, 0);
   const points: TrackPoint[] = [];
+  let t = startedAt;
   for (let i = 0; i <= steps; i++) {
-    points.push({ lat, lng, altitude: alt, timestamp: startedAt + i * dt, speed: (stepMeters / (dt / 1000)) * (0.85 + rand() * 0.3) });
+    const stepMs = i < steps ? weights[i] * scale : dt;
+    points.push({ lat, lng, altitude: alt, timestamp: t, speed: stepMeters / (stepMs / 1000) });
+    t += i < steps ? stepMs : 0;
     heading += (rand() - 0.5) * 0.6; // gentle turns, like real streets
     lat += (Math.cos(heading) * stepMeters) / METERS_PER_DEG_LAT;
     lng += (Math.sin(heading) * stepMeters) / (METERS_PER_DEG_LAT * Math.cos((lat * Math.PI) / 180));

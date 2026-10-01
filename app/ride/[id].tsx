@@ -1,18 +1,24 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import RideMap from "@/components/map/RideMap";
 import GlassCard from "@/components/ui/GlassCard";
 import BackButton from "@/components/ui/BackButton";
 import StatTile from "@/components/ui/StatTile";
+import SegmentedControl from "@/components/ui/SegmentedControl";
+import AreaChart from "@/components/charts/AreaChart";
 import { useTheme } from "@/theme/useTheme";
+import { accents } from "@/theme/colors";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { getRide } from "@/services/db";
 import { formatDistance, formatDuration, formatSpeed } from "@/utils/format";
+import { environmentalImpact } from "@/utils/rideStats";
+import { kmSplits, rideProfile } from "@/utils/rideAnalysis";
 import type { Ride } from "@/types/ride";
 
 export default function RideDetailScreen() {
@@ -20,13 +26,16 @@ export default function RideDetailScreen() {
   const { colors } = useTheme();
   const units = useSettingsStore((s) => s.units);
   const [ride, setRide] = useState<Ride | null | undefined>(undefined);
+  const [chart, setChart] = useState<"speed" | "altitude">("speed");
 
   useEffect(() => {
     if (id) setRide(getRide(id));
   }, [id]);
 
-  if (ride === undefined) return null;
+  const profile = useMemo(() => (ride ? rideProfile(ride.points, 36) : { speed: [], altitude: [] }), [ride]);
+  const splits = useMemo(() => (ride ? kmSplits(ride.points) : []), [ride]);
 
+  if (ride === undefined) return null;
   if (ride === null) {
     return (
       <SafeAreaView style={[styles.safe, { alignItems: "center", justifyContent: "center" }]}>
@@ -37,17 +46,19 @@ export default function RideDetailScreen() {
   }
 
   const route = ride.points.map((p) => ({ lat: p.lat, lng: p.lng }));
+  const co2 = environmentalImpact(ride.distanceMeters).co2Kg;
+  const maxSplit = Math.max(1, ...splits.map((s) => s.seconds));
+  const hasProfile = profile.speed.length > 1;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bgTop }}>
       <Stack.Screen options={{ headerShown: false }} />
       {route.length > 1 ? (
-        <RideMap route={route} center={route[route.length - 1] ?? null} height={280} />
+        <RideMap route={route} center={route[route.length - 1] ?? null} height={300} fitRoute />
       ) : (
-        // Rides synced from another device carry only the summary (the GPS
-        // trace never leaves the phone that recorded it).
-        <View style={[styles.noMap, { backgroundColor: colors.glassFillStrong }]}>
-          <Ionicons name="map-outline" size={30} color={colors.inkFaint} />
+        // Rides synced from another device carry only the summary (the GPS trace never leaves the phone).
+        <View style={[styles.noMap, { backgroundColor: accents.green.soft }]}>
+          <Ionicons name="map-outline" size={30} color={accents.green.lip} />
           <Text style={{ color: colors.inkSoft, textAlign: "center", marginTop: 8, paddingHorizontal: 32 }}>
             El trazado del mapa solo está en el dispositivo donde grabaste este recorrido.
           </Text>
@@ -58,10 +69,20 @@ export default function RideDetailScreen() {
         <BackButton />
       </SafeAreaView>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.date, { color: colors.ink }]}>
-          {format(new Date(ride.startedAt), "EEEE d 'de' MMMM, yyyy · HH:mm", { locale: es })}
-        </Text>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Animated.View entering={FadeInDown.springify()} style={styles.headRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.date, { color: colors.ink }]}>{format(new Date(ride.startedAt), "EEEE d 'de' MMMM", { locale: es })}</Text>
+            <Text style={{ color: colors.inkSoft }}>
+              {format(new Date(ride.startedAt), "HH:mm")}
+              {ride.endedAt ? ` – ${format(new Date(ride.endedAt), "HH:mm")}` : ""}
+            </Text>
+          </View>
+          <Animated.View entering={ZoomIn.delay(150).springify().damping(9)} style={[styles.ptsBadge, { backgroundColor: accents.gold.soft, borderColor: accents.gold.base }]}>
+            <Ionicons name="ribbon" size={16} color={accents.gold.lip} />
+            <Text style={{ color: accents.gold.lip, fontWeight: "900", fontSize: 16 }}>+{ride.pointsEarned}</Text>
+          </Animated.View>
+        </Animated.View>
 
         <View style={styles.grid}>
           <StatTile icon="speedometer-outline" label="Distancia" value={formatDistance(ride.distanceMeters, units)} accent />
@@ -72,12 +93,70 @@ export default function RideDetailScreen() {
           <StatTile icon="flame-outline" label="Calorías" value={`${Math.round(ride.caloriesKcal)} kcal`} />
         </View>
 
-        <GlassCard style={{ marginTop: 16, marginBottom: 40 }}>
-          <View style={styles.pointsRow}>
-            <Ionicons name="trophy-outline" size={18} color={colors.primaryDark} />
-            <Text style={[styles.pointsText, { color: colors.ink }]}>+{ride.pointsEarned} puntos ganados</Text>
+        <GlassCard containerStyle={{ marginTop: 16 }} entranceDelay={80}>
+          <View style={styles.co2Row}>
+            <View style={[styles.co2Icon, { backgroundColor: accents.teal.soft, borderColor: accents.teal.base }]}>
+              <Ionicons name="leaf" size={20} color={accents.teal.lip} />
+            </View>
+            <Text style={{ color: colors.ink, flex: 1, fontWeight: "700" }}>
+              Evitaste <Text style={{ color: accents.teal.lip, fontWeight: "900" }}>{co2.toFixed(2)} kg de CO₂</Text> frente a ir en carro.
+            </Text>
           </View>
         </GlassCard>
+
+        {hasProfile && (
+          <>
+            <Text style={[styles.section, { color: colors.ink }]}>Perfil del recorrido</Text>
+            <GlassCard entranceDelay={120}>
+              <SegmentedControl
+                options={[
+                  { label: "Velocidad", value: "speed" },
+                  { label: "Altitud", value: "altitude" },
+                ]}
+                value={chart}
+                onChange={setChart}
+                style={{ marginBottom: 12 }}
+              />
+              <AreaChart
+                values={chart === "speed" ? profile.speed : profile.altitude.map((a) => a - Math.min(...profile.altitude))}
+                labels={["Inicio", "", "", "", "Fin"]}
+                accessibilityLabel={chart === "speed" ? "Velocidad a lo largo del recorrido" : "Altitud a lo largo del recorrido"}
+              />
+              <Text style={{ color: colors.inkFaint, fontSize: 12, marginTop: 8 }}>
+                {chart === "speed"
+                  ? `Máxima ${formatSpeed(Math.max(...profile.speed), units)}`
+                  : `Entre ${Math.round(Math.min(...profile.altitude))} y ${Math.round(Math.max(...profile.altitude))} m`}
+              </Text>
+            </GlassCard>
+          </>
+        )}
+
+        {splits.length > 0 && (
+          <>
+            <Text style={[styles.section, { color: colors.ink }]}>Parciales por km</Text>
+            <GlassCard entranceDelay={160}>
+              {splits.map((s, i) => (
+                <View key={`${s.km}_${i}`} style={styles.splitRow}>
+                  <Text style={[styles.splitKm, { color: colors.ink }]}>{Number.isInteger(s.km) ? s.km : s.km.toFixed(1)}</Text>
+                  <View style={styles.splitTrack}>
+                    <View
+                      style={[
+                        styles.splitFill,
+                        { width: `${Math.max(12, (s.seconds / maxSplit) * 100)}%`, backgroundColor: s.fastest ? accents.green.base : accents.blue.base },
+                      ]}
+                    />
+                  </View>
+                  <Text style={[styles.splitTime, { color: s.fastest ? accents.green.lip : colors.inkSoft }]}>
+                    {formatDuration(s.seconds)}
+                    {s.fastest ? " ★" : ""}
+                  </Text>
+                </View>
+              ))}
+            </GlassCard>
+          </>
+        )}
+
+        <View style={{ height: 50 }} />
       </ScrollView>
     </View>
   );
@@ -86,10 +165,18 @@ export default function RideDetailScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   floatingBack: { position: "absolute", left: 16, top: 0 },
-  content: { padding: 20, paddingTop: 24 },
-  date: { fontSize: 15, fontWeight: "700", marginBottom: 16, textTransform: "capitalize" },
+  content: { padding: 20, paddingTop: 20 },
+  headRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
+  date: { fontSize: 20, fontWeight: "900", textTransform: "capitalize" },
+  ptsBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 2, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   noMap: { height: 220, alignItems: "center", justifyContent: "center", paddingTop: 40 },
-  pointsRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  pointsText: { fontSize: 14.5, fontWeight: "700" },
+  co2Row: { flexDirection: "row", alignItems: "center", gap: 12 },
+  co2Icon: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", borderWidth: 2 },
+  section: { fontSize: 18, fontWeight: "800", marginTop: 22, marginBottom: 10 },
+  splitRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 5 },
+  splitKm: { width: 30, fontWeight: "900", fontSize: 13 },
+  splitTrack: { flex: 1, height: 12, borderRadius: 6, backgroundColor: "#EEF1EC", overflow: "hidden" },
+  splitFill: { height: "100%", borderRadius: 6 },
+  splitTime: { width: 74, textAlign: "right", fontWeight: "800", fontSize: 12.5 },
 });

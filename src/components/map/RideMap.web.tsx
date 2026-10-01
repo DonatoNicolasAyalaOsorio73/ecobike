@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Polyline, CircleMarker, useMap } from "react-l
 import "leaflet/dist/leaflet.css";
 import type { RideMapProps } from "./RideMap.native";
 import { useTheme } from "@/theme/useTheme";
+import { routeCamera } from "@/utils/mapCamera";
 
 const BOGOTA = { lat: 4.711, lng: -74.0721 };
 
@@ -19,16 +20,20 @@ function injectCss() {
   cssInjected = true;
 }
 
-function Recenter({ center, recenterKey }: { center: { lat: number; lng: number } | null; recenterKey: number }) {
+function Recenter({ center, recenterKey, fitTo }: { center: { lat: number; lng: number } | null; recenterKey: number; fitTo: [[number, number], [number, number]] | null }) {
   const map = useMap();
   useEffect(() => {
+    if (fitTo) {
+      map.fitBounds(fitTo, { padding: [28, 28] });
+      return;
+    }
     if (center) map.flyTo([center.lat, center.lng], map.getZoom() < 14 ? 16 : map.getZoom(), { duration: 0.8 });
-  }, [center?.lat, center?.lng, recenterKey, map]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [center?.lat, center?.lng, recenterKey, map, fitTo?.[0][0], fitTo?.[1][1]]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
 
 /** OpenStreetMap via Leaflet: no API key, works in any browser. */
-export default function RideMap({ route, center, height = 260, fill, recenterKey = 0 }: RideMapProps) {
+export default function RideMap({ route, center, height = 260, fill, recenterKey = 0, fitRoute }: RideMapProps) {
   const { isDark } = useTheme();
   injectCss();
   const initialCenter = center ?? route[0] ?? BOGOTA;
@@ -41,7 +46,7 @@ export default function RideMap({ route, center, height = 260, fill, recenterKey
       <MapContainer
         center={[initialCenter.lat, initialCenter.lng]}
         zoom={15}
-        zoomControl={!fill}
+        zoomControl={false} // pinch / wheel to zoom; keeps the corners free for app controls
         className={isDark ? "ecobike-dark" : undefined}
         style={{ height: "100%", width: "100%" }}
       >
@@ -53,7 +58,7 @@ export default function RideMap({ route, center, height = 260, fill, recenterKey
         {center && (
           <CircleMarker center={[center.lat, center.lng]} radius={9} pathOptions={{ color: "#fff", weight: 3, fillColor: "#ADF14B", fillOpacity: 1 }} />
         )}
-        <Recenter center={center} recenterKey={recenterKey} />
+        <Recenter center={center} recenterKey={recenterKey} fitTo={fitRoute ? routeCamera(route)?.bounds ?? null : null} />
       </MapContainer>
     </View>
   );

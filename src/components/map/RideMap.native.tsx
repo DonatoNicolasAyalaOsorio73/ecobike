@@ -2,6 +2,7 @@ import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import { AppleMaps, GoogleMaps } from "expo-maps";
 import { useTheme } from "@/theme/useTheme";
+import { routeCamera } from "@/utils/mapCamera";
 
 export interface RideMapProps {
   route: { lat: number; lng: number }[];
@@ -11,6 +12,8 @@ export interface RideMapProps {
   fill?: boolean;
   /** Bump to re-center the camera on `center` (the "locate me" button). */
   recenterKey?: number;
+  /** Frame the whole route instead of following `center` (ride detail). */
+  fitRoute?: boolean;
 }
 
 /**
@@ -18,15 +21,16 @@ export interface RideMapProps {
  * Google Maps have genuinely different feature sets) — this wrapper picks
  * the native one per platform and exposes only what the app uses.
  */
-export default function RideMap({ route, center, height = 260, fill, recenterKey = 0 }: RideMapProps) {
+export default function RideMap({ route, center, height = 260, fill, recenterKey = 0, fitRoute }: RideMapProps) {
   const { isDark } = useTheme();
   const coordinates = route.map((p) => ({ latitude: p.lat, longitude: p.lng }));
   // A new object identity (keyed by recenterKey) makes the camera move again.
-  const cameraPosition = React.useMemo(
-    () => (center ? { coordinates: { latitude: center.lat, longitude: center.lng }, zoom: 16 } : undefined),
+  const cameraPosition = React.useMemo(() => {
+    const fit = fitRoute ? routeCamera(route) : null;
+    if (fit) return { coordinates: { latitude: fit.center.lat, longitude: fit.center.lng }, zoom: fit.zoom };
+    return center ? { coordinates: { latitude: center.lat, longitude: center.lng }, zoom: 16 } : undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [center?.lat, center?.lng, recenterKey]
-  );
+  }, [center?.lat, center?.lng, recenterKey, fitRoute, route.length]);
   const polylines = coordinates.length > 1 ? [{ coordinates, color: "#ADF14B", width: 6 }] : [];
   const wrap = fill ? StyleSheet.absoluteFill : [styles.card, { height }];
 
