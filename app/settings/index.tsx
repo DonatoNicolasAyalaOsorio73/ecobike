@@ -84,20 +84,8 @@ export default function SettingsScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <SectionLabel text="Apariencia" />
+          <SectionLabel text="Unidades" />
           <GlassCard>
-            <SettingsChoiceRow
-              icon="contrast-outline"
-              label="Tema"
-              value={settings.appearance}
-              onChange={(v) => settings.update({ appearance: v })}
-              options={[
-                { label: "Sistema", value: "system" },
-                { label: "Claro", value: "light" },
-                { label: "Oscuro", value: "dark" },
-              ]}
-            />
-            <Divider />
             <SettingsChoiceRow
               icon="speedometer-outline"
               label="Unidades"

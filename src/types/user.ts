@@ -27,14 +27,12 @@ export interface UserProfile {
 }
 
 export type Units = "metric" | "imperial";
-export type AppearanceMode = "system" | "light" | "dark";
 
 export type GpsAccuracy = "high" | "balanced";
 
 /** Device-local preferences (persisted per device by settingsStore). */
 export interface UserSettings {
   units: Units;
-  appearance: AppearanceMode;
   biometricUnlockEnabled: boolean;
   /** Master switch for push on this device (token registered or cleared). */
   notificationsEnabled: boolean;
@@ -55,7 +53,6 @@ export interface UserSettings {
 
 export const DEFAULT_SETTINGS: UserSettings = {
   units: "metric",
-  appearance: "system",
   biometricUnlockEnabled: false,
   notificationsEnabled: true,
   weeklyGoalKm: 30,

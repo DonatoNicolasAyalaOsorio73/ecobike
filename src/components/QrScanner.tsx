@@ -1,5 +1,6 @@
-import React, { useRef } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import AppModal from "@/components/ui/AppModal";
+import React, { useEffect, useRef } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -16,13 +17,15 @@ export default function QrScanner({ visible, onClose, onScanned }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
   const handled = useRef(false);
 
-  const onShow = () => {
+  useEffect(() => {
+    if (!visible) return;
     handled.current = false;
     if (permission && !permission.granted && permission.canAskAgain) requestPermission();
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   return (
-    <Modal visible={visible} animationType="slide" onShow={onShow} onRequestClose={onClose} supportedOrientations={["portrait"]}>
+    <AppModal visible={visible} onRequestClose={onClose}>
       <View style={styles.root}>
         {permission?.granted ? (
           <CameraView
@@ -57,7 +60,7 @@ export default function QrScanner({ visible, onClose, onScanned }: Props) {
         </Pressable>
         {permission?.granted && <Text style={styles.hint}>Apunta al QR del cliente</Text>}
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

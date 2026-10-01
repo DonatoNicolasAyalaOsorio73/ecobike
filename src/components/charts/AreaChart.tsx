@@ -26,7 +26,9 @@ export default function AreaChart({ values, labels, height = 140, accessibilityL
     reveal.value = withTiming(1, { duration: 900, easing: Easing.out(Easing.cubic) });
   }, [values, reveal]);
 
-  const clip = useAnimatedStyle(() => ({ width: reveal.value * width }));
+  // Percentage, not reveal * width: the worklet must not capture a stale width
+  // from before layout (that left the chart invisible on first render).
+  const clip = useAnimatedStyle(() => ({ width: `${reveal.value * 100}%` }));
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
 
   const max = Math.max(0.0001, ...values);

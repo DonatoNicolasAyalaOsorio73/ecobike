@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
@@ -107,9 +108,11 @@ function RootLayout() {
 
   if (status === "locked") {
     return (
-      <WebAppShell>
-        <BiometricLockScreen />
-      </WebAppShell>
+      <SafeAreaProvider>
+        <WebAppShell>
+          <BiometricLockScreen />
+        </WebAppShell>
+      </SafeAreaProvider>
     );
   }
 
@@ -118,8 +121,11 @@ function RootLayout() {
       {/* Required for react-native-gesture-handler's recognizers (swipe
           actions, sheet drags) to receive touches at all. */}
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <WebAppShell>
-          <SafeAreaProvider>
+        {/* SafeAreaProvider outside the shell: on desktop web the shell
+            overrides insets with the iPhone frame's (island + home bar). */}
+        <SafeAreaProvider>
+          <WebAppShell>
+            <StatusBar style="dark" />
             <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
               <Stack.Screen name="index" />
               <Stack.Protected guard={status === "signedOut"}>
@@ -138,8 +144,8 @@ function RootLayout() {
             </Stack>
             <OfflineBanner />
             <ToastHost />
-          </SafeAreaProvider>
-        </WebAppShell>
+          </WebAppShell>
+        </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
   );

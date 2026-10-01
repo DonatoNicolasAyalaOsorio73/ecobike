@@ -131,7 +131,7 @@ export default function StatsScreen() {
             <StatTile icon="flame-outline" label="Calorías" value={`${Math.round(calories).toLocaleString("es-CO")} kcal`} />
             <StatTile icon="calendar-outline" label="Días activos" value={String(activeDays)} />
             <StatTile icon="bonfire-outline" label="Racha actual" value={`${stats.currentStreakDays} ${stats.currentStreakDays === 1 ? "día" : "días"}`} accent />
-            <StatTile icon="speedometer-outline" label="Promedio por recorrido" value={cur.rides ? formatDistance(cur.distanceMeters / cur.rides, units) : "—"} />
+            <StatTile icon="speedometer-outline" label="Por recorrido" value={cur.rides ? formatDistance(cur.distanceMeters / cur.rides, units) : "—"} />
           </View>
 
           <Section title="Meta semanal" />
@@ -193,11 +193,13 @@ export default function StatsScreen() {
           <Section title="Tipos de recorrido" />
           <GlassCard entranceDelay={120}>
             <DonutChart
+              size={112}
+              thickness={16}
               centerLabel="recorridos"
               slices={[
-                { label: "Cortos (< 5 km)", value: buckets.short, color: colors.primaryLight },
-                { label: "Medios (5–15 km)", value: buckets.medium, color: colors.primary },
-                { label: "Largos (> 15 km)", value: buckets.long, color: colors.primaryDark },
+                { label: "Cortos · < 5 km", value: buckets.short, color: colors.primaryLight },
+                { label: "Medios · 5–15", value: buckets.medium, color: colors.primary },
+                { label: "Largos · > 15 km", value: buckets.long, color: colors.primaryDark },
               ]}
             />
           </GlassCard>
@@ -233,7 +235,7 @@ export default function StatsScreen() {
               const unlocked = unlockedCodes.has(a.code);
               const p = unlocked ? 1 : a.progress(stats);
               return (
-                <GlassCard key={a.code} style={[styles.achievementCard, !unlocked && { opacity: 0.7 }]} entranceDelay={Math.min(i, 8) * 30}>
+                <GlassCard key={a.code} containerStyle={[styles.achievementCard, !unlocked && { opacity: 0.7 }]} entranceDelay={Math.min(i, 8) * 30}>
                   <View style={styles.achievementHead}>
                     <Ionicons name={a.icon as any} size={22} color={unlocked ? colors.primaryDark : colors.inkFaint} />
                     {unlocked && <Ionicons name="checkmark-circle" size={16} color={colors.success} />}
@@ -352,7 +354,7 @@ const styles = StyleSheet.create({
   track: { borderRadius: 4, overflow: "hidden" },
   fill: { height: "100%", borderRadius: 4 },
   achievementsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  achievementCard: { width: "47%", flexGrow: 1 },
+  achievementCard: { flexBasis: "46%", flexGrow: 1 },
   achievementHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   achievementTitle: { fontSize: 13.5, fontWeight: "700", marginTop: 8 },
   achievementDesc: { fontSize: 11.5, marginTop: 2, lineHeight: 15 },

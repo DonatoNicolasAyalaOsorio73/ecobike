@@ -1,12 +1,9 @@
 import React from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { Platform } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
-import GlassSurface from "./GlassSurface";
-import { useTheme } from "@/theme/useTheme";
+import { SPRING } from "@/theme/motion";
 
 interface Props {
   label: string;
@@ -18,90 +15,63 @@ interface Props {
   style?: StyleProp<ViewStyle>;
 }
 
-// Matches the spring UIKit uses for its default button press feedback
-// (damping ~16, stiffness ~380) rather than a linear/timing fade — this is
-// what makes a press feel "native iOS" instead of "web app with a tap state".
-const PRESS_SPRING = { damping: 16, stiffness: 380, mass: 0.6 };
+// Duolingo-style "chunky" 3D button: a solid face sitting on a darker lip.
+// Pressing pushes the face down onto the lip; releasing springs it back up
+// with a little bounce. Same props as before, so every button in the app
+// picks up the new feel.
+const LIP = 4;
+const RADIUS = 16;
 
-export default function GlassButton({
-  label,
-  icon,
-  onPress,
-  variant = "primary",
-  disabled = false,
-  loading = false,
-  style,
-}: Props) {
-  const { colors, radii, glowShadow, isDark } = useTheme();
-  const isPrimary = variant === "primary";
-  const isDanger = variant === "danger";
-  const scale = useSharedValue(1);
+const PALETTE = {
+  primary: { face: "#ADF14B", lip: "#7CB82F", border: "#9BDD3F", text: "#1F3A0B" },
+  secondary: { face: "#FFFFFF", lip: "#D5DDD2", border: "#E2E8E0", text: "#3C4A3F" },
+  danger: { face: "#FF5A5F", lip: "#D33A3F", border: "#FF5A5F", text: "#FFFFFF" },
+  disabled: { face: "#EEF1EC", lip: "#D9DED6", border: "#E2E6DF", text: "#A2ACA4" },
+} as const;
 
-  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+export default function GlassButton({ label, icon, onPress, variant = "primary", disabled = false, loading = false, style }: Props) {
+  const p = disabled ? PALETTE.disabled : PALETTE[variant];
+  const press = useSharedValue(0);
 
-  const handlePress = () => {
-    if (disabled || loading) return;
-    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onPress();
-  };
+  const faceStyle = useAnimatedStyle(() => ({ transform: [{ translateY: press.value * LIP }] }));
 
   return (
-    <Animated.View style={[{ borderRadius: radii.pill }, isPrimary && !disabled && glowShadow, animatedStyle, style]}>
+    <View style={style}>
       <Pressable
-        onPress={handlePress}
-        onPressIn={() => (scale.value = withSpring(0.96, PRESS_SPRING))}
-        onPressOut={() => (scale.value = withSpring(1, PRESS_SPRING))}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ disabled: disabled || loading, busy: loading }}
         disabled={disabled || loading}
-        style={[{ borderRadius: radii.pill, overflow: "hidden" }, disabled ? { opacity: 0.55 } : null]}
+        onPressIn={() => {
+          press.value = withSpring(1, SPRING.press);
+          Haptics.selectionAsync().catch(() => {});
+        }}
+        onPressOut={() => (press.value = withSpring(0, SPRING.bouncy))}
+        onPress={onPress}
+        style={[styles.lip, { backgroundColor: p.lip }]}
       >
-        {isPrimary ? (
-          <LinearGradient
-            colors={[colors.primaryLight, colors.primary]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.inner, { borderColor: colors.glassBorder, borderWidth: 1 }]}
-          >
-            <Content icon={icon} label={label} textColor={colors.onPrimary} loading={loading} />
-          </LinearGradient>
-        ) : (
-          <GlassSurface
-            radius={radii.pill}
-            intensity={45}
-            specular={false}
-            borderColor={isDanger ? colors.danger : colors.glassBorder}
-            backgroundColor={isDanger ? "rgba(229,72,77,0.12)" : colors.glassFillStrong}
-            style={styles.inner}
-          >
-            <Content icon={icon} label={label} textColor={isDanger ? colors.danger : colors.ink} loading={loading} />
-          </GlassSurface>
-        )}
+        <Animated.View style={[styles.face, { backgroundColor: p.face, borderColor: p.border }, faceStyle]}>
+          {variant !== "secondary" && !disabled && <View pointerEvents="none" style={styles.shine} />}
+          {loading ? (
+            <ActivityIndicator color={p.text} />
+          ) : (
+            <View style={styles.row}>
+              {icon ? <Ionicons name={icon} size={19} color={p.text} /> : null}
+              <Text style={[styles.label, { color: p.text }]} numberOfLines={1}>
+                {label}
+              </Text>
+            </View>
+          )}
+        </Animated.View>
       </Pressable>
-    </Animated.View>
-  );
-}
-
-function Content({
-  icon,
-  label,
-  textColor,
-  loading,
-}: {
-  icon?: keyof typeof Ionicons.glyphMap;
-  label: string;
-  textColor: string;
-  loading: boolean;
-}) {
-  if (loading) return <ActivityIndicator color={textColor} />;
-  return (
-    <View style={styles.row}>
-      {icon ? <Ionicons name={icon} size={18} color={textColor} style={{ marginRight: 2 }} /> : null}
-      <Text style={[styles.label, { color: textColor }]}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  inner: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 16, gap: 8 },
+  lip: { borderRadius: RADIUS, paddingBottom: LIP },
+  face: { borderRadius: RADIUS, borderWidth: 2, minHeight: 50, paddingHorizontal: 16, alignItems: "center", justifyContent: "center" },
+  shine: { position: "absolute", top: 5, left: 14, right: 14, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.45)" },
   row: { flexDirection: "row", alignItems: "center", gap: 8 },
-  label: { fontSize: 16, fontWeight: "700" },
+  label: { fontSize: 16, fontWeight: "800", letterSpacing: 0.2 },
 });

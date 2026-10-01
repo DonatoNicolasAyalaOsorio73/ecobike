@@ -43,40 +43,6 @@ const lightColorTokens = {
 
 export const lightColors: Theme = lightColorTokens;
 
-export const darkColors: Theme = {
-  bgTop: "#0E1410",
-  bgBottom: "#131C15",
-  blobGreen: "#3E5A22",
-  blobGreenSoft: "#2A3B1E",
-
-  primary: "#ADF14B",
-  primaryDark: "#8FCB3A",
-  primaryLight: "#C9F485",
-  onPrimary: "#14210A",
-
-  ink: "#F2F5EF",
-  inkSoft: "#B7C2B9",
-  inkFaint: "#7C8880",
-
-  surface: "#161D18",
-  surfaceRaised: "#1D2620",
-
-  glassFill: "rgba(255,255,255,0.06)",
-  glassFillStrong: "rgba(255,255,255,0.10)",
-  glassBorder: "rgba(255,255,255,0.14)",
-  glassBorderSoft: "rgba(255,255,255,0.09)",
-  glassGreenFill: "rgba(173,241,75,0.14)",
-  glassGreenBorder: "rgba(173,241,75,0.35)",
-  shadow: "rgba(0,0,0,0.45)",
-
-  placeholder: "#68746C",
-  divider: "rgba(255,255,255,0.12)",
-
-  success: "#4BC96C",
-  warning: "#E7B84A",
-  danger: "#F0666A",
-  info: "#5AA3EE",
-};
 
 export const radii = {
   pill: 999,

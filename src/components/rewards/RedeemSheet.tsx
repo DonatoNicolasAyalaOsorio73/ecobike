@@ -1,5 +1,6 @@
+import AppModal from "@/components/ui/AppModal";
 import React, { useEffect, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, SlideInDown, ZoomIn } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
@@ -53,7 +54,7 @@ export default function RedeemSheet({ reward, availablePoints, onClose, redeem }
   };
 
   return (
-    <Modal transparent visible animationType="none" onRequestClose={onClose} statusBarTranslucent>
+    <AppModal visible onRequestClose={onClose}>
       <Animated.View entering={FadeIn.duration(180)} style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.45)" }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={phase === "working" ? undefined : onClose} accessibilityLabel="Cerrar" />
       </Animated.View>
@@ -133,7 +134,7 @@ export default function RedeemSheet({ reward, availablePoints, onClose, redeem }
         </GlassSurface>
       </Animated.View>
       {phase === "done" && <Confetti />}
-    </Modal>
+    </AppModal>
   );
 }
 

@@ -1,8 +1,10 @@
 import React from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   Extrapolation,
   interpolate,
+  runOnJS,
+  useAnimatedRef,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
@@ -23,6 +25,26 @@ const GRADIENTS: [string, string][] = [
 ];
 
 const SPACING = 14;
+
+// Web has no snapToInterval: native CSS scroll-snap gives the same "one card
+// at a time" paging for touch swipes and trackpads.
+const WEB_SNAP_CONTAINER = Platform.OS === "web" ? ({ scrollSnapType: "x mandatory" } as any) : undefined;
+const WEB_SNAP_ITEM = Platform.OS === "web" ? ({ scrollSnapAlign: "center" } as any) : undefined;
+
+function Arrow({ icon, label, disabled, onPress, color }: { icon: any; label: string; disabled: boolean; onPress: () => void; color: string }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      disabled={disabled}
+      onPress={onPress}
+      hitSlop={8}
+      style={({ pressed }) => [styles.arrow, { opacity: disabled ? 0.3 : 1, transform: [{ scale: pressed ? 0.88 : 1 }] }]}
+    >
+      <Ionicons name={icon} size={20} color={color} />
+    </Pressable>
+  );
+}
 
 interface Props {
   rewards: Reward[];
@@ -57,7 +79,7 @@ function Card({ reward, index, cardWidth, scrollX, affordable, missing, onPress 
   const [from, to] = GRADIENTS[index % GRADIENTS.length];
 
   return (
-    <Animated.View style={[{ width: cardWidth, marginRight: SPACING }, cardStyle]}>
+    <Animated.View style={[{ width: cardWidth, marginRight: SPACING }, WEB_SNAP_ITEM, cardStyle]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${reward.title}, ${reward.subtitle}, ${reward.pointsCost} puntos`}
@@ -102,7 +124,7 @@ function Card({ reward, index, cardWidth, scrollX, affordable, missing, onPress 
   );
 }
 
-function Dot({ index, step, scrollX }: { index: number; step: number; scrollX: SharedValue<number> }) {
+function Dot({ index, step, scrollX, onPress }: { index: number; step: number; scrollX: SharedValue<number>; onPress: () => void }) {
   const { colors } = useTheme();
   const style = useAnimatedStyle(() => {
     const range = [(index - 1) * step, index * step, (index + 1) * step];
@@ -111,24 +133,39 @@ function Dot({ index, step, scrollX }: { index: number; step: number; scrollX: S
       opacity: interpolate(scrollX.value, range, [0.35, 1, 0.35], Extrapolation.CLAMP),
     };
   });
-  return <Animated.View style={[styles.dot, { backgroundColor: colors.primaryDark }, style]} />;
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={`Ir a la recompensa ${index + 1}`} onPress={onPress} hitSlop={8}>
+      <Animated.View style={[styles.dot, { backgroundColor: colors.primaryDark }, style]} />
+    </Pressable>
+  );
 }
 
 /** Image-first, snap-paging rewards carousel with scale + parallax on scroll. */
 export default function RewardCarousel({ rewards, availablePoints, width, onPress }: Props) {
+  const { colors } = useTheme();
   const scrollX = useSharedValue(0);
+  const ref = useAnimatedRef<Animated.ScrollView>();
+  const [index, setIndex] = React.useState(0);
+  const cardWidth = Math.min(320, width - 72);
+  const step = cardWidth + SPACING;
+  const side = (width - cardWidth) / 2;
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollX.value = e.contentOffset.x;
+    runOnJS(setIndex)(Math.round(e.contentOffset.x / step));
   });
-  const cardWidth = Math.min(340, width - 64);
-  const side = (width - cardWidth) / 2;
+  const goTo = (i: number) => {
+    const target = Math.max(0, Math.min(rewards.length - 1, i));
+    ref.current?.scrollTo({ x: target * step, animated: true });
+  };
 
   return (
     <View>
       <Animated.ScrollView
+        ref={ref}
         horizontal
+        style={WEB_SNAP_CONTAINER}
         showsHorizontalScrollIndicator={false}
-        snapToInterval={cardWidth + SPACING}
+        snapToInterval={step}
         decelerationRate="fast"
         onScroll={onScroll}
         scrollEventThrottle={16}
@@ -147,10 +184,14 @@ export default function RewardCarousel({ rewards, availablePoints, width, onPres
           />
         ))}
       </Animated.ScrollView>
-      <View style={styles.dots}>
-        {rewards.map((r, i) => (
-          <Dot key={r.id} index={i} step={cardWidth + SPACING} scrollX={scrollX} />
-        ))}
+      <View style={styles.controls}>
+        <Arrow icon="chevron-back" label="Anterior" disabled={index <= 0} onPress={() => goTo(index - 1)} color={colors.primaryDark} />
+        <View style={styles.dots}>
+          {rewards.map((r, i) => (
+            <Dot key={r.id} index={i} step={step} scrollX={scrollX} onPress={() => goTo(i)} />
+          ))}
+        </View>
+        <Arrow icon="chevron-forward" label="Siguiente" disabled={index >= rewards.length - 1} onPress={() => goTo(index + 1)} color={colors.primaryDark} />
       </View>
     </View>
   );
@@ -166,6 +207,8 @@ const styles = StyleSheet.create({
   heroSubtitle: { color: "rgba(255,255,255,0.9)", fontSize: 14, marginTop: 4 },
   costPill: { position: "absolute", top: 14, right: 14, flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
   footer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingVertical: 14 },
-  dots: { flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 14 },
+  controls: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 14, marginTop: 14 },
+  dots: { flexDirection: "row", alignItems: "center", gap: 6 },
+  arrow: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.8)", borderWidth: 1, borderColor: "rgba(0,0,0,0.06)" },
   dot: { height: 7, borderRadius: 4 },
 });

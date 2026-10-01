@@ -79,6 +79,7 @@
     "@babel/core": "^7.24.0",
     "@firebase/rules-unit-testing": "^5.0.2",
     "@types/node": "^26.6.2",
+    "@types/react-dom": "~19.2",
     "typescript": "~6.0.3"
   }
 }

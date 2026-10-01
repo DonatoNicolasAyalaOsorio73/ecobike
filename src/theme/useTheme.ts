@@ -1,24 +1,18 @@
-import { useColorScheme } from "react-native";
-import { darkColors, glowShadowStyle, lightColors, radii, shadowStyle, spacing, type Theme } from "./colors";
-import { useSettingsStore } from "@/stores/settingsStore";
+import { glowShadowStyle, lightColors, radii, shadowStyle, spacing, type Theme } from "./colors";
 
-/**
- * Single source of truth for theming. Respects the user's system appearance
- * unless they've pinned Light/Dark in Settings > Apariencia.
- */
+// EcoBike is light-only by design (brand decision): same look on every
+// device regardless of the system appearance.
+const colors: Theme = lightColors;
+const theme = {
+  colors,
+  isDark: false as const,
+  radii,
+  spacing,
+  shadow: shadowStyle(colors),
+  glowShadow: glowShadowStyle(colors),
+};
+
+/** Single source of truth for theming. */
 export function useTheme() {
-  const system = useColorScheme();
-  const override = useSettingsStore((s) => s.appearance);
-  const scheme = override === "system" ? system : override;
-  const isDark = scheme === "dark";
-  const colors: Theme = isDark ? darkColors : lightColors;
-
-  return {
-    colors,
-    isDark,
-    radii,
-    spacing,
-    shadow: shadowStyle(colors),
-    glowShadow: glowShadowStyle(colors),
-  };
+  return theme;
 }

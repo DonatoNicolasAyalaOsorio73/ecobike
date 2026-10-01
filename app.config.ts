@@ -14,7 +14,7 @@ const config: ExpoConfig = {
   version: "2.0.0",
   scheme: "ecobike",
   orientation: "portrait",
-  userInterfaceStyle: "automatic",
+  userInterfaceStyle: "light",
   icon: "./assets/icon.png",
   // Splash screen is fully configured via the expo-splash-screen plugin
   // below — the old top-level `splash` key was removed from the config
@@ -127,10 +127,6 @@ const config: ExpoConfig = {
         image: "./assets/splash-icon.png",
         imageWidth: 220,
         backgroundColor: "#F6FBF3",
-        dark: {
-          image: "./assets/splash-icon.png",
-          backgroundColor: "#0E1410",
-        },
       },
     ],
   ],
