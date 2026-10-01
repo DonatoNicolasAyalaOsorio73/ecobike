@@ -1,8 +1,9 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
@@ -12,12 +13,15 @@ import GlassInput from "@/components/ui/GlassInput";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import SwipeableRow from "@/components/ui/SwipeableRow";
 import { useTheme } from "@/theme/useTheme";
+import { accents, type AccentName } from "@/theme/colors";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useRiderStats } from "@/hooks/useRiderStats";
+import { useAvailablePoints } from "@/hooks/useAvailablePoints";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { formatDistance, formatDuration } from "@/utils/format";
 import { groupRidesByMonth, ridesInPeriod, type StatsPeriod } from "@/utils/rideStats";
-import { deleteRide } from "@/services/db";
+import { deleteRideEverywhere } from "@/services/rides.service";
+import { useAuthStore } from "@/stores/authStore";
 import { toast } from "@/stores/toastStore";
 import type { Ride } from "@/types/ride";
 
@@ -28,11 +32,18 @@ const PERIOD_OPTIONS: { label: string; value: StatsPeriod }[] = [
   { label: "Todo", value: "all" },
 ];
 
+/** Short / medium / long rides get their own color, like the stats donut. */
+function rideAccent(meters: number): AccentName {
+  return meters < 5000 ? "teal" : meters <= 15000 ? "green" : "orange";
+}
+
 export default function HistoryScreen() {
   const { colors } = useTheme();
   const userId = useCurrentUserId();
   const units = useSettingsStore((s) => s.units);
+  const { isRealAccount } = useAvailablePoints(userId);
   const { rides, refresh } = useRiderStats(userId);
+  const refreshProfile = useAuthStore((s) => s.refreshProfile);
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<StatsPeriod>("all");
   const [query, setQuery] = useState("");
@@ -45,28 +56,62 @@ export default function HistoryScreen() {
     setRefreshing(false);
   };
 
-  const groups = useMemo(() => {
+  const sections = useMemo(() => {
     const inPeriod = ridesInPeriod(rides, period);
     const q = query.trim().toLowerCase();
     const matched = q
       ? inPeriod.filter((r) => {
-          // Search over what's actually visible on the row — the human-readable
-          // date and the distance — so typing "septiembre" or "12" finds what
-          // the rider is looking at rather than matching an internal id.
+          // Search what the row shows: the human date and the distance.
           const label = format(new Date(r.startedAt), "d 'de' MMMM yyyy, HH:mm", { locale: es }).toLowerCase();
-          const km = (r.distanceMeters / 1000).toFixed(1);
-          return label.includes(q) || km.includes(q);
+          return label.includes(q) || (r.distanceMeters / 1000).toFixed(1).includes(q);
         })
       : inPeriod;
-    return groupRidesByMonth(matched);
+    return groupRidesByMonth(matched).map((g) => ({
+      key: g.key,
+      title: g.label,
+      km: g.rides.reduce((s, r) => s + r.distanceMeters, 0),
+      data: g.rides,
+    }));
   }, [rides, period, query]);
 
-  const totalShown = groups.reduce((sum, g) => sum + g.rides.length, 0);
+  const onDelete = async (ride: Ride) => {
+    try {
+      await deleteRideEverywhere(ride, isRealAccount);
+      refresh();
+      if (isRealAccount) refreshProfile().catch(() => {});
+      toast.success(isRealAccount && ride.pointsEarned ? `Recorrido eliminado (−${ride.pointsEarned} pts)` : "Recorrido eliminado");
+    } catch (e: any) {
+      toast.error(e?.message ?? "No se pudo eliminar. Revisa tu conexión.");
+    }
+  };
 
-  const onDelete = (ride: Ride) => {
-    deleteRide(ride.id);
-    refresh();
-    toast.success("Recorrido eliminado");
+  const renderItem = ({ item, index }: { item: Ride; index: number }) => {
+    const a = accents[rideAccent(item.distanceMeters)];
+    return (
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 35).springify().damping(16)}>
+        <SwipeableRow onDelete={() => onDelete(item)}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Recorrido del ${format(new Date(item.startedAt), "d 'de' MMMM", { locale: es })}, ${formatDistance(item.distanceMeters, units)}`}
+            onPress={() => router.push(`/ride/${item.id}`)}
+            style={({ pressed }) => [styles.row, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}
+          >
+            <View style={[styles.iconWrap, { backgroundColor: a.soft, borderColor: a.base }]}>
+              <Ionicons name="bicycle" size={19} color={a.lip} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.date, { color: colors.ink }]}>{format(new Date(item.startedAt), "EEEE d, HH:mm", { locale: es })}</Text>
+              <Text style={[styles.meta, { color: colors.inkSoft }]}>
+                {formatDistance(item.distanceMeters, units)} · {formatDuration(item.durationSeconds)}
+              </Text>
+            </View>
+            <View style={[styles.ptsPill, { backgroundColor: accents.gold.soft }]}>
+              <Text style={{ color: accents.gold.lip, fontWeight: "900", fontSize: 12.5 }}>+{item.pointsEarned}</Text>
+            </View>
+          </Pressable>
+        </SwipeableRow>
+      </Animated.View>
+    );
   };
 
   return (
@@ -75,68 +120,47 @@ export default function HistoryScreen() {
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <View style={styles.headerRow}>
           <BackButton />
-          <Text style={[styles.header, { color: colors.ink }]}>Actividad</Text>
+          <Text style={[styles.header, { color: colors.ink }]} accessibilityRole="header">
+            Actividad
+          </Text>
           <View style={{ width: 44 }} />
         </View>
 
-        <ScrollView
+        <SectionList
+          sections={sections}
+          keyExtractor={(r) => r.id}
+          renderItem={renderItem}
+          stickySectionHeadersEnabled={false}
+          initialNumToRender={14}
+          windowSize={9}
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        >
-          <SegmentedControl options={PERIOD_OPTIONS} value={period} onChange={setPeriod} style={{ marginBottom: 12 }} />
-
-          <GlassInput
-            icon="search-outline"
-            placeholder="Buscar por fecha o distancia"
-            value={query}
-            onChangeText={setQuery}
-            autoCapitalize="none"
-          />
-
-          {totalShown === 0 ? (
+          ListHeaderComponent={
+            <>
+              <SegmentedControl options={PERIOD_OPTIONS} value={period} onChange={setPeriod} style={{ marginBottom: 12 }} />
+              <GlassInput icon="search-outline" placeholder="Buscar por fecha o distancia" value={query} onChangeText={setQuery} autoCapitalize="none" />
+              <Text style={{ color: colors.inkFaint, fontSize: 12, marginBottom: 4, marginLeft: 6 }}>Desliza un recorrido a la izquierda para eliminarlo.</Text>
+            </>
+          }
+          renderSectionHeader={({ section }) => (
+            <View style={styles.sectionHead}>
+              <Text style={[styles.monthLabel, { color: colors.ink }]}>{section.title.charAt(0).toUpperCase() + section.title.slice(1)}</Text>
+              <Text style={{ color: colors.inkSoft, fontSize: 12.5, fontWeight: "700" }}>
+                {section.data.length} · {formatDistance(section.km, units)}
+              </Text>
+            </View>
+          )}
+          ListEmptyComponent={
             <GlassCard>
               <Text style={{ color: colors.inkSoft, textAlign: "center" }}>
-                {rides.length === 0
-                  ? "Todavía no tienes recorridos. Ve a la pestaña Mapa para empezar el primero."
-                  : "Ningún recorrido coincide con esta búsqueda."}
+                {rides.length === 0 ? "Todavía no tienes recorridos. Ve a la pestaña Mapa para empezar el primero." : "Ningún recorrido coincide con esta búsqueda."}
               </Text>
             </GlassCard>
-          ) : (
-            groups.map((group) => (
-              <View key={group.key}>
-                <Text style={[styles.monthLabel, { color: colors.inkFaint }]}>
-                  {group.label.toUpperCase()} · {group.rides.length}
-                </Text>
-                {group.rides.map((item, index) => (
-                  <SwipeableRow key={item.id} onDelete={() => onDelete(item)}>
-                    <Pressable onPress={() => router.push(`/ride/${item.id}`)}>
-                      <GlassCard style={{ marginBottom: 12 }} entranceDelay={Math.min(index, 8) * 40}>
-                        <View style={styles.row}>
-                          <View style={[styles.iconWrap, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
-                            <Ionicons name="bicycle" size={18} color={colors.primaryDark} />
-                          </View>
-                          <View style={{ flex: 1 }}>
-                            <Text style={[styles.date, { color: colors.ink }]}>
-                              {format(new Date(item.startedAt), "d 'de' MMMM, HH:mm", { locale: es })}
-                            </Text>
-                            <Text style={[styles.meta, { color: colors.inkSoft }]}>
-                              {formatDistance(item.distanceMeters, units)} · {formatDuration(item.durationSeconds)} · +{item.pointsEarned} pts
-                            </Text>
-                          </View>
-                          <Ionicons name="chevron-forward" size={18} color={colors.inkFaint} />
-                        </View>
-                      </GlassCard>
-                    </Pressable>
-                  </SwipeableRow>
-                ))}
-              </View>
-            ))
-          )}
-
-          <View style={{ height: 120 }} />
-        </ScrollView>
+          }
+          ListFooterComponent={<View style={{ height: 120 }} />}
+        />
       </SafeAreaView>
     </View>
   );
@@ -148,9 +172,12 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 4, marginBottom: 8 },
   header: { fontSize: 17, fontWeight: "800" },
   scroll: { paddingHorizontal: 20, paddingTop: 4 },
-  monthLabel: { fontSize: 11.5, fontWeight: "700", letterSpacing: 0.5, marginBottom: 8, marginTop: 10 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12 },
-  iconWrap: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", borderWidth: 1 },
-  date: { fontSize: 14.5, fontWeight: "700" },
+  sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginTop: 14, marginBottom: 8 },
+  monthLabel: { fontSize: 17, fontWeight: "900" },
+  // Lightweight row (no blur) so long histories scroll smoothly on any phone.
+  row: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#FFFFFF", borderRadius: 18, borderWidth: 2, borderColor: "#EDF1EA", borderBottomWidth: 4, padding: 12, marginBottom: 10 },
+  iconWrap: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", borderWidth: 2 },
+  date: { fontSize: 15, fontWeight: "800", textTransform: "capitalize" },
   meta: { fontSize: 12.5, marginTop: 2 },
+  ptsPill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
 });

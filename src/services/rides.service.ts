@@ -1,7 +1,7 @@
 import { collection, getDocs } from "firebase/firestore";
 import { getDb, isFirebaseConfigured } from "./firebase";
 import { api } from "./api";
-import { getRide, initDb, listRides, markSynced, saveRide, unlockAchievement, unsyncedRides, wipeAllLocalData } from "./db";
+import { deleteRide, getRide, initDb, listRides, markSynced, saveRide, unlockAchievement, unsyncedRides, wipeAllLocalData } from "./db";
 import { computeRiderStats, evaluateAchievements } from "@/utils/gamification";
 import type { Ride } from "@/types/ride";
 
@@ -113,4 +113,15 @@ export async function resetLocalCache(userId: string): Promise<number> {
   const added = await pullRemoteRides(userId);
   evaluateAchievements(computeRiderStats(listRides(userId)), new Set()).forEach((a) => unlockAchievement(userId, a.code));
   return added;
+}
+
+/**
+ * Deletes a ride everywhere. Real accounts: the server removes it and takes
+ * back its points (otherwise the next sync would just re-download it).
+ */
+export async function deleteRideEverywhere(ride: Ride, isRealAccount: boolean): Promise<void> {
+  if (isRealAccount && isFirebaseConfigured && ride.synced) {
+    await api("rides", "DELETE", { id: ride.id });
+  }
+  deleteRide(ride.id);
 }
