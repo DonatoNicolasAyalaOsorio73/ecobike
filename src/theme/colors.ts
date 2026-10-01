@@ -35,28 +35,28 @@ const lightColorTokens = {
   placeholder: "#9AA69C",
   divider: "rgba(20,23,26,0.12)",
 
-  success: "#3FB65E",
-  warning: "#E0A82E",
+  success: "#34C759",
+  warning: "#6E9F2E",
   danger: "#E5484D",
-  info: "#3B8FE0",
+  info: "#248A3D",
 };
 
 export const lightColors: Theme = lightColorTokens;
 
 /**
- * Playful accent palette (Duolingo-like) for categories, icons and
- * celebrations. Each has a soft tint for backgrounds and a darker "lip"
- * for 3D elements. Brand green stays the primary.
+ * Accent palette: a single green family (iOS-style monochrome tint) so the
+ * app reads calm and on-brand. Names are kept as semantic slots; each maps to
+ * a distinct green shade. Only destructive actions use red.
  */
 export const accents = {
-  green: { base: "#58CC02", soft: "#E5F8D2", lip: "#46A302" },
-  lime: { base: "#ADF14B", soft: "#EEFBD9", lip: "#7CB82F" },
-  blue: { base: "#1CB0F6", soft: "#DDF4FF", lip: "#1899D6" },
-  orange: { base: "#FF9600", soft: "#FFF1DB", lip: "#E08600" },
-  gold: { base: "#FFC800", soft: "#FFF7D6", lip: "#E5B400" },
-  purple: { base: "#CE82FF", soft: "#F5E9FF", lip: "#A568CC" },
-  red: { base: "#FF4B4B", soft: "#FFE3E3", lip: "#D33131" },
-  teal: { base: "#14C4B4", soft: "#D9F7F4", lip: "#0FA396" },
+  green: { base: "#34C759", soft: "#E3F7E8", lip: "#248A3D" },
+  lime: { base: "#9BD84A", soft: "#EEF8DF", lip: "#6E9F2E" },
+  blue: { base: "#30B07A", soft: "#DEF4EA", lip: "#1F7F56" },
+  orange: { base: "#7CC242", soft: "#EAF6DD", lip: "#56892C" },
+  gold: { base: "#5DBB63", soft: "#E4F5E5", lip: "#3D8A43" },
+  purple: { base: "#2E9E6B", soft: "#DCF1E6", lip: "#1D7049" },
+  red: { base: "#E5484D", soft: "#FDE7E8", lip: "#B83236" },
+  teal: { base: "#3FB89A", soft: "#DDF4EE", lip: "#2A8670" },
 } as const;
 export type AccentName = keyof typeof accents;
 

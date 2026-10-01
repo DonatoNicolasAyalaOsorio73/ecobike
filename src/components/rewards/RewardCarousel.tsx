@@ -18,10 +18,10 @@ import type { Reward } from "@/types/reward";
 // Art for rewards without a logo: each card gets its own gradient.
 const GRADIENTS: [string, string][] = [
   ["#ADF14B", "#3FB65E"],
-  ["#2BC0A6", "#0E7C86"],
-  ["#F6C453", "#E07B2E"],
-  ["#7FD8F6", "#3769D6"],
-  ["#C7A6F7", "#7A4FD6"],
+  ["#7FD9A8", "#1F7F56"],
+  ["#C8EE8A", "#56892C"],
+  ["#9EE6C9", "#2A8670"],
+  ["#B5E3A1", "#3D8A43"],
 ];
 
 const SPACING = 14;

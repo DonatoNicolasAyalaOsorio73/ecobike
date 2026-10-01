@@ -8,7 +8,7 @@ export default function DeltaBadge({ pct }: { pct: number | null | undefined }) 
   const { colors } = useTheme();
   if (pct === null || pct === undefined || !Number.isFinite(pct)) return null;
   const up = pct >= 0;
-  const color = up ? colors.success : colors.danger;
+  const color = up ? colors.success : colors.inkSoft;
   const value = Math.abs(Math.round(pct));
   return (
     <View style={[styles.pill, { borderColor: color }]} accessibilityLabel={`${up ? "Sube" : "Baja"} ${value} por ciento`}>

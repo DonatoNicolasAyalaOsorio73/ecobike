@@ -46,23 +46,6 @@ export default function WelcomeScreen() {
   return (
     <View style={styles.screen}>
       <BackgroundBlobs />
-      {/* Decorative floating icons */}
-      <Floating delay={0} style={[styles.deco, { top: "13%", left: "10%" }]}>
-        <View style={[styles.decoBubble, { backgroundColor: accents.gold.soft }]}>
-          <Ionicons name="star" size={18} color={accents.gold.base} />
-        </View>
-      </Floating>
-      <Floating delay={400} distance={10} style={[styles.deco, { top: "18%", right: "11%" }]}>
-        <View style={[styles.decoBubble, { backgroundColor: accents.blue.soft }]}>
-          <Ionicons name="leaf" size={18} color={accents.blue.base} />
-        </View>
-      </Floating>
-      <Floating delay={800} style={[styles.deco, { top: "36%", left: "6%" }]}>
-        <View style={[styles.decoBubble, { backgroundColor: accents.orange.soft }]}>
-          <Ionicons name="flame" size={16} color={accents.orange.base} />
-        </View>
-      </Floating>
-
       <SafeAreaView style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.safe} showsVerticalScrollIndicator={false} bounces={false}>
         <View style={styles.hero}>

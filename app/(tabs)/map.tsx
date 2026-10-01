@@ -18,6 +18,7 @@ import Flame from "@/components/ui/Flame";
 import DuoProgressBar from "@/components/ui/DuoProgressBar";
 import { useTheme } from "@/theme/useTheme";
 import { SPRING } from "@/theme/motion";
+import { accents } from "@/theme/colors";
 import { useRideStore } from "@/stores/rideStore";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useRiderStats } from "@/hooks/useRiderStats";
@@ -146,7 +147,7 @@ export default function MapScreen() {
               </View>
             </View>
             <View style={styles.dailyRow}>
-              <Ionicons name="ribbon" size={15} color="#E5B400" />
+              <Ionicons name="ribbon" size={15} color={accents.gold.lip} />
               <Text style={{ color: colors.inkSoft, fontSize: 12.5, fontWeight: "700", flex: 1 }}>
                 Hoy {Math.min(todayPts, dailyGoal)} / {dailyGoal} pts
               </Text>
@@ -254,7 +255,7 @@ export default function MapScreen() {
           <Animated.View entering={FadeIn.duration(400).delay(80)}>
             <GlassSurface radius={999} intensity={55} backgroundColor={colors.glassFillStrong} style={styles.pointsPill}>
               <Flame size={16} lit={streak > 0} />
-              <Text style={{ color: streak > 0 ? "#E08600" : colors.inkSoft, fontWeight: "900", fontSize: 13, marginLeft: 4 }}>{streak}</Text>
+              <Text style={{ color: streak > 0 ? accents.orange.lip : colors.inkSoft, fontWeight: "900", fontSize: 13, marginLeft: 4 }}>{streak}</Text>
             </GlassSurface>
           </Animated.View>
           {riding && (
