@@ -107,7 +107,7 @@ function RootLayout() {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bgTop }}>
         <BackgroundBlobs />
-        <Logo size="large" />
+        <Logo size="large" animateIn={false} />
         <ActivityIndicator color={colors.primary} size="large" style={{ marginTop: 28 }} />
       </View>
     );

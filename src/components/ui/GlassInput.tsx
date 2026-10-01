@@ -53,13 +53,16 @@ export default function GlassInput({
   }, [errorText, shake]);
   const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shake.value }] }));
 
-  const border = errorText ? colors.danger : focused ? colors.primaryDark : colors.glassBorderSoft;
+  // iOS-style filled field: tinted fill at rest, white + green ring on focus.
+  // Constant border width so focusing never shifts the text by a pixel.
+  const border = errorText ? colors.danger : focused ? colors.primaryDark : "transparent";
+  const fill = focused ? "#FFFFFF" : "rgba(40,110,55,0.07)";
 
   return (
     <View style={containerStyle}>
       {label ? <Text style={[styles.label, { color: colors.inkSoft }]}>{label}</Text> : null}
       <Animated.View style={shakeStyle}>
-        <GlassSurface radius={radii.pill} intensity={40} specular={false} borderColor={border} style={[styles.wrap, { borderWidth: focused || errorText ? 2 : 1 }]}>
+        <GlassSurface radius={radii.pill} intensity={40} specular={false} borderColor={border} backgroundColor={fill} style={[styles.wrap, { borderWidth: 1.5 }]}>
           <View style={styles.inner}>
             {icon ? <Ionicons name={icon} size={18} color={errorText ? colors.danger : colors.primaryDark} /> : null}
 

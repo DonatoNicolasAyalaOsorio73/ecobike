@@ -49,7 +49,7 @@ export default function BiometricLockScreen() {
         <BackgroundBlobs />
         <SafeAreaView style={styles.safe}>
           <View style={styles.center}>
-            <Logo size="small" />
+            <Logo size="small" animateIn={false} />
             <Ionicons name="lock-closed" size={40} color={colors.primaryDark} style={{ marginVertical: 20 }} />
             <Text style={[styles.title, { color: colors.ink }]}>EcoBike está bloqueado</Text>
             {failed && (
