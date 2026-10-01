@@ -21,7 +21,7 @@ const ICON_ACCENT: Partial<Record<string, AccentName>> = {
   "flash-outline": "gold",
   "trending-up-outline": "orange",
   "triangle-outline": "teal",
-  "flame-outline": "red",
+  "flame-outline": "orange",
   "calendar-outline": "blue",
   "bonfire-outline": "orange",
   "bicycle-outline": "green",

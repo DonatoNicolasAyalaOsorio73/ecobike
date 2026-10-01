@@ -16,7 +16,7 @@ import { useTheme } from "@/theme/useTheme";
 import { accents } from "@/theme/colors";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { getRide } from "@/services/db";
-import { formatDistance, formatDuration, formatSpeed } from "@/utils/format";
+import { formatDistance, formatDuration, formatSpeed, sentenceCase } from "@/utils/format";
 import { environmentalImpact } from "@/utils/rideStats";
 import { kmSplits, rideProfile } from "@/utils/rideAnalysis";
 import type { Ride } from "@/types/ride";
@@ -77,7 +77,7 @@ export default function RideDetailScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInDown.springify()} style={styles.headRow}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.date, { color: colors.ink }]}>{format(new Date(ride.startedAt), "EEEE d 'de' MMMM", { locale: es })}</Text>
+            <Text style={[styles.date, { color: colors.ink }]}>{sentenceCase(format(new Date(ride.startedAt), "EEEE d 'de' MMMM", { locale: es }))}</Text>
             <Text style={{ color: colors.inkSoft }}>
               {format(new Date(ride.startedAt), "HH:mm")}
               {ride.endedAt ? ` – ${format(new Date(ride.endedAt), "HH:mm")}` : ""}
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   floatingBack: { position: "absolute", left: 16, top: 0 },
   content: { padding: 20, paddingTop: 20 },
   headRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
-  date: { fontSize: 20, fontWeight: "700", textTransform: "capitalize" },
+  date: { fontSize: 20, fontWeight: "700", },
   ptsBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 2, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   noMap: { height: 220, alignItems: "center", justifyContent: "center", paddingTop: 40 },

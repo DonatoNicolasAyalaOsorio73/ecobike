@@ -20,3 +20,8 @@ export function formatSpeed(kmh: number, units: "metric" | "imperial"): string {
   }
   return `${kmh.toFixed(1)} km/h`;
 }
+
+/** "domingo 27 de septiembre" -> "Domingo 27 de septiembre" (Spanish sentence case, not Title Case). */
+export function sentenceCase(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}

@@ -147,20 +147,20 @@ export default function ChatScreen() {
               item.kind === "day" ? (
                 <Text style={[styles.day, { color: colors.inkFaint }]}>{item.label}</Text>
               ) : (
-                <Animated.View entering={FadeInUp.springify().damping(18)} style={[styles.bubbleRow, item.fromMe ? styles.right : styles.left]}>
+                <Animated.View entering={FadeInUp.duration(220)} style={[styles.bubbleRow, item.fromMe ? styles.right : styles.left]}>
                   <View
                     style={[
                       styles.bubble,
                       item.fromMe
-                        ? { backgroundColor: colors.primary, borderBottomRightRadius: 6 }
-                        : { backgroundColor: colors.glassFillStrong, borderColor: colors.glassBorder, borderWidth: 1, borderBottomLeftRadius: 6 },
+                        ? { backgroundColor: SENT, borderBottomRightRadius: 6 }
+                        : { backgroundColor: RECEIVED, borderBottomLeftRadius: 6 },
                       item.pending && { opacity: 0.6 },
                     ]}
                   >
-                    <Text selectable style={{ color: item.fromMe ? colors.onPrimary : colors.ink, fontSize: 15, lineHeight: 20 }}>
+                    <Text selectable style={{ color: item.fromMe ? "#FFFFFF" : colors.ink, fontSize: 16, lineHeight: 21, letterSpacing: -0.2 }}>
                       {item.text}
                     </Text>
-                    <Text style={[styles.time, { color: item.fromMe ? colors.onPrimary : colors.inkFaint }]}>
+                    <Text style={[styles.time, { color: item.fromMe ? "rgba(255,255,255,0.85)" : colors.inkFaint }]}>
                       {item.pending ? "Enviando…" : format(new Date(item.createdAt), "HH:mm")}
                     </Text>
                   </View>
@@ -193,9 +193,9 @@ export default function ChatScreen() {
               accessibilityLabel="Enviar"
               onPress={onSend}
               disabled={!text.trim()}
-              style={[styles.send, { backgroundColor: text.trim() ? colors.primary : colors.divider }]}
+              style={[styles.send, { backgroundColor: text.trim() ? SENT : colors.divider }]}
             >
-              <Ionicons name="arrow-up" size={20} color={colors.onPrimary} />
+              <Ionicons name="arrow-up" size={20} color="#FFFFFF" />
             </Pressable>
           </GlassSurface>
         </KeyboardAvoidingView>
@@ -203,6 +203,10 @@ export default function ChatScreen() {
     </View>
   );
 }
+
+// iMessage-style bubbles in the app green.
+const SENT = "#34C759";
+const RECEIVED = "#E9EFE8";
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },

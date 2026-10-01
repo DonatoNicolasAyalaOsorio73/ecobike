@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatDistance, formatDuration, formatSpeed } from "../format.ts";
+import { formatDistance, formatDuration, formatSpeed, sentenceCase } from "../format.ts";
 
 test("formatDuration: seconds, minutes, and hours buckets", () => {
   assert.equal(formatDuration(45), "45s");
@@ -16,4 +16,9 @@ test("formatDistance: metric vs imperial", () => {
 test("formatSpeed: metric vs imperial", () => {
   assert.equal(formatSpeed(20, "metric"), "20.0 km/h");
   assert.equal(formatSpeed(20, "imperial"), "12.4 mph");
+});
+
+test("sentenceCase: only the first letter is uppercased", () => {
+  assert.equal(sentenceCase("domingo 27 de septiembre"), "Domingo 27 de septiembre");
+  assert.equal(sentenceCase(""), "");
 });
