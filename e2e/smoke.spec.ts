@@ -62,7 +62,7 @@ test("guest tour: map, stats, rewards, friends, profile, settings", async ({ pag
   await page.getByRole("button", { name: /^Chat con Laura/ }).click();
   await page.getByLabel("Escribe un mensaje").fill("Prueba E2E");
   await page.getByRole("button", { name: "Enviar" }).click();
-  await expect(page.getByText("Prueba E2E")).toBeVisible();
+  await expect(page.getByText("Prueba E2E", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Volver" }).first().click();
   await expect(page.getByText("Mensajes", { exact: false }).first()).toBeVisible();
 
