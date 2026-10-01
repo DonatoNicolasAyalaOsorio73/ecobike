@@ -1,18 +1,35 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import Animated, { Easing, FadeInDown, FadeInUp, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming, ZoomIn } from "react-native-reanimated";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import GlassButton from "@/components/ui/GlassButton";
 import SocialRow from "@/components/ui/SocialRow";
 import Logo from "@/components/ui/Logo";
 import { useTheme } from "@/theme/useTheme";
+import { accents, type AccentName } from "@/theme/colors";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { signInWithApple, isAppleAuthAvailable } from "@/services/auth.service";
 import { isFirebaseConfigured } from "@/services/firebase";
 import { useAuthStore } from "@/stores/authStore";
-import { useState, useEffect } from "react";
+
+const FEATURES: { icon: keyof typeof Ionicons.glyphMap; accent: AccentName; title: string; text: string }[] = [
+  { icon: "ribbon", accent: "gold", title: "Gana puntos", text: "10 por km, canjeables en tiendas" },
+  { icon: "flame", accent: "orange", title: "Mantén tu racha", text: "Pedalea cada día y sube de nivel" },
+  { icon: "people", accent: "blue", title: "Reta a tus amigos", text: "Ranking, chat y logros" },
+];
+
+/** Gentle up-and-down float, staggered per element (decorative). */
+function Floating({ children, delay = 0, distance = 8, style }: { children: React.ReactNode; delay?: number; distance?: number; style?: any }) {
+  const t = useSharedValue(0);
+  useEffect(() => {
+    t.value = withRepeat(withSequence(withTiming(1, { duration: 1600 + delay, easing: Easing.inOut(Easing.sin) }), withTiming(0, { duration: 1600 + delay, easing: Easing.inOut(Easing.sin) })), -1);
+  }, [t, delay]);
+  const s = useAnimatedStyle(() => ({ transform: [{ translateY: -distance * t.value }] }));
+  return <Animated.View style={[style, s]}>{children}</Animated.View>;
+}
 
 export default function WelcomeScreen() {
   const { colors } = useTheme();
@@ -20,61 +37,80 @@ export default function WelcomeScreen() {
   const [appleAvailable, setAppleAvailable] = useState(false);
   const { available: googleAvailable, promptAsync } = useGoogleAuth(setError);
   const continueAsGuest = useAuthStore((s) => s.continueAsGuest);
+  const compact = useWindowDimensions().height < 740; // iPhone SE / small Androids
 
   useEffect(() => {
-    if (Platform.OS === "ios") {
-      isAppleAuthAvailable().then(setAppleAvailable);
-    }
+    if (Platform.OS === "ios") isAppleAuthAvailable().then(setAppleAvailable);
   }, []);
 
   return (
     <View style={styles.screen}>
       <BackgroundBlobs />
-      <SafeAreaView style={styles.safe}>
+      {/* Decorative floating icons */}
+      <Floating delay={0} style={[styles.deco, { top: "13%", left: "10%" }]}>
+        <View style={[styles.decoBubble, { backgroundColor: accents.gold.soft }]}>
+          <Ionicons name="star" size={18} color={accents.gold.base} />
+        </View>
+      </Floating>
+      <Floating delay={400} distance={10} style={[styles.deco, { top: "18%", right: "11%" }]}>
+        <View style={[styles.decoBubble, { backgroundColor: accents.blue.soft }]}>
+          <Ionicons name="leaf" size={18} color={accents.blue.base} />
+        </View>
+      </Floating>
+      <Floating delay={800} style={[styles.deco, { top: "36%", left: "6%" }]}>
+        <View style={[styles.decoBubble, { backgroundColor: accents.orange.soft }]}>
+          <Ionicons name="flame" size={16} color={accents.orange.base} />
+        </View>
+      </Floating>
+
+      <SafeAreaView style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={styles.safe} showsVerticalScrollIndicator={false} bounces={false}>
         <View style={styles.hero}>
-          <Logo size="large" />
+          <Animated.View entering={ZoomIn.springify().damping(9)}>
+            <Floating distance={6}>
+              <Logo size={compact ? "small" : "large"} />
+            </Floating>
+          </Animated.View>
 
-          <Text style={[styles.headline, { color: colors.ink }]}>
+          <Animated.Text entering={FadeInDown.delay(150).springify()} style={[styles.headline, { color: colors.ink }, compact && { fontSize: 26, lineHeight: 31, marginTop: 14 }]}>
             Muévete mejor.{"\n"}
-            Vive <Text style={{ color: colors.primaryDark }}>sostenible.</Text>
-          </Text>
+            Vive <Text style={{ color: accents.green.base }}>sostenible.</Text>
+          </Animated.Text>
 
-          <Text style={[styles.subtitle, { color: colors.inkSoft }]}>
-            Pedalea, registra tus recorridos y desbloquea logros mientras cuidas el planeta.
-          </Text>
+          <View style={[styles.features, compact && { marginTop: 16, gap: 8 }]}>
+            {FEATURES.map((f, i) => (
+              <Animated.View key={f.title} entering={FadeInUp.delay(300 + i * 110).springify().damping(13)} style={styles.feature}>
+                <View style={[styles.featureIcon, { backgroundColor: accents[f.accent].soft, borderColor: accents[f.accent].base }]}>
+                  <Ionicons name={f.icon} size={20} color={accents[f.accent].lip} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 15 }}>{f.title}</Text>
+                  <Text style={{ color: colors.inkSoft, fontSize: 13 }}>{f.text}</Text>
+                </View>
+              </Animated.View>
+            ))}
+          </View>
 
           {!isFirebaseConfigured && (
-            <Text style={[styles.demoNotice, { color: colors.warning }]}>
-              Modo demo local: configura Firebase para crear cuenta e iniciar sesión.
-            </Text>
+            <Text style={[styles.notice, { color: colors.warning }]}>Sin conexión con el servidor: puedes explorar sin cuenta.</Text>
           )}
-          {error && <Text style={[styles.demoNotice, { color: colors.danger }]}>{error}</Text>}
+          {error && <Text style={[styles.notice, { color: colors.danger }]}>{error}</Text>}
         </View>
 
-        <View style={styles.actions}>
-          <GlassButton
-            label="Ya tengo cuenta"
-            icon="log-in-outline"
-            variant="primary"
-            onPress={() => router.push("/(auth)/login")}
-            style={{ marginBottom: 12 }}
-          />
-          <GlassButton
-            label="Registrarme"
-            icon="person-add-outline"
-            variant="secondary"
-            onPress={() => router.push("/(auth)/register")}
-          />
+        <Animated.View entering={FadeInUp.delay(650).springify()} style={styles.actions}>
+          <GlassButton label="Empezar gratis" icon="rocket-outline" onPress={() => router.push("/(auth)/register")} style={{ marginBottom: 12 }} />
+          <GlassButton label="Ya tengo cuenta" variant="secondary" onPress={() => router.push("/(auth)/login")} />
 
           <SocialRow
             onGoogle={googleAvailable ? () => promptAsync() : undefined}
             onApple={appleAvailable ? () => signInWithApple().catch((e) => setError(e.message)) : undefined}
           />
 
-          <Text style={[styles.guestLink, { color: colors.inkSoft }]} onPress={continueAsGuest}>
+          <Text style={[styles.guestLink, { color: colors.inkSoft }]} onPress={continueAsGuest} accessibilityRole="button">
             Explorar sin cuenta
           </Text>
-        </View>
+        </Animated.View>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
@@ -82,11 +118,15 @@ export default function WelcomeScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  safe: { flex: 1, justifyContent: "space-between", paddingHorizontal: 26 },
-  hero: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 8 },
-  headline: { marginTop: 28, fontSize: 30, fontWeight: "800", textAlign: "center", lineHeight: 36 },
-  subtitle: { marginTop: 14, fontSize: 15, textAlign: "center", lineHeight: 21, paddingHorizontal: 10 },
-  demoNotice: { marginTop: 14, fontSize: 12.5, textAlign: "center", fontWeight: "600", paddingHorizontal: 12 },
-  guestLink: { marginTop: 18, fontSize: 13, textAlign: "center", fontWeight: "700", textDecorationLine: "underline" },
+  safe: { flexGrow: 1, justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 12 },
+  hero: { flexGrow: 1, alignItems: "center", justifyContent: "center", paddingVertical: 12 },
+  headline: { marginTop: 22, fontSize: 30, fontWeight: "900", textAlign: "center", lineHeight: 36, letterSpacing: -0.5 },
+  features: { alignSelf: "stretch", gap: 12, marginTop: 26 },
+  feature: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "rgba(255,255,255,0.75)", borderRadius: 18, borderWidth: 2, borderColor: "#EDF1EA", padding: 12 },
+  featureIcon: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", borderWidth: 2 },
+  notice: { marginTop: 14, fontSize: 12.5, textAlign: "center", fontWeight: "600" },
+  guestLink: { marginTop: 16, fontSize: 14, textAlign: "center", fontWeight: "800" },
   actions: { paddingBottom: 18 },
+  deco: { position: "absolute" },
+  decoBubble: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
 });

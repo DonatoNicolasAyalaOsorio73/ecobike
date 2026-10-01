@@ -46,3 +46,21 @@ test("profileCompletion counts filled fields and suggests the next one", () => {
   assert.equal(profileCompletion(full).ratio, 1);
   assert.equal(profileCompletion(full).nextHint, null);
 });
+
+import { passwordStrength, validateEmail } from "../profileForm.ts";
+
+test("validateEmail", () => {
+  assert.equal(validateEmail("ana@correo.co"), null);
+  assert.ok(validateEmail(""));
+  assert.ok(validateEmail("ana@correo"));
+  assert.ok(validateEmail("ana correo.com"));
+});
+
+test("passwordStrength grows with length and variety; weak patterns capped", () => {
+  assert.ok(passwordStrength("abc").error);
+  assert.equal(passwordStrength("abcdefgh").error, null);
+  assert.ok(passwordStrength("Bici-2026-Verde!").score >= 3);
+  assert.ok(passwordStrength("aaaaaaaaaaaaaa").score <= 1);
+  assert.ok(passwordStrength("password12345").score <= 1);
+  assert.ok(passwordStrength("abcdefgh").score < passwordStrength("Rueda-Verde12").score);
+});

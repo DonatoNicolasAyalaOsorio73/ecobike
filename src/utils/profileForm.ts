@@ -81,3 +81,30 @@ export function profileCompletion(v: ProfileFormValues): { ratio: number; nextHi
   const next = COMPLETION_FIELDS.find((f) => !(typeof v[f.key] === "boolean" ? v[f.key] : String(v[f.key]).trim().length > 0));
   return { ratio: filled.length / COMPLETION_FIELDS.length, nextHint: next?.hint ?? null };
 }
+
+/** Pragmatic email check (the real verification is the confirmation email). */
+export function validateEmail(v: string): string | null {
+  const t = v.trim();
+  if (!t) return "Escribe tu correo.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(t)) return "Ese correo no parece válido.";
+  return null;
+}
+
+export interface PasswordStrength {
+  score: 0 | 1 | 2 | 3 | 4;
+  label: "Muy débil" | "Débil" | "Aceptable" | "Fuerte" | "Muy fuerte";
+  error: string | null;
+}
+
+/** Length + character variety; minimum 8 characters to be accepted. */
+export function passwordStrength(pw: string): PasswordStrength {
+  const variety = [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].filter((r) => r.test(pw)).length;
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (variety >= 2) score++;
+  if (variety >= 3 && pw.length >= 10) score++;
+  if (/^(.)\1+$/.test(pw) || /^(1234|abcd|password|contraseña|qwerty)/i.test(pw)) score = Math.min(score, 1);
+  const labels = ["Muy débil", "Débil", "Aceptable", "Fuerte", "Muy fuerte"] as const;
+  return { score: score as PasswordStrength["score"], label: labels[score], error: pw.length < 8 ? "Mínimo 8 caracteres." : null };
+}

@@ -11,6 +11,9 @@ import { useTheme } from "@/theme/useTheme";
 import { signUpWithEmail } from "@/services/auth.service";
 import { isFirebaseConfigured } from "@/services/firebase";
 import { useAuthStore } from "@/stores/authStore";
+import { passwordStrength, validateEmail, validateName } from "@/utils/profileForm";
+
+const STRENGTH_COLORS = ["#FF4B4B", "#FF9600", "#FFC800", "#58CC02", "#46A302"];
 
 export default function RegisterScreen() {
   const { colors } = useTheme();
@@ -21,25 +24,25 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   const continueAsGuest = useAuthStore((s) => s.continueAsGuest);
+
+  const strength = passwordStrength(password);
+  const fieldErrors = {
+    firstName: validateName(firstName, "nombre"),
+    email: validateEmail(email),
+    password: strength.error,
+    confirm: confirmPassword !== password ? "Las contraseñas no coinciden." : null,
+  };
+  const show = (e: string | null) => (submitted ? e : null);
 
   const onSubmit = async () => {
     if (!isFirebaseConfigured) {
       setError("Esta app no tiene un proyecto de Firebase configurado todavía — usa \"Explorar sin cuenta\" para probarla ahora.");
       return;
     }
-    if (!firstName.trim() || !email.trim() || !password) {
-      setError("Completa nombre, correo y contraseña.");
-      return;
-    }
-    if (password.length < 8) {
-      setError("La contraseña debe tener al menos 8 caracteres.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Las contraseñas no coinciden.");
-      return;
-    }
+    setSubmitted(true);
+    if (Object.values(fieldErrors).some(Boolean)) return;
     setLoading(true);
     setError(null);
     try {
@@ -65,7 +68,7 @@ export default function RegisterScreen() {
             </Text>
 
             <GlassCard>
-              <GlassInput icon="person-outline" placeholder="Nombres" value={firstName} onChangeText={setFirstName} autoCapitalize="words" />
+              <GlassInput icon="person-outline" placeholder="Nombres" value={firstName} onChangeText={setFirstName} autoCapitalize="words" errorText={show(fieldErrors.firstName)} />
               <GlassInput icon="person-outline" placeholder="Apellidos" value={lastName} onChangeText={setLastName} autoCapitalize="words" />
               <GlassInput
                 icon="mail-outline"
@@ -74,15 +77,28 @@ export default function RegisterScreen() {
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoComplete="email"
+                errorText={show(fieldErrors.email)}
               />
-              <GlassInput icon="lock-closed-outline" placeholder="Contraseña" value={password} onChangeText={setPassword} secure />
+              <GlassInput icon="lock-closed-outline" placeholder="Contraseña" value={password} onChangeText={setPassword} secure autoComplete="new-password" errorText={show(fieldErrors.password)} />
+              {password.length > 0 && (
+                <View style={styles.strength} accessibilityLabel={`Seguridad de la contraseña: ${strength.label}`}>
+                  <View style={styles.strengthBars}>
+                    {[0, 1, 2, 3].map((i) => (
+                      <View key={i} style={[styles.strengthBar, { backgroundColor: i < Math.max(1, strength.score) ? STRENGTH_COLORS[strength.score] : "#E6EAE3" }]} />
+                    ))}
+                  </View>
+                  <Text style={{ color: STRENGTH_COLORS[strength.score], fontWeight: "800", fontSize: 12 }}>{strength.label}</Text>
+                </View>
+              )}
               <GlassInput
                 icon="lock-closed-outline"
                 placeholder="Confirmar contraseña"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secure
-                errorText={error}
+                autoComplete="new-password"
+                errorText={show(fieldErrors.confirm) ?? error}
               />
 
               <GlassButton
@@ -142,6 +158,9 @@ function mapAuthError(code?: string): string {
 }
 
 const styles = StyleSheet.create({
+  strength: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: -4, marginBottom: 12, marginHorizontal: 8 },
+  strengthBars: { flex: 1, flexDirection: "row", gap: 5 },
+  strengthBar: { flex: 1, height: 6, borderRadius: 3 },
   screen: { flex: 1 },
   safe: { flex: 1, paddingHorizontal: 24 },
   scroll: { paddingBottom: 32, paddingTop: 8 },
