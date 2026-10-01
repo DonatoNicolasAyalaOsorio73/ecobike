@@ -17,7 +17,7 @@ function Bar({ ratio, index, highlight, height }: { ratio: number; index: number
   const { colors } = useTheme();
   const h = useSharedValue(0);
   useEffect(() => {
-    h.value = withDelay(index * 35, withSpring(ratio, SPRING.momentum));
+    h.value = withDelay(index * 35, withSpring(ratio, SPRING.default));
   }, [ratio, index, h]);
   const style = useAnimatedStyle(() => ({ height: Math.max(3, h.value * height) }));
   return (
@@ -59,8 +59,9 @@ export default function BarChart({ values, labels, height = 120, formatMax, acce
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "flex-end", gap: 4 },
-  slot: { flex: 1, justifyContent: "flex-end" },
-  bar: { width: "100%", borderRadius: 6 },
+  slot: { flex: 1, justifyContent: "flex-end", alignItems: "center" },
+  // Slim capsule bars (Apple Fitness/Health) rather than full-width blocks.
+  bar: { width: "58%", maxWidth: 22, borderRadius: 999 },
   label: { flex: 1, fontSize: 10.5, textAlign: "center", marginTop: 6 },
   maxLabel: { fontSize: 11, fontWeight: "700", textAlign: "right", marginBottom: 6 },
 });
