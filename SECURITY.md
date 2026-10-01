@@ -40,8 +40,8 @@ serverless functions in [`api/`](api) with the Firebase Admin SDK:
 | Endpoint | What it does |
 |---|---|
 | `POST /api/rides` | Validates a ride summary (speed <= 45 km/h, <= 200 km, <= 30 days old, max 20 rewarded rides/24h), computes points server-side, writes `usuarios/{uid}/rides/{id}` and `puntosAcumulados` in one transaction. Idempotent by ride id. |
-| `POST /api/redeem` | Reads the price from `tiendas/{id}`, checks and deducts the balance, writes `codigos_canjeados`. |
-| `POST /api/friends` | request / accept / reject / remove, writing both users atomically. |
+| `POST /api/redeem` | Requires a verified email for password accounts (anti-farming). Reads the price from `tiendas/{id}`, checks and deducts the balance, writes `codigos_canjeados`. |
+| `POST /api/friends` | request / accept / reject / remove, writing both users atomically. Max 100 pending requests per user. |
 | `GET/POST/PUT /api/stores` | Rewards catalog admin. Requires `role == "admin"` or legacy `isAdmin == true` on `usuarios/{uid}`, or an `admin` custom claim. |
 | `POST /api/validate` | Store staff (role `partner`) or admin looks up a redemption code and marks it used, once. |
 | `POST /api/roles` | Admin assigns `partner` / `user` / `admin` by username. |

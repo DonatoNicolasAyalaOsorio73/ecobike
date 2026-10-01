@@ -249,3 +249,20 @@ export async function fetchUserProfile(uid: string): Promise<UserProfile | null>
     emailVerified: data.emailVerified ?? false,
   };
 }
+
+export async function resendVerificationEmail() {
+  requireFirebase();
+  const user = getFirebaseAuth().currentUser;
+  if (user) await sendEmailVerification(user);
+}
+
+/** Re-reads the Auth user after they clicked the email link; also refreshes
+ * the ID token so the server sees email_verified = true. */
+export async function reloadEmailVerification(): Promise<boolean> {
+  requireFirebase();
+  const user = getFirebaseAuth().currentUser;
+  if (!user) return false;
+  await user.reload();
+  await user.getIdToken(true);
+  return user.emailVerified;
+}

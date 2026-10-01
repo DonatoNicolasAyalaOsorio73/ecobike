@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import Constants from "expo-constants";
+import * as Application from "expo-application";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import GlassCard from "@/components/ui/GlassCard";
 import BackButton from "@/components/ui/BackButton";
@@ -156,6 +158,10 @@ export default function SettingsScreen() {
             )}
           </GlassCard>
 
+          <Text style={[styles.demoNotice, { color: colors.inkFaint }]}>
+            EcoBike {Constants.expoConfig?.version ?? ""}
+            {Application.nativeBuildVersion ? ` (${Application.nativeBuildVersion})` : ""}
+          </Text>
           {!isFirebaseConfigured && (
             <Text style={[styles.demoNotice, { color: colors.inkFaint }]}>
               Modo demo local — configura Firebase (ver ENVIRONMENT.md) para cuentas reales, sincronización y funciones sociales.

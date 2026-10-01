@@ -13,23 +13,23 @@ const USERS_COLLECTION = "usuarios";
 const REDEMPTIONS_SUBCOLLECTION = "codigos_canjeados";
 
 /**
- * Reads the real `tiendas` catalog. NOTE: the live project's Firestore
- * rules require `isActive == true` (or admin) to read a `tiendas` document,
- * but the real, existing documents predate that field and don't have it —
- * so this read can come back permission-denied for a normal signed-in user
- * until that's fixed project-side. Falling back to a local list keeps the
- * *redemption flow itself* (the actual feature) usable either way, exactly
- * like ride tracking staying usable offline.
+ * Real accounts get the live `tiendas` catalog (or an error, never fake
+ * rewards they couldn't actually redeem). Guests get the local demo list.
  */
-export async function fetchRewardsCatalog(): Promise<{ rewards: Reward[]; usingRealCatalog: boolean }> {
-  if (!isFirebaseConfigured) return { rewards: DEFAULT_REWARDS, usingRealCatalog: false };
+export async function fetchRewardsCatalog(
+  realAccount = false
+): Promise<{ rewards: Reward[]; usingRealCatalog: boolean; error: boolean }> {
+  if (!isFirebaseConfigured || !realAccount) return { rewards: DEFAULT_REWARDS, usingRealCatalog: false, error: false };
   try {
     const snap = await getDocs(collection(getDb(), STORES_COLLECTION));
-    const active = snap.docs.filter((d) => d.data().isActive !== false);
-    if (active.length === 0) return { rewards: DEFAULT_REWARDS, usingRealCatalog: false };
-    return { rewards: active.map((d) => mapStoreDoc(d.id, d.data())), usingRealCatalog: true };
+    const rewards = snap.docs
+      .filter((d) => d.data().isActive !== false)
+      .map((d) => mapStoreDoc(d.id, d.data()))
+      .filter((rw) => rw.pointsCost > 0)
+      .sort((x, y) => x.pointsCost - y.pointsCost);
+    return { rewards, usingRealCatalog: true, error: false };
   } catch {
-    return { rewards: DEFAULT_REWARDS, usingRealCatalog: false };
+    return { rewards: [], usingRealCatalog: false, error: true };
   }
 }
 

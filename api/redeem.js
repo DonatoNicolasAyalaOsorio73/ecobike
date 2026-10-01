@@ -4,6 +4,11 @@ const { admin, httpError, requireUser, body, handler, redemptionCode } = require
 
 module.exports = handler(["POST"], async (req) => {
   const user = await requireUser(req);
+  // Anti-farming: password accounts must verify their email before spending
+  // points (Google/Apple sign-ins are already verified).
+  if (user.firebase?.sign_in_provider === "password" && user.email_verified !== true) {
+    throw httpError(403, "Verifica tu correo para canjear recompensas.");
+  }
   const { rewardId } = body(req);
   if (typeof rewardId !== "string" || !rewardId) throw httpError(400, "Falta rewardId.");
 

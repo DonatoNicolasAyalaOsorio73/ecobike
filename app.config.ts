@@ -63,6 +63,12 @@ const config: ExpoConfig = {
       : {}),
   },
   web: {
+    name: "EcoBike",
+    shortName: "EcoBike",
+    description: "Pedalea, registra tus recorridos y gana puntos para canjear en tiendas aliadas.",
+    themeColor: "#ADF14B",
+    backgroundColor: "#F6FBF3",
+    lang: "es",
     bundler: "metro",
     output: "single",
     favicon: "./assets/favicon.png",

@@ -5,6 +5,7 @@ export interface Reward {
   details: string;
   pointsCost: number;
   icon: string; // Ionicons name
+  imageUrl?: string; // store logo (tiendas.logo), shown instead of the icon
 }
 
 export interface Redemption {

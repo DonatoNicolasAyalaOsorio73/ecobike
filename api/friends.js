@@ -27,6 +27,10 @@ module.exports = handler(["POST"], async (req) => {
       if (myFriends.includes(other)) throw httpError(409, "Ya son amigos.");
       // If they already asked me, a request from me just means "accept".
       if (!myPending.includes(other)) {
+        // ponytail: simple anti-spam cap; per-sender rate limits if abuse appears.
+        if ((otherSnap.data().solicitudesPendientes ?? []).length >= 100) {
+          throw httpError(429, "Ese usuario tiene demasiadas solicitudes pendientes.");
+        }
         tx.update(otherRef, { solicitudesPendientes: FieldValue.arrayUnion(me) });
         return { status: "requested" };
       }

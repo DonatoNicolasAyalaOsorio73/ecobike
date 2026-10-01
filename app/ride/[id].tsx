@@ -41,7 +41,18 @@ export default function RideDetailScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bgTop }}>
       <Stack.Screen options={{ headerShown: false }} />
-      <RideMap route={route} center={route[route.length - 1] ?? null} height={280} />
+      {route.length > 1 ? (
+        <RideMap route={route} center={route[route.length - 1] ?? null} height={280} />
+      ) : (
+        // Rides synced from another device carry only the summary (the GPS
+        // trace never leaves the phone that recorded it).
+        <View style={[styles.noMap, { backgroundColor: colors.glassFillStrong }]}>
+          <Ionicons name="map-outline" size={30} color={colors.inkFaint} />
+          <Text style={{ color: colors.inkSoft, textAlign: "center", marginTop: 8, paddingHorizontal: 32 }}>
+            El trazado del mapa solo está en el dispositivo donde grabaste este recorrido.
+          </Text>
+        </View>
+      )}
 
       <SafeAreaView style={styles.floatingBack} edges={["top"]}>
         <BackButton />
@@ -78,6 +89,7 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingTop: 24 },
   date: { fontSize: 15, fontWeight: "700", marginBottom: 16, textTransform: "capitalize" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  noMap: { height: 220, alignItems: "center", justifyContent: "center", paddingTop: 40 },
   pointsRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   pointsText: { fontSize: 14.5, fontWeight: "700" },
 });

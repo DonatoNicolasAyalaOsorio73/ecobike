@@ -6,14 +6,16 @@ import type { Redemption, Reward } from "@/types/reward";
 export function useRewards(userId: string | null, isRealAccount: boolean) {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [usingRealCatalog, setUsingRealCatalog] = useState(false);
+  const [catalogError, setCatalogError] = useState(false);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const { rewards: catalog, usingRealCatalog: real } = await fetchRewardsCatalog();
+    const { rewards: catalog, usingRealCatalog: real, error } = await fetchRewardsCatalog(isRealAccount);
     setRewards(catalog);
     setUsingRealCatalog(real);
+    setCatalogError(error);
     if (userId) {
       // Real accounts: codes live in Firestore, so they show on every device.
       setRedemptions(
@@ -40,5 +42,5 @@ export function useRewards(userId: string | null, isRealAccount: boolean) {
     [userId, isRealAccount]
   );
 
-  return { rewards, usingRealCatalog, redemptions, loading, redeem, refresh };
+  return { rewards, usingRealCatalog, catalogError, redemptions, loading, redeem, refresh };
 }

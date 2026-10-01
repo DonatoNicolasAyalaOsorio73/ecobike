@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { ScrollView, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,6 +12,7 @@ import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useAvailablePoints } from "@/hooks/useAvailablePoints";
 import { useRewards } from "@/hooks/useRewards";
 import { useAuthStore } from "@/stores/authStore";
+import EmailVerifyBanner from "@/components/EmailVerifyBanner";
 import type { Reward } from "@/types/reward";
 
 const CARD_SPACING = 16;
@@ -21,7 +22,7 @@ export default function PointsScreen() {
   const userId = useCurrentUserId();
   const { points: availablePoints, isRealAccount } = useAvailablePoints(userId);
   const refreshProfile = useAuthStore((s) => s.refreshProfile);
-  const { rewards, usingRealCatalog, redeem, refresh: refreshRewards } = useRewards(userId, isRealAccount);
+  const { rewards, usingRealCatalog, catalogError, loading, redeem, refresh: refreshRewards } = useRewards(userId, isRealAccount);
   const [activeIndex, setActiveIndex] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ text: string; isError: boolean } | null>(null);
@@ -72,10 +73,24 @@ export default function PointsScreen() {
           </Text>
         </View>
 
-        {!usingRealCatalog && (
+        <EmailVerifyBanner />
+        {!isRealAccount && (
           <Text style={[styles.demoNotice, { color: colors.warning }]}>
-            Mostrando catálogo de ejemplo — no se pudo leer el catálogo real (ver SECURITY.md).
+            Catálogo de ejemplo. Inicia sesión para canjear en tiendas aliadas reales.
           </Text>
+        )}
+        {catalogError && (
+          <GlassCard style={styles.feedbackCard}>
+            <Text style={{ color: colors.inkSoft, textAlign: "center", marginBottom: 10 }}>
+              No se pudo cargar el catálogo. Revisa tu conexión.
+            </Text>
+            <GlassButton label="Reintentar" icon="refresh" variant="secondary" onPress={refreshRewards} />
+          </GlassCard>
+        )}
+        {usingRealCatalog && !loading && rewards.length === 0 && (
+          <GlassCard style={styles.feedbackCard}>
+            <Text style={{ color: colors.inkSoft, textAlign: "center" }}>Pronto habrá recompensas de tiendas aliadas.</Text>
+          </GlassCard>
         )}
 
         {feedback && (
@@ -100,7 +115,11 @@ export default function PointsScreen() {
             return (
               <GlassCard key={reward.id} style={{ width: cardWidth, marginRight: CARD_SPACING }} intensity={45} entranceDelay={i * 70}>
                 <View style={[styles.rewardIcon, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
-                  <Ionicons name={reward.icon as any} size={30} color={colors.primaryDark} />
+                  {reward.imageUrl ? (
+                    <Image source={{ uri: reward.imageUrl }} style={styles.rewardLogo} accessibilityLabel={`Logo de ${reward.title}`} />
+                  ) : (
+                    <Ionicons name={reward.icon as any} size={30} color={colors.primaryDark} />
+                  )}
                 </View>
                 <Text style={[styles.rewardTitle, { color: colors.ink }]}>{reward.title}</Text>
                 <Text style={[styles.rewardSubtitle, { color: colors.inkSoft }]}>{reward.subtitle}</Text>
@@ -162,6 +181,7 @@ const styles = StyleSheet.create({
   feedbackCard: { marginHorizontal: 20, marginBottom: 12, paddingVertical: 10 },
   demoNotice: { fontSize: 11.5, textAlign: "center", fontWeight: "600", marginBottom: 10, paddingHorizontal: 20 },
   carousel: { alignItems: "center" },
+  rewardLogo: { width: 58, height: 58, borderRadius: 29 },
   rewardIcon: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center", borderWidth: 1, alignSelf: "center", marginBottom: 12 },
   rewardTitle: { fontSize: 20, fontWeight: "800", textAlign: "center" },
   rewardSubtitle: { fontSize: 13, textAlign: "center", marginTop: 4 },

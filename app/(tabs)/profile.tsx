@@ -10,6 +10,7 @@ import GlassButton from "@/components/ui/GlassButton";
 import { SettingsNavRow, SettingsSwitchRow } from "@/components/ui/SettingsRow";
 import { useTheme } from "@/theme/useTheme";
 import { useAuthStore } from "@/stores/authStore";
+import EmailVerifyBanner from "@/components/EmailVerifyBanner";
 import { useLocalProfileStore } from "@/stores/localProfileStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
@@ -94,6 +95,9 @@ export default function ProfileScreen() {
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <Text style={[styles.header, { color: colors.ink }]}>Perfil</Text>
+          <View style={{ marginHorizontal: -20 }}>
+            <EmailVerifyBanner />
+          </View>
 
           <GlassCard style={styles.profileCard}>
             <View style={styles.pointsPillWrap}>

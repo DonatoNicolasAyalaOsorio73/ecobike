@@ -10,5 +10,6 @@ export function mapStoreDoc(id: string, data: Record<string, any>): Reward {
     // Legacy documents store this as a string (e.g. "80"), not a number.
     pointsCost: Number(data.pointsRequired ?? 0) || 0,
     icon: "gift-outline",
+    imageUrl: typeof data.logo === "string" && data.logo.startsWith("https://") ? data.logo : undefined,
   };
 }

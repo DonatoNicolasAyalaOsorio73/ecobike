@@ -75,5 +75,8 @@ npm run web          # expo start --web
 npm run typecheck    # tsc --noEmit
 npm test             # utils + api/_lib.js ride validation (node:test)
 npm run build:web    # expo export --platform web -> dist/
-npm run deploy:rules # firestore + storage rules to ecobike-9dedd
+npm run deploy:rules # firestore rules + indexes + storage rules to ecobike-9dedd
 ```
+
+CI (`.github/workflows/ci.yml`) runs typecheck, tests and the web build on
+every push to `main` and every pull request.
