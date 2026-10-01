@@ -209,9 +209,9 @@ export default function StatsScreen() {
               thickness={16}
               centerLabel="recorridos"
               slices={[
-                { label: "Cortos · < 5 km", value: buckets.short, color: colors.primaryLight },
-                { label: "Medios · 5–15", value: buckets.medium, color: colors.primary },
-                { label: "Largos · > 15 km", value: buckets.long, color: colors.primaryDark },
+                { label: "Cortos · < 5 km", value: buckets.short, color: "#E4FBC0" },
+                { label: "Medios · 5–15", value: buckets.medium, color: "#C3F57A" },
+                { label: "Largos · > 15 km", value: buckets.long, color: "#9EE23C" },
               ]}
             />
           </GlassCard>
@@ -250,7 +250,7 @@ export default function StatsScreen() {
                 <GlassCard key={a.code} containerStyle={[styles.achievementCard, !unlocked && { opacity: 0.7 }]} entranceDelay={Math.min(i, 8) * 30}>
                   <View style={styles.achievementHead}>
                     <Ionicons name={a.icon as any} size={22} color={unlocked ? colors.primaryDark : colors.inkFaint} />
-                    {unlocked && <Ionicons name="checkmark-circle" size={16} color={colors.success} />}
+                    {unlocked && <Ionicons name="checkmark-circle" size={16} color={colors.primaryDark} />}
                   </View>
                   <Text style={[styles.achievementTitle, { color: colors.ink }]}>{a.title}</Text>
                   <Text style={[styles.achievementDesc, { color: colors.inkSoft }]} numberOfLines={2}>

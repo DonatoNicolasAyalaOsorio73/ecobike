@@ -151,7 +151,7 @@ export default function MapScreen() {
               <Text style={{ color: colors.inkSoft, fontSize: 12.5, fontWeight: "700", flex: 1 }}>
                 Hoy {Math.min(todayPts, dailyGoal)} / {dailyGoal} pts
               </Text>
-              {todayPts >= dailyGoal && <Text style={{ color: "#46A302", fontSize: 12, fontWeight: "700" }}>¡Meta del día!</Text>}
+              {todayPts >= dailyGoal && <Text style={{ color: colors.ink, fontSize: 12, fontWeight: "700" }}>¡Meta del día!</Text>}
             </View>
             <DuoProgressBar value={todayPts / dailyGoal} accent="gold" />
             <View style={styles.controlsRow}>

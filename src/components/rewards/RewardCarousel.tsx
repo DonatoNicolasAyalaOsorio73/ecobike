@@ -18,11 +18,11 @@ import type { Reward } from "@/types/reward";
 
 // Art for rewards without a logo: each card gets its own gradient.
 const GRADIENTS: [string, string][] = [
-  ["#ADF14B", "#3FB65E"],
-  ["#7FD9A8", "#1F7F56"],
-  ["#C8EE8A", "#56892C"],
-  ["#9EE6C9", "#2A8670"],
-  ["#B5E3A1", "#3D8A43"],
+  ["#E4FBC0", "#ADF14B"],
+  ["#F1FBE2", "#C3F57A"],
+  ["#EAFBD0", "#B9F45F"],
+  ["#F4FCE6", "#CDF78C"],
+  ["#EEFADA", "#A6EC45"],
 ];
 
 const SPACING = 14;
@@ -93,11 +93,11 @@ function Card({ reward, index, cardWidth, scrollX, affordable, missing, onPress 
               <Image source={{ uri: reward.imageUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
             ) : (
               <LinearGradient colors={[from, to]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[StyleSheet.absoluteFill, styles.art]}>
-                <Ionicons name={reward.icon as any} size={110} color="rgba(255,255,255,0.9)" />
+                <Ionicons name={reward.icon as any} size={110} color="rgba(28,36,16,0.18)" />
               </LinearGradient>
             )}
           </Animated.View>
-          <LinearGradient colors={["rgba(0,0,0,0)", "rgba(10,40,20,0.7)"]} style={styles.scrim} />
+          <LinearGradient colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.88)"]} style={styles.scrim} />
           <LinearGradient pointerEvents="none" colors={["rgba(255,255,255,0.35)", "rgba(255,255,255,0)"]} style={styles.sheen} />
           <View style={styles.heroText}>
             <Text style={styles.heroTitle} numberOfLines={1}>
@@ -207,8 +207,8 @@ const styles = StyleSheet.create({
   art: { alignItems: "center", justifyContent: "center" },
   scrim: { position: "absolute", left: 0, right: 0, bottom: 0, height: "60%" },
   heroText: { padding: 18 },
-  heroTitle: { color: "#fff", fontSize: 26, fontWeight: "700", letterSpacing: -0.5 },
-  heroSubtitle: { color: "rgba(255,255,255,0.9)", fontSize: 14, marginTop: 4 },
+  heroTitle: { color: "#1C2410", fontSize: 26, fontWeight: "700", letterSpacing: -0.5 },
+  heroSubtitle: { color: "#3E4A3A", fontSize: 14, marginTop: 4 },
   costPill: { position: "absolute", top: 14, right: 14, flexDirection: "row", alignItems: "center", paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.82)", borderWidth: 1, borderColor: "rgba(255,255,255,0.95)" },
   footer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingVertical: 14 },
   controls: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12, marginTop: 16 },

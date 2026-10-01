@@ -64,7 +64,7 @@ export default function RedeemSheet({ reward, availablePoints, onClose, redeem }
           <ScrollView contentContainerStyle={{ paddingBottom: 8 }}>
             {phase === "done" && result ? (
               <Animated.View entering={ZoomIn.springify()} style={{ alignItems: "center" }}>
-                <Ionicons name="checkmark-circle" size={44} color={colors.success} />
+                <Ionicons name="checkmark-circle" size={44} color={colors.primaryDark} />
                 <Text style={[styles.title, { color: colors.ink, textAlign: "center" }]}>¡Canje listo!</Text>
                 <Text style={{ color: colors.inkSoft, textAlign: "center", marginTop: 4 }}>
                   Muestra este código en {result.rewardTitle}. Solo se puede usar una vez.

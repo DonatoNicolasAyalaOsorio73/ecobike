@@ -226,7 +226,7 @@ export default function EditProfileScreen() {
     usernameState === "checking" ? (
       <ActivityIndicator size="small" color={colors.inkSoft} />
     ) : usernameState === "ok" ? (
-      <Ionicons name="checkmark-circle" size={20} color={accents.green.base} />
+      <Ionicons name="checkmark-circle" size={20} color={accents.green.lip} />
     ) : usernameState === "taken" ? (
       <Ionicons name="close-circle" size={20} color={colors.danger} />
     ) : null;
@@ -251,7 +251,7 @@ export default function EditProfileScreen() {
                 <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 16 }}>Perfil {Math.round(ratio * 100)}% completo</Text>
                 {ratio === 1 && (
                   <Animated.View entering={ZoomIn.springify().damping(16)}>
-                    <Ionicons name="ribbon" size={22} color={accents.gold.base} />
+                    <Ionicons name="ribbon" size={22} color={accents.gold.lip} />
                   </Animated.View>
                 )}
               </View>

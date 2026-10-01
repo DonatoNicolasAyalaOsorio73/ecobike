@@ -13,7 +13,7 @@ import { isFirebaseConfigured } from "@/services/firebase";
 import { useAuthStore } from "@/stores/authStore";
 import { passwordStrength, validateEmail, validateName } from "@/utils/profileForm";
 
-const STRENGTH_COLORS = ["#E5484D", "#C8EE8A", "#9BD84A", "#34C759", "#248A3D"];
+const STRENGTH_COLORS = ["#E5484D", "#E2F8BE", "#CDF78C", "#B9F45F", "#ADF14B"];
 
 export default function RegisterScreen() {
   const { colors } = useTheme();

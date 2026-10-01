@@ -74,7 +74,7 @@ function OptionCard({ o, selected, onPress, index }: { o: Option; selected: bool
         </View>
         {selected && (
           <Animated.View entering={ZoomIn.springify().damping(16)}>
-            <Ionicons name="checkmark-circle" size={26} color={a.base} />
+            <Ionicons name="checkmark-circle" size={26} color={a.lip} />
           </Animated.View>
         )}
       </Pressable>
@@ -131,7 +131,7 @@ export default function OnboardingScreen() {
         {done ? (
           <View style={styles.doneWrap}>
             <Animated.View entering={ZoomIn.springify().damping(7)} style={[styles.doneIcon, { backgroundColor: accents.green.soft, borderColor: accents.green.base }]}>
-              <Ionicons name="bicycle" size={64} color={accents.green.base} />
+              <Ionicons name="bicycle" size={64} color={accents.green.lip} />
             </Animated.View>
             <Animated.Text entering={FadeInRight.delay(150).springify()} style={styles.doneTitle}>
               ¡Todo listo{name ? `, ${name}` : ""}!

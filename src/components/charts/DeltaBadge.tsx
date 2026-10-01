@@ -8,10 +8,11 @@ export default function DeltaBadge({ pct }: { pct: number | null | undefined }) 
   const { colors } = useTheme();
   if (pct === null || pct === undefined || !Number.isFinite(pct)) return null;
   const up = pct >= 0;
-  const color = up ? colors.success : colors.inkSoft;
+  // Up: lime fill + ink text (same as the primary button). Down: neutral outline.
+  const color = up ? colors.primaryDark : colors.inkSoft;
   const value = Math.abs(Math.round(pct));
   return (
-    <View style={[styles.pill, { borderColor: color }]} accessibilityLabel={`${up ? "Sube" : "Baja"} ${value} por ciento`}>
+    <View style={[styles.pill, up ? { borderColor: colors.primary, backgroundColor: colors.primary } : { borderColor: color }]} accessibilityLabel={`${up ? "Sube" : "Baja"} ${value} por ciento`}>
       <Ionicons name={up ? "arrow-up" : "arrow-down"} size={11} color={color} />
       <Text style={[styles.text, { color }]}>{value}%</Text>
     </View>

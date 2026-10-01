@@ -26,7 +26,7 @@ function Bar({ ratio, index, highlight, height }: { ratio: number; index: number
         style={[
           styles.bar,
           style,
-          { backgroundColor: ratio > 0 ? (highlight ? colors.primaryDark : colors.primary) : colors.divider },
+          { backgroundColor: ratio > 0 ? (highlight ? colors.primary : colors.primaryLight) : colors.divider },
         ]}
       />
     </View>

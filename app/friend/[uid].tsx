@@ -148,7 +148,7 @@ function Tile({ accent, icon, value, label, delay }: { accent: AccentName; icon:
   const a = accents[accent];
   return (
     <Animated.View entering={ZoomIn.delay(delay).springify().damping(16)} style={[styles.tile, { borderColor: a.base, backgroundColor: "#fff" }]}>
-      <Ionicons name={icon} size={20} color={a.base} />
+      <Ionicons name={icon} size={20} color={a.lip} />
       <Text style={styles.tileValue} numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </Text>

@@ -121,7 +121,7 @@ function SummaryPill({ accent, icon, value, label }: { accent: AccentName; icon:
   const a = accents[accent];
   return (
     <View style={[styles.pill, { borderColor: a.base }]}>
-      <Ionicons name={icon} size={16} color={a.base} />
+      <Ionicons name={icon} size={16} color={a.lip} />
       <Text style={styles.pillValue}>{value.toLocaleString("es-CO")}</Text>
       <Text style={styles.pillLabel} numberOfLines={1}>
         {label}

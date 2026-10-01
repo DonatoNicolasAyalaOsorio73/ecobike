@@ -104,7 +104,7 @@ export default function HistoryScreen() {
             style={({ pressed, hovered }: any) => [styles.row, { backgroundColor: pressed ? "#EEF3EC" : hovered ? "#F6F9F5" : "#FFFFFF" }]}
           >
             <View style={[styles.iconWrap, { backgroundColor: a.base }]}>
-              <Ionicons name="bicycle" size={17} color="#FFFFFF" />
+              <Ionicons name="bicycle" size={17} color={a.lip} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.date, { color: colors.ink }]}>{sentenceCase(format(new Date(item.startedAt), "EEEE d, HH:mm", { locale: es }))}</Text>

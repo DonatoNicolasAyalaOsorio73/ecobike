@@ -157,10 +157,10 @@ export default function ChatScreen() {
                       item.pending && { opacity: 0.6 },
                     ]}
                   >
-                    <Text selectable style={{ color: item.fromMe ? "#FFFFFF" : colors.ink, fontSize: 16, lineHeight: 21, letterSpacing: -0.2 }}>
+                    <Text selectable style={{ color: item.fromMe ? "#1C2410" : colors.ink, fontSize: 16, lineHeight: 21, letterSpacing: -0.2 }}>
                       {item.text}
                     </Text>
-                    <Text style={[styles.time, { color: item.fromMe ? "rgba(255,255,255,0.85)" : colors.inkFaint }]}>
+                    <Text style={[styles.time, { color: item.fromMe ? "rgba(28,36,16,0.6)" : colors.inkFaint }]}>
                       {item.pending ? "Enviando…" : format(new Date(item.createdAt), "HH:mm")}
                     </Text>
                   </View>
@@ -195,7 +195,7 @@ export default function ChatScreen() {
               disabled={!text.trim()}
               style={[styles.send, { backgroundColor: text.trim() ? SENT : colors.divider }]}
             >
-              <Ionicons name="arrow-up" size={20} color="#FFFFFF" />
+              <Ionicons name="arrow-up" size={20} color="#1C2410" />
             </Pressable>
           </GlassSurface>
         </KeyboardAvoidingView>
@@ -205,7 +205,7 @@ export default function ChatScreen() {
 }
 
 // iMessage-style bubbles in the app green.
-const SENT = "#34C759";
+const SENT = "#ADF14B";
 const RECEIVED = "#E9EFE8";
 
 const styles = StyleSheet.create({

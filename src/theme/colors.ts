@@ -13,7 +13,8 @@ const lightColorTokens = {
   blobGreenSoft: "#E3F9C8",
 
   primary: "#ADF14B",
-  primaryDark: "#6FA524",
+  // Not a dark green: the "on lime" ink used for text/icons that need emphasis.
+  primaryDark: "#1C2410",
   primaryLight: "#D8FBA6",
   onPrimary: "#14210A",
 
@@ -29,34 +30,34 @@ const lightColorTokens = {
   glassBorder: "rgba(255,255,255,0.9)",
   glassBorderSoft: "rgba(255,255,255,0.55)",
   glassGreenFill: "rgba(173,241,75,0.28)",
-  glassGreenBorder: "rgba(120,190,40,0.5)",
+  glassGreenBorder: "rgba(173,241,75,0.9)",
   shadow: "rgba(40, 60, 20, 0.16)",
 
   placeholder: "#9AA69C",
   divider: "rgba(20,23,26,0.12)",
 
-  success: "#34C759",
-  warning: "#6E9F2E",
+  success: "#ADF14B",
+  warning: "#5B6660",
   danger: "#E5484D",
-  info: "#248A3D",
+  info: "#1C2410",
 };
 
 export const lightColors: Theme = lightColorTokens;
 
 /**
- * Accent palette: a single green family (iOS-style monochrome tint) so the
- * app reads calm and on-brand. Names are kept as semantic slots; each maps to
- * a distinct green shade. Only destructive actions use red.
+ * Accent palette: light lime only (the primary button's green). Bases are
+ * lime fills; "lip" is near-black ink for text/icons drawn on them, exactly
+ * like the button label. Only destructive actions use red.
  */
 export const accents = {
-  green: { base: "#34C759", soft: "#E3F7E8", lip: "#248A3D" },
-  lime: { base: "#9BD84A", soft: "#EEF8DF", lip: "#6E9F2E" },
-  blue: { base: "#30B07A", soft: "#DEF4EA", lip: "#1F7F56" },
-  orange: { base: "#7CC242", soft: "#EAF6DD", lip: "#56892C" },
-  gold: { base: "#5DBB63", soft: "#E4F5E5", lip: "#3D8A43" },
-  purple: { base: "#2E9E6B", soft: "#DCF1E6", lip: "#1D7049" },
+  green: { base: "#ADF14B", soft: "#F1FBE2", lip: "#1C2410" },
+  lime: { base: "#C3F57A", soft: "#F4FCE6", lip: "#1C2410" },
+  blue: { base: "#B9F45F", soft: "#F1FBE2", lip: "#1C2410" },
+  orange: { base: "#A6EC45", soft: "#EFFADC", lip: "#1C2410" },
+  gold: { base: "#BDF26A", soft: "#F3FBE4", lip: "#1C2410" },
+  purple: { base: "#9EE23C", soft: "#EEFADA", lip: "#1C2410" },
   red: { base: "#E5484D", soft: "#FDE7E8", lip: "#B83236" },
-  teal: { base: "#3FB89A", soft: "#DDF4EE", lip: "#2A8670" },
+  teal: { base: "#CDF78C", soft: "#F5FCEA", lip: "#1C2410" },
 } as const;
 export type AccentName = keyof typeof accents;
 

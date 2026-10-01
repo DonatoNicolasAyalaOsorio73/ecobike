@@ -65,7 +65,7 @@ export default function ToastHost() {
           style={styles.pill}
         >
           <View style={[styles.iconDot, { backgroundColor: accent }]}>
-            <Ionicons name={ICONS[kind]} size={16} color="#FFFFFF" />
+            <Ionicons name={ICONS[kind]} size={16} color={kind === "success" ? colors.primaryDark : "#FFFFFF"} />
           </View>
           <Text style={[styles.text, { color: colors.ink }]} numberOfLines={2}>
             {message}

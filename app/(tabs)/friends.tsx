@@ -469,7 +469,7 @@ export default function FriendsScreen() {
               />
               {league === "week" && (
                 <View style={[styles.leagueBanner, { backgroundColor: accents.purple.soft, borderColor: accents.purple.base }]}>
-                  <Ionicons name="shield-half" size={22} color={accents.purple.base} />
+                  <Ionicons name="shield-half" size={22} color={accents.purple.lip} />
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: accents.purple.lip, fontWeight: "700" }}>Liga semanal</Text>
                     <Text style={{ color: colors.inkSoft, fontSize: 12.5 }}>

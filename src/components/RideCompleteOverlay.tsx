@@ -55,7 +55,7 @@ export default function RideCompleteOverlay({ ride, streak, pointsToday, goal, g
       <View style={styles.root}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Animated.View entering={ZoomIn.springify().damping(7).mass(0.8)} style={[styles.hero, { backgroundColor: accents.gold.soft, borderColor: accents.gold.base }]}>
-            <Ionicons name="trophy" size={64} color={accents.gold.base} />
+            <Ionicons name="trophy" size={64} color={accents.gold.lip} />
           </Animated.View>
           <Animated.Text entering={FadeInDown.delay(180).springify()} style={styles.title}>
             ¡Recorrido completado!
@@ -66,11 +66,11 @@ export default function RideCompleteOverlay({ ride, streak, pointsToday, goal, g
 
           <View style={styles.boxes}>
             <StatBox accent="blue" label="DISTANCIA" delay={360}>
-              <AnimatedNumber value={Math.round(shownDistance * 100)} style={[styles.boxValue, { color: accents.blue.base }]} format={(v) => `${(v / 100).toFixed(2)}`} />
-              <Text style={[styles.boxUnit, { color: accents.blue.base }]}>{units === "metric" ? "km" : "mi"}</Text>
+              <AnimatedNumber value={Math.round(shownDistance * 100)} style={[styles.boxValue, { color: accents.blue.lip }]} format={(v) => `${(v / 100).toFixed(2)}`} />
+              <Text style={[styles.boxUnit, { color: accents.blue.lip }]}>{units === "metric" ? "km" : "mi"}</Text>
             </StatBox>
             <StatBox accent="purple" label="TIEMPO" delay={460}>
-              <Text style={[styles.boxValue, { color: accents.purple.base, fontSize: 20 }]}>{formatDuration(ride.durationSeconds)}</Text>
+              <Text style={[styles.boxValue, { color: accents.purple.lip, fontSize: 20 }]}>{formatDuration(ride.durationSeconds)}</Text>
             </StatBox>
             <StatBox accent="gold" label="PUNTOS" delay={560}>
               <AnimatedNumber value={ride.pointsEarned} style={[styles.boxValue, { color: accents.gold.lip }]} format={(v) => `+${v}`} />
@@ -79,7 +79,7 @@ export default function RideCompleteOverlay({ ride, streak, pointsToday, goal, g
 
           {levelAfter > levelBefore && (
             <Animated.View entering={ZoomIn.delay(640).springify().damping(16)} style={[styles.levelUp, { backgroundColor: accents.purple.soft, borderColor: accents.purple.base }]}>
-              <Ionicons name="arrow-up-circle" size={30} color={accents.purple.base} />
+              <Ionicons name="arrow-up-circle" size={30} color={accents.purple.lip} />
               <View>
                 <Text style={[styles.levelUpKicker, { color: accents.purple.lip }]}>¡SUBISTE DE NIVEL!</Text>
                 <Text style={styles.levelUpText}>Ahora eres nivel {levelAfter}</Text>
@@ -162,14 +162,14 @@ const styles = StyleSheet.create({
   levelUpKicker: { fontWeight: "700", fontSize: 11.5, letterSpacing: 0.6 },
   levelUpText: { color: "#1F2A22", fontWeight: "700", fontSize: 17, marginTop: 2 },
   streakRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 24 },
-  streakText: { fontSize: 18, fontWeight: "700", color: accents.orange.base },
+  streakText: { fontSize: 18, fontWeight: "700", color: accents.orange.lip },
   goalBlock: { alignSelf: "stretch", marginTop: 22 },
   goalHead: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
   goalTitle: { fontWeight: "700", color: "#1F2A22" },
   goalValue: { fontWeight: "700", color: "#6B776F" },
   achievement: { flexDirection: "row", alignItems: "center", gap: 12, alignSelf: "stretch", marginTop: 14, padding: 14, borderRadius: 18, borderWidth: 2, borderColor: "#E5EAE2", backgroundColor: "#FBFDF9" },
   achievementIcon: { width: 50, height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center", borderWidth: 2 },
-  achievementKicker: { color: accents.green.base, fontWeight: "700", fontSize: 11, letterSpacing: 0.6 },
+  achievementKicker: { color: accents.green.lip, fontWeight: "700", fontSize: 11, letterSpacing: 0.6 },
   achievementTitle: { color: "#1F2A22", fontWeight: "700", fontSize: 15.5, marginTop: 2 },
   achievementDesc: { color: "#6B776F", fontSize: 12.5, marginTop: 1 },
   footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 34, borderTopWidth: 2, borderTopColor: "#EEF1EC", backgroundColor: "#fff" },

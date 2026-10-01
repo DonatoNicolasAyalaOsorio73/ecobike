@@ -29,7 +29,7 @@ export default function StreakCard({ rides, entranceDelay = 0 }: { rides: Ride[]
         <Flame size={46} lit={current > 0} />
         <View style={{ flex: 1 }}>
           <View style={styles.countRow}>
-            <AnimatedNumber value={current} style={[styles.count, { color: current > 0 ? accents.orange.base : colors.inkFaint }]} />
+            <AnimatedNumber value={current} style={[styles.count, { color: current > 0 ? accents.orange.lip : colors.inkFaint }]} />
             <Text style={[styles.countLabel, { color: colors.ink }]}>{current === 1 ? "día de racha" : "días de racha"}</Text>
           </View>
           <Text style={{ color: colors.inkSoft, fontSize: 13 }}>{streakMessage(current, rodeToday)}</Text>
@@ -39,9 +39,9 @@ export default function StreakCard({ rides, entranceDelay = 0 }: { rides: Ride[]
       <View style={styles.week}>
         {dots.map((d, i) => (
           <View key={i} style={styles.dayCol}>
-            <Text style={[styles.dayLabel, { color: d.status === "today" ? accents.orange.base : colors.inkFaint }]}>{d.label}</Text>
+            <Text style={[styles.dayLabel, { color: d.status === "today" ? accents.orange.lip : colors.inkFaint }]}>{d.label}</Text>
             {d.status === "done" ? (
-              <Animated.View entering={ZoomIn.delay(entranceDelay + 150 + i * 60).springify().damping(16)} style={[styles.dot, { backgroundColor: accents.orange.base, borderColor: accents.orange.lip }]}>
+              <Animated.View entering={ZoomIn.delay(entranceDelay + 150 + i * 60).springify().damping(16)} style={[styles.dot, { backgroundColor: accents.orange.base, borderColor: accents.orange.base }]}>
                 <Ionicons name="checkmark" size={15} color="#fff" />
               </Animated.View>
             ) : (

@@ -31,7 +31,8 @@ export default function RideMap({ route, center, height = 260, fill, recenterKey
     return center ? { coordinates: { latitude: center.lat, longitude: center.lng }, zoom: 16 } : undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [center?.lat, center?.lng, recenterKey, fitRoute, route.length]);
-  const polylines = coordinates.length > 1 ? [{ coordinates, color: "#ADF14B", width: 6 }] : [];
+  // Ink casing under the lime line (Apple Maps style) keeps the light route legible.
+  const polylines = coordinates.length > 1 ? [{ coordinates, color: "rgba(28,36,16,0.35)", width: 9 }, { coordinates, color: "#ADF14B", width: 6 }] : [];
   const wrap = fill ? StyleSheet.absoluteFill : [styles.card, { height }];
 
   return (

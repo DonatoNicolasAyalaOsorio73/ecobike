@@ -49,7 +49,7 @@ export default function MissionsCard({ rides, entranceDelay = 0 }: { rides: Ride
             </View>
             {m.done && (
               <Animated.View entering={ZoomIn.delay(entranceDelay + 300 + i * 90).springify().damping(16)} style={styles.chest}>
-                <Ionicons name="trophy" size={18} color={accents.gold.base} />
+                <Ionicons name="trophy" size={18} color={accents.gold.lip} />
               </Animated.View>
             )}
           </View>

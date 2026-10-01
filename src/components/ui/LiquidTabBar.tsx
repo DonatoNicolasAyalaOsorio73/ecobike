@@ -140,6 +140,6 @@ const styles = StyleSheet.create({
   indicatorSlot: { position: "absolute", top: 0, bottom: 0, left: 0, paddingHorizontal: 2 },
   indicator: { flex: 1, borderRadius: BAR_RADIUS - INSET, borderWidth: 1, borderColor: "rgba(255,255,255,0.9)" },
   item: { flex: 1, alignItems: "center", justifyContent: "center", gap: 2, borderRadius: BAR_RADIUS - INSET },
-  focusRing: { outlineWidth: 2, outlineColor: "#34C759", outlineStyle: "solid", outlineOffset: -2 } as any,
+  focusRing: { outlineWidth: 2, outlineColor: "#ADF14B", outlineStyle: "solid", outlineOffset: -2 } as any,
   label: { fontSize: 10.5, letterSpacing: -0.1 },
 });

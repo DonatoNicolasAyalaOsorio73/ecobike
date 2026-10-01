@@ -57,7 +57,7 @@ export default function WelcomeScreen() {
 
           <Animated.Text entering={FadeInDown.delay(150).springify()} style={[styles.headline, { color: colors.ink }, compact && { fontSize: 26, lineHeight: 31, marginTop: 14 }]}>
             Muévete mejor.{"\n"}
-            Vive <Text style={{ color: accents.green.base }}>sostenible.</Text>
+            Vive <Text style={{ backgroundColor: accents.green.base, borderRadius: 8 }}> sostenible. </Text>
           </Animated.Text>
 
           <View style={[styles.features, compact && { marginTop: 16, gap: 8 }]}>

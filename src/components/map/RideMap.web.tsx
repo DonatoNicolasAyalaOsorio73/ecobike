@@ -54,7 +54,9 @@ export default function RideMap({ route, center, height = 260, fill, recenterKey
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: "#6FA524", weight: 6, lineCap: "round" }} />}
+        {/* Lime route with an ink casing (Apple Maps style) so a light line stays legible on any tile. */}
+        {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: "#1C2410", weight: 9, opacity: 0.35, lineCap: "round" }} />}
+        {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: "#ADF14B", weight: 6, lineCap: "round" }} />}
         {center && (
           <CircleMarker center={[center.lat, center.lng]} radius={9} pathOptions={{ color: "#fff", weight: 3, fillColor: "#ADF14B", fillOpacity: 1 }} />
         )}

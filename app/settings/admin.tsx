@@ -37,7 +37,7 @@ function Kpi({ accent, icon, value, label }: { accent: AccentName; icon: keyof t
   const a = accents[accent];
   return (
     <View style={[styles.kpi, { borderColor: a.base }]}>
-      <Ionicons name={icon} size={16} color={a.base} />
+      <Ionicons name={icon} size={16} color={a.lip} />
       <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit>
         {value === undefined ? "…" : value.toLocaleString("es-CO")}
       </Text>
