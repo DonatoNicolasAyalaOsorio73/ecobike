@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Platform, Pressable, StyleSheet, Text } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
@@ -32,7 +32,7 @@ export default function ToastHost() {
   const visible = Boolean(message);
 
   useEffect(() => {
-    progress.value = withSpring(visible ? 1 : 0, visible ? SPRING.sheet : SPRING.default);
+    progress.value = withSpring(visible ? 1 : 0, visible ? SPRING.bouncy : SPRING.default);
     if (visible && Platform.OS !== "web") {
       Haptics.notificationAsync(
         kind === "error"
@@ -47,7 +47,7 @@ export default function ToastHost() {
 
   const style = useAnimatedStyle(() => ({
     opacity: progress.value,
-    transform: [{ translateY: (1 - progress.value) * -30 }, { scale: 0.96 + progress.value * 0.04 }],
+    transform: [{ translateY: (1 - progress.value) * -40 }, { scale: 0.9 + progress.value * 0.1 }],
   }));
 
   if (!message) return null;
@@ -56,7 +56,7 @@ export default function ToastHost() {
 
   return (
     <Animated.View style={[styles.wrap, { top: insets.top + 8 }, style]}>
-      <Pressable onPress={hide} style={{ width: "100%" }}>
+      <Pressable onPress={hide} style={{ width: "100%" }} accessibilityRole="alert" accessibilityLiveRegion="polite" accessibilityLabel={message}>
         <GlassSurface
           radius={999}
           intensity={60}
@@ -64,7 +64,9 @@ export default function ToastHost() {
           borderColor={accent}
           style={styles.pill}
         >
-          <Ionicons name={ICONS[kind]} size={16} color={accent} />
+          <View style={[styles.iconDot, { backgroundColor: accent }]}>
+            <Ionicons name={ICONS[kind]} size={16} color="#FFFFFF" />
+          </View>
           <Text style={[styles.text, { color: colors.ink }]} numberOfLines={2}>
             {message}
           </Text>
@@ -76,6 +78,7 @@ export default function ToastHost() {
 
 const styles = StyleSheet.create({
   wrap: { position: "absolute", left: 16, right: 16, alignItems: "center", zIndex: 60 },
-  pill: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 11, width: "100%" },
-  text: { fontSize: 12.5, fontWeight: "700", flex: 1 },
+  pill: { flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 8, paddingRight: 16, paddingVertical: 8, width: "100%", borderWidth: 2 },
+  iconDot: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  text: { fontSize: 13.5, fontWeight: "800", flex: 1 },
 });

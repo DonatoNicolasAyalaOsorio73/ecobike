@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import QRCode from "react-native-qrcode-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,6 +12,8 @@ import GlassCard from "@/components/ui/GlassCard";
 import { useTheme } from "@/theme/useTheme";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useRewards } from "@/hooks/useRewards";
+import GlassButton from "@/components/ui/GlassButton";
+import { accents, type AccentName } from "@/theme/colors";
 import { useAvailablePoints } from "@/hooks/useAvailablePoints";
 
 export default function MyCodesScreen() {
@@ -40,16 +42,28 @@ export default function MyCodesScreen() {
           refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={colors.primary} />}
           ListHeaderComponent={
             redemptions.length > 0 ? (
-              <Text style={{ color: colors.inkSoft, fontSize: 12.5, textAlign: "center", marginBottom: 12 }}>
-                Toca un código para mostrar su QR en la tienda.
-              </Text>
+              <>
+                <View style={styles.summary}>
+                  <SummaryPill accent="green" icon="ticket" value={redemptions.filter((r) => r.status !== "used").length} label="Activos" />
+                  <SummaryPill accent="purple" icon="checkmark-done" value={redemptions.filter((r) => r.status === "used").length} label="Usados" />
+                  <SummaryPill accent="gold" icon="ribbon" value={redemptions.reduce((s, r) => s + r.pointsSpent, 0)} label="Pts canjeados" />
+                </View>
+                <Text style={{ color: colors.inkSoft, fontSize: 12.5, textAlign: "center", marginBottom: 12 }}>
+                  Toca un código para mostrar su QR en la tienda.
+                </Text>
+              </>
             ) : null
           }
           ListEmptyComponent={
-            <GlassCard>
-              <Text style={{ color: colors.inkSoft, textAlign: "center" }}>
-                Todavía no has canjeado ninguna recompensa.
+            <GlassCard style={{ alignItems: "center" }}>
+              <View style={[styles.emptyIcon, { backgroundColor: accents.gold.soft, borderColor: accents.gold.base }]}>
+                <Ionicons name="gift" size={34} color={accents.gold.lip} />
+              </View>
+              <Text style={{ color: colors.ink, fontWeight: "900", fontSize: 17, marginTop: 12 }}>Aún no tienes códigos</Text>
+              <Text style={{ color: colors.inkSoft, textAlign: "center", marginTop: 4, marginBottom: 14 }}>
+                Canjea tus puntos por recompensas en tiendas aliadas.
               </Text>
+              <GlassButton label="Ver recompensas" icon="gift-outline" onPress={() => router.replace("/points")} style={{ alignSelf: "stretch" }} />
             </GlassCard>
           }
           renderItem={({ item, index }) => {
@@ -79,7 +93,10 @@ export default function MyCodesScreen() {
                   </Text>
                 </View>
               </View>
-              {used && <Text style={[styles.meta, { color: colors.inkSoft, marginTop: 8 }]}>Usado en tienda</Text>}
+              <View style={[styles.status, { backgroundColor: used ? "#EEF1EC" : accents.green.soft }]}>
+                <Ionicons name={used ? "checkmark-done" : "ticket"} size={12} color={used ? colors.inkSoft : accents.green.lip} />
+                <Text style={{ color: used ? colors.inkSoft : accents.green.lip, fontSize: 11, fontWeight: "900" }}>{used ? "USADO" : "ACTIVO"}</Text>
+              </View>
               {open && (
                 <View style={styles.qrWrap}>
                   <View style={styles.qrBox}>
@@ -100,7 +117,26 @@ export default function MyCodesScreen() {
   );
 }
 
+function SummaryPill({ accent, icon, value, label }: { accent: AccentName; icon: keyof typeof Ionicons.glyphMap; value: number; label: string }) {
+  const a = accents[accent];
+  return (
+    <View style={[styles.pill, { borderColor: a.base, borderBottomColor: a.lip }]}>
+      <Ionicons name={icon} size={16} color={a.base} />
+      <Text style={styles.pillValue}>{value.toLocaleString("es-CO")}</Text>
+      <Text style={styles.pillLabel} numberOfLines={1}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  summary: { flexDirection: "row", gap: 8, marginBottom: 12 },
+  pill: { flex: 1, alignItems: "center", gap: 2, paddingVertical: 10, borderRadius: 16, borderWidth: 2, borderBottomWidth: 4, backgroundColor: "#fff" },
+  pillValue: { fontSize: 18, fontWeight: "900", color: "#1F2A22" },
+  pillLabel: { fontSize: 11, fontWeight: "700", color: "#6B776F" },
+  status: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, marginTop: 10 },
+  emptyIcon: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", borderWidth: 3 },
   screen: { flex: 1 },
   safe: { flex: 1 },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 4, marginBottom: 8 },
