@@ -50,10 +50,22 @@ export default function RideMap({ route, center, height = 260, fill, recenterKey
   }, [center?.lat, center?.lng, recenterKey, fitRoute, route.length, fitPlanned, plannedRoute]);
   // Ink casing under the lime line (Apple Maps style) keeps the light route legible.
   const planned = (plannedRoute ?? []).map((p) => ({ latitude: p.lat, longitude: p.lng }));
+  const following = planned.length > 1;
   const polylines = [
-    // Planned Eco ruta: ink casing + white core (reads as "the way to go"), under the ride trace.
-    ...(planned.length > 1 ? [{ coordinates: planned, color: "rgba(28,36,16,0.55)", width: 8 }, { coordinates: planned, color: "#FFFFFF", width: 4 }] : []),
-    ...(coordinates.length > 1 ? [{ coordinates, color: "rgba(28,36,16,0.35)", width: 9 }, { coordinates, color: "#7BF510", width: 6 }] : []),
+    // Path to follow (Eco ruta): glowing green — wide soft halo, green line, bright core.
+    ...(following
+      ? [
+          { coordinates: planned, color: "rgba(123,245,16,0.28)", width: 18 },
+          { coordinates: planned, color: "#7BF510", width: 7 },
+          { coordinates: planned, color: "rgba(255,255,255,0.85)", width: 2 },
+        ]
+      : []),
+    // Ridden trace: dark over the green path; lime with ink casing on a free ride.
+    ...(coordinates.length > 1
+      ? following
+        ? [{ coordinates, color: "rgba(28,36,16,0.9)", width: 5 }]
+        : [{ coordinates, color: "rgba(28,36,16,0.35)", width: 9 }, { coordinates, color: "#7BF510", width: 6 }]
+      : []),
   ];
   const wrap = fill ? StyleSheet.absoluteFill : [styles.card, { height }];
 

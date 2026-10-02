@@ -1,5 +1,7 @@
 import { decodePolyline } from "@/utils/polyline";
 import { CO2_KG_PER_KM } from "@/utils/rideStats";
+import { haversineMeters } from "@/utils/geo";
+import type { Maneuver } from "@/utils/navigation";
 
 /**
  * Eco ruta: place search + bike routing on OpenStreetMap data.
@@ -21,6 +23,8 @@ export interface Place {
   detail: string;
   lat: number;
   lng: number;
+  /** Straight-line distance from the rider, when their position is known. */
+  distanceKm: number | null;
 }
 
 export interface RoutePrefs {
@@ -38,12 +42,17 @@ export interface BikeRoute {
   co2Kg: number;
   /** First turn-by-turn instruction (Spanish), for the preview. */
   firstInstruction: string | null;
+  /** Turn-by-turn instructions with their position on `points` (navigation). */
+  maneuvers: Maneuver[];
 }
+
+const LOCAL_KM = 30; // results within this radius are "near you" and come first
 
 export async function searchPlaces(query: string, near: { lat: number; lng: number } | null, signal?: AbortSignal): Promise<Place[]> {
   const q = query.trim();
   if (q.length < 3) return [];
-  const params = new URLSearchParams({ q, limit: "6" });
+  // Ask for more candidates than we show, then rank by real distance to the rider.
+  const params = new URLSearchParams({ q, limit: "15" });
   if (near) {
     params.set("lat", String(near.lat));
     params.set("lon", String(near.lng));
@@ -51,13 +60,24 @@ export async function searchPlaces(query: string, near: { lat: number; lng: numb
   const res = await fetch(`${PHOTON}?${params}`, { signal });
   if (!res.ok) throw new Error("No pudimos buscar lugares ahora.");
   const json = await res.json();
-  return (json.features ?? []).map((f: any) => {
+  const places: Place[] = (json.features ?? []).map((f: any) => {
     const p = f.properties ?? {};
     // Drop empty and repeated parts ("Bogotá, Bogotá, Bogotá D.C." → "Bogotá").
     const parts = [p.street && p.housenumber ? `${p.street} ${p.housenumber}` : p.street, p.district, p.city, p.state].filter(Boolean) as string[];
     const detail = parts.filter((x, i) => !parts.slice(0, i).some((y) => y.startsWith(x) || x.startsWith(y))).join(", ");
-    return { name: p.name ?? p.street ?? "Lugar", detail, lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] };
+    const lat = f.geometry.coordinates[1];
+    const lng = f.geometry.coordinates[0];
+    return { name: p.name ?? p.street ?? "Lugar", detail, lat, lng, distanceKm: near ? haversineMeters(near, { lat, lng }) / 1000 : null };
   });
+  // Near places first (closest first), then the rest in Photon's relevance order.
+  return rankByProximity(places).slice(0, 6);
+}
+
+/** Places within LOCAL_KM come first sorted by distance; farther ones keep their order after. */
+export function rankByProximity(places: Place[]): Place[] {
+  const near = places.filter((p) => p.distanceKm != null && p.distanceKm <= LOCAL_KM).sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0));
+  const far = places.filter((p) => !(p.distanceKm != null && p.distanceKm <= LOCAL_KM));
+  return [...near, ...far];
 }
 
 /** Up to 3 bike routes (the recommended one first). */
@@ -94,5 +114,6 @@ function toRoute(trip: any): BikeRoute {
     minutes: Math.round((trip.summary?.time ?? 0) / 60),
     co2Kg: km * CO2_KG_PER_KM,
     firstInstruction: leg.maneuvers?.[1]?.instruction ?? leg.maneuvers?.[0]?.instruction ?? null,
+    maneuvers: (leg.maneuvers ?? []).map((m: any) => ({ instruction: m.instruction ?? "", type: m.type ?? 0, beginIndex: m.begin_shape_index ?? 0 })),
   };
 }

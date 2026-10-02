@@ -28,7 +28,9 @@ const FOLLOW_ZOOM = 16;
 const DARK_TILES_CSS =
   ".ecobike-dark .leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9)}" +
   // Light map: calmer colors (less saturated POIs/landuse), labels stay crisp.
-  ".ecobike-clean{filter:saturate(0.55) brightness(1.04) contrast(0.97)}";
+  ".ecobike-clean{filter:saturate(0.55) brightness(1.04) contrast(0.97)}" +
+  // Glow halo under the path to follow.
+  ".ecobike-glow{filter:blur(4px)}";
 let cssInjected = false;
 function injectCss() {
   if (cssInjected || typeof document === "undefined") return;
@@ -85,11 +87,13 @@ export default function RideMap({ route, center, height = 260, fill, recenterKey
           className="ecobike-clean"
         />
         {/* Lime route with an ink casing (Apple Maps style) so a light line stays legible on any tile. */}
-        {/* Planned Eco ruta: ink casing + white core, under the ride trace. */}
-        {plannedPositions.length > 1 && <Polyline positions={plannedPositions} pathOptions={{ color: "#1C2410", weight: 8, opacity: 0.55, lineCap: "round", lineJoin: "round" }} />}
-        {plannedPositions.length > 1 && <Polyline positions={plannedPositions} pathOptions={{ color: "#FFFFFF", weight: 4, lineCap: "round", lineJoin: "round" }} />}
-        {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: "#1C2410", weight: 9, opacity: 0.35, lineCap: "round" }} />}
-        {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: "#7BF510", weight: 6, lineCap: "round" }} />}
+        {/* Path to follow (Eco ruta): glowing green — a soft blurred halo, the green line, a bright core. */}
+        {plannedPositions.length > 1 && <Polyline positions={plannedPositions} pathOptions={{ color: "#7BF510", weight: 18, opacity: 0.35, lineCap: "round", lineJoin: "round", className: "ecobike-glow" }} />}
+        {plannedPositions.length > 1 && <Polyline positions={plannedPositions} pathOptions={{ color: "#7BF510", weight: 7, lineCap: "round", lineJoin: "round" }} />}
+        {plannedPositions.length > 1 && <Polyline positions={plannedPositions} pathOptions={{ color: "#FFFFFF", weight: 2, opacity: 0.85, lineCap: "round", lineJoin: "round" }} />}
+        {/* Ridden trace: dark over the green path (progress reads at a glance); lime with ink casing on a free ride. */}
+        {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: "#1C2410", weight: plannedPositions.length > 1 ? 5 : 9, opacity: plannedPositions.length > 1 ? 0.9 : 0.35, lineCap: "round" }} />}
+        {positions.length > 1 && plannedPositions.length < 2 && <Polyline positions={positions} pathOptions={{ color: "#7BF510", weight: 6, lineCap: "round" }} />}
         {/* You-are-here: a heading arrow (ink with a white outline over a soft halo) so you can tell which way you face. */}
         {center && <Marker position={[center.lat, center.lng]} icon={arrowIcon(heading ?? 0)} interactive={false} keyboard={false} zIndexOffset={1000} />}
         <Recenter center={center} recenterKey={recenterKey} fitTo={fitRoute ? routeCamera(route)?.bounds ?? null : fitPlanned && plannedRoute ? routeCamera(plannedRoute)?.bounds ?? null : null} roomForCard={!fitRoute && !!fitPlanned} />

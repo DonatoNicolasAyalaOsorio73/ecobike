@@ -48,6 +48,8 @@ interface Props {
   near: { lat: number; lng: number } | null;
   /** Eco ruta: a destination was picked; the map shows the route preview. */
   onEcoPick: (place: Place, prefs: RoutePrefs) => void;
+  /** Eco ruta opened: refresh the rider's real position for local search. */
+  onEcoOpen?: () => void;
 }
 
 /**
@@ -56,7 +58,7 @@ interface Props {
  * (starts now), Eco ruta (search a place → greener bike route) and
  * Entrenamiento (your own km/time goal). Tap outside or the ✕ to close.
  */
-export default function RideLauncher({ open, onOpenChange, onSelect, weekProgress, disabled, bottom, near, onEcoPick }: Props) {
+export default function RideLauncher({ open, onOpenChange, onSelect, weekProgress, disabled, bottom, near, onEcoPick, onEcoOpen }: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [view, setView] = React.useState<View3>("menu");
@@ -113,7 +115,10 @@ export default function RideLauncher({ open, onOpenChange, onSelect, weekProgres
                     onPress={() => {
                       haptic();
                       if (m.id === "free") onSelect(null);
-                      else setView(m.id);
+                      else {
+                        if (m.id === "eco") onEcoOpen?.();
+                        setView(m.id);
+                      }
                     }}
                   >
                     <GlassSurface radius={18} intensity={50} backgroundColor="rgba(255,255,255,0.82)" style={styles.option}>
@@ -136,7 +141,8 @@ export default function RideLauncher({ open, onOpenChange, onSelect, weekProgres
 
           {/* Eco ruta sits at the top (search field above the keyboard, like Maps). */}
           {view === "eco" && (
-            <View pointerEvents="box-none" style={[styles.panel, { top: insets.top + 12 }]}>
+            // Spans from the top down to just above the button, so results scroll above the ✕ instead of under it.
+            <View pointerEvents="box-none" style={[styles.panel, { top: insets.top + 12, bottom: bottom + BUTTON + 18 }]}>
               <EcoRoutePanel near={near} prefs={prefs} onPrefsChange={setPrefs} onBack={() => setView("menu")} onPick={(place) => onEcoPick(place, prefs)} />
             </View>
           )}
@@ -196,8 +202,9 @@ export default function RideLauncher({ open, onOpenChange, onSelect, weekProgres
                   {/* Specular reflection on top of the green: tinted glass, not a flat sticker. */}
                   <LinearGradient pointerEvents="none" colors={["rgba(255,255,255,0.55)", "rgba(255,255,255,0.08)", "rgba(255,255,255,0)"]} locations={[0, 0.45, 0.6]} start={{ x: 0.2, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
                                   </Animated.View>
-                <Animated.View style={[StyleSheet.absoluteFill, styles.center, closeStyle]}>
-                  <Ionicons name="close" size={30} color={colors.ink} />
+                {/* Open state: a solid ink disc with a white ✕, visible over any background (map, results, cards). */}
+                <Animated.View style={[StyleSheet.absoluteFill, styles.center, styles.closeDisc, closeStyle]}>
+                  <Ionicons name="close" size={30} color="#FFFFFF" />
                 </Animated.View>
             </GlassSurface>
           </Pressable>
@@ -214,6 +221,7 @@ const DISC_VOLUME = Platform.OS === "web" ? ({ boxShadow: "inset 0 -3px 8px rgba
 const TRACE_GLOW = Platform.OS === "web" ? ({ filter: "drop-shadow(0 0 4px rgba(255,255,255,0.95)) drop-shadow(0 0 2px rgba(123,245,16,0.6))" } as object) : null;
 
 const styles = StyleSheet.create({
+  closeDisc: { borderRadius: BUTTON / 2, backgroundColor: "rgba(20,23,26,0.88)" },
   panel: { position: "absolute", left: 20, right: 20, maxWidth: 420, alignSelf: "center", marginHorizontal: "auto" } as any,
   anchor: { position: "absolute", left: 0, right: 0, alignItems: "center" },
   buttonWrap: { borderRadius: BUTTON / 2 },

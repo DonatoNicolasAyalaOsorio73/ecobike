@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Animated from "react-native-reanimated";
 import GlassSurface from "@/components/ui/GlassSurface";
@@ -86,10 +86,15 @@ export default function EcoRoutePanel({ near, prefs, onPrefsChange, onPick, onBa
         <Pref icon="leaf-outline" label="Ruta más verde (menos tráfico)" value={prefs.greener} onChange={(v) => onPrefsChange({ ...prefs, greener: v })} />
       </Animated.View>
 
-      {error && <Text style={[type.footnote, styles.note, { color: colors.inkSoft }]}>{error}</Text>}
-      {!near && <Text style={[type.footnote, styles.note, { color: colors.inkSoft }]}>Activa tu ubicación para calcular la ruta desde donde estás.</Text>}
+      {/* Where the search is anchored: the rider's real position. */}
+      <View style={styles.locRow}>
+        <Ionicons name={near ? "navigate" : "navigate-outline"} size={14} color={colors.inkSoft} />
+        <Text style={[type.footnote, { color: colors.inkSoft }]}>{near ? "Buscando cerca de tu ubicación actual" : "Obteniendo tu ubicación…"}</Text>
+      </View>
 
-      <View style={{ gap: 8 }}>
+      {error && <Text style={[type.footnote, styles.note, { color: colors.inkSoft }]}>{error}</Text>}
+
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 8, paddingBottom: 8 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {results.map((p, i) => (
           <Animated.View key={`${p.lat},${p.lng},${i}`} entering={enter(i * 30)}>
             <PressableScale depth={0.03} onPress={() => onPick(p)} accessibilityLabel={`${p.name}, ${p.detail}`} disabled={!near}>
@@ -99,12 +104,15 @@ export default function EcoRoutePanel({ near, prefs, onPrefsChange, onPick, onBa
                   <Text style={[type.callout, { color: colors.ink, fontWeight: "600" }]} numberOfLines={1}>{p.name}</Text>
                   {p.detail ? <Text style={[type.caption, { color: colors.inkSoft, fontWeight: "400" }]} numberOfLines={1}>{p.detail}</Text> : null}
                 </View>
+                {p.distanceKm != null && (
+                  <Text style={[type.caption, { color: colors.inkSoft }]}>{p.distanceKm < 1 ? `${Math.round(p.distanceKm * 1000)} m` : `${p.distanceKm.toFixed(1).replace(".", ",")} km`}</Text>
+                )}
                 <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
               </GlassSurface>
             </PressableScale>
           </Animated.View>
         ))}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -121,7 +129,8 @@ function Pref({ icon, label, value, onChange }: { icon: keyof typeof Ionicons.gl
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 12 },
+  wrap: { gap: 12, flex: 1 },
+  locRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 6, marginTop: -4 },
   header: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2 },
   search: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, height: 48 },
   input: { flex: 1, fontSize: 16, minWidth: 0, outlineStyle: "none" } as any,

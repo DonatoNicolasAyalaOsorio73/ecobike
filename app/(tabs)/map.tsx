@@ -7,6 +7,9 @@ import Animated, { FadeIn, FadeInDown, FadeOutDown, ZoomIn, useAnimatedStyle, wi
 import RideMap from "@/components/map/RideMap";
 import RideLauncher from "@/components/map/RideLauncher";
 import EcoRoutePreview from "@/components/map/EcoRoutePreview";
+import NavBanner from "@/components/map/NavBanner";
+import { cumulativeMeters, navigate } from "@/utils/navigation";
+import * as Haptics from "expo-haptics";
 import { planBikeRoute, type BikeRoute, type Place, type RoutePrefs } from "@/services/routing";
 import PointsBadge from "@/components/ui/PointsBadge";
 import { LIQUID_BORDER, LIQUID_FILL, LIQUID_RIM } from "@/theme/glass";
@@ -132,7 +135,9 @@ export default function MapScreen() {
 
   // ─── Eco ruta: preview a planned bike route, then ride it ───
   const [eco, setEco] = useState<{ place: Place; prefs: RoutePrefs; routes: BikeRoute[]; idx: number; loading: boolean; error: string | null } | null>(null);
-  const [activePlanned, setActivePlanned] = useState<{ lat: number; lng: number }[] | null>(null);
+  // The Eco ruta being ridden (route + where to), for the green path and turn-by-turn.
+  const [activeEco, setActiveEco] = useState<{ route: BikeRoute; place: Place; prefs: RoutePrefs } | null>(null);
+  const [recalculating, setRecalculating] = useState(false);
   const pickEco = async (place: Place, prefs: RoutePrefs) => {
     setMenuOpen(false);
     if (!center) return;
@@ -147,13 +152,13 @@ export default function MapScreen() {
   const startEco = () => {
     const r = eco?.routes[eco.idx];
     if (!r) return;
-    setActivePlanned(r.points);
+    setActiveEco({ route: r, place: eco!.place, prefs: eco!.prefs });
     setEco(null);
     begin({ kind: "distance", meters: Math.max(500, Math.round(r.km * 1000)) });
   };
   // The planned line stays on the map while riding it; it clears once the map is idle again.
   useEffect(() => {
-    if (status === "IDLE" && !eco) setActivePlanned(null);
+    if (status === "IDLE" && !eco) setActiveEco(null);
   }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const begin = (g: Parameters<typeof startRide>[1]) => {
@@ -174,6 +179,33 @@ export default function MapScreen() {
   }, [ride?.points.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const heading = travelHeading ?? compass;
   const center = currentLocation ?? idleCenter;
+  // Turn-by-turn: where the rider is on the Eco ruta (re-evaluated on each GPS fix).
+  const ecoCum = React.useMemo(() => (activeEco ? cumulativeMeters(activeEco.route.points) : null), [activeEco]);
+  const nav = React.useMemo(
+    () => (activeEco && ecoCum && currentLocation ? navigate(activeEco.route.points, ecoCum, activeEco.route.maneuvers, currentLocation) : null),
+    [activeEco, ecoCum, currentLocation]
+  );
+  // A light tap as each turn comes up (once per turn, within 60 m).
+  const announced = React.useRef<number | null>(null);
+  useEffect(() => {
+    const idx = nav?.next?.beginIndex ?? null;
+    if (idx != null && nav!.distanceM <= 60 && announced.current !== idx) {
+      announced.current = idx;
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+    }
+  }, [nav]);
+  const recalculate = async () => {
+    if (!activeEco || !currentLocation) return;
+    setRecalculating(true);
+    try {
+      const [route] = await planBikeRoute(currentLocation, activeEco.place, activeEco.prefs);
+      if (route) setActiveEco({ ...activeEco, route });
+    } catch {
+      toast("No pudimos recalcular la ruta. Sigue la línea verde.", "error");
+    } finally {
+      setRecalculating(false);
+    }
+  };
   const weekKm = distanceThisWeek(rides) / 1000;
   const weekProgress = weeklyGoalKm > 0 ? weekKm / weeklyGoalKm : 0;
   const riding = status === "ACTIVE" || status === "PAUSED";
@@ -195,7 +227,7 @@ export default function MapScreen() {
         fill
         recenterKey={recenterKey}
         heading={heading}
-        plannedRoute={eco?.routes[eco.idx]?.points ?? activePlanned ?? undefined}
+        plannedRoute={eco?.routes[eco.idx]?.points ?? activeEco?.route.points ?? undefined}
         fitPlanned={!!eco?.routes.length}
       />
 
@@ -305,6 +337,12 @@ export default function MapScreen() {
       )}
 
       <SafeAreaView style={styles.safe} edges={["top"]} pointerEvents="box-none">
+        {/* Following an Eco ruta: turn-by-turn takes the top of the screen. */}
+        {nav && activeEco && riding ? (
+          <View style={{ paddingTop: 10 }}>
+            <NavBanner nav={nav} destination={activeEco.place.name} recalculating={recalculating} onRecalculate={recalculate} />
+          </View>
+        ) : (
         <View style={styles.topRow} pointerEvents="box-none">
           <Animated.View entering={enter(80)}>
             <PointsBadge points={availablePoints} today={pointsToday(rides)} />
@@ -329,6 +367,7 @@ export default function MapScreen() {
             </Animated.View>
           )}
         </View>
+        )}
 
         <View style={styles.rail} pointerEvents="box-none">
           <GlassIconButton liquid icon="navigate" accessibilityLabel="Centrar en mi ubicación" onPress={() => locate(true)} />
@@ -340,6 +379,7 @@ export default function MapScreen() {
         <RideLauncher
           near={center}
           onEcoPick={pickEco}
+          onEcoOpen={() => locate(true)}
           open={menuOpen}
           onOpenChange={setMenuOpen}
           onSelect={begin}
