@@ -4,7 +4,8 @@ import { router, useNavigation } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
-import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
+import Animated, { ZoomIn } from "react-native-reanimated";
+import { enter } from "@/theme/motion";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import BackButton from "@/components/ui/BackButton";
 import { columnStyle, useLargeTitle } from "@/components/ui/LargeTitleScreen";
@@ -259,7 +260,7 @@ export default function EditProfileScreen() {
             </GlassCard>
 
             {/* Photo */}
-            <Animated.View entering={FadeInDown.delay(60).springify()} style={styles.photoBlock}>
+            <Animated.View entering={enter(60)} style={styles.photoBlock}>
               <Pressable onPress={pickPhoto} accessibilityRole="button" accessibilityLabel="Cambiar foto de perfil" style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.95 : 1 }] })}>
                 <View style={[styles.avatar, { borderColor: "transparent", backgroundColor: accents.green.soft }]}>
                   {photo ? <Image source={{ uri: photo }} style={styles.avatarImg} /> : <Ionicons name="person" size={48} color={accents.green.lip} />}
@@ -347,7 +348,7 @@ export default function EditProfileScreen() {
 
           <View style={[styles.footer, { borderTopColor: colors.divider }]}>
             {confirmLeave ? (
-              <Animated.View entering={FadeInDown.springify()} style={{ gap: 10 }}>
+              <Animated.View entering={enter()} style={{ gap: 10 }}>
                 <Text style={{ color: colors.ink, fontWeight: "700", textAlign: "center" }}>¿Salir sin guardar los cambios?</Text>
                 <View style={{ flexDirection: "row", gap: 10 }}>
                   <GlassButton label="Seguir editando" variant="secondary" onPress={() => setConfirmLeave(false)} style={{ flex: 1 }} />
@@ -381,7 +382,7 @@ export default function EditProfileScreen() {
 function Section({ title, delay }: { title: string; delay: number }) {
   const { colors } = useTheme();
   return (
-    <Animated.Text entering={FadeInDown.delay(delay).springify()} style={[styles.section, { color: colors.ink }]} accessibilityRole="header">
+    <Animated.Text entering={enter(delay)} style={[styles.section, { color: colors.ink }]} accessibilityRole="header">
       {title}
     </Animated.Text>
   );

@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
+import Animated, { ZoomIn } from "react-native-reanimated";
+import { enter } from "@/theme/motion";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import BackButton from "@/components/ui/BackButton";
 import { columnStyle, useLargeTitle } from "@/components/ui/LargeTitleScreen";
@@ -111,7 +112,7 @@ export default function FriendProfileScreen() {
               </View>
             </ProgressRing>
           </Animated.View>
-          <Animated.Text entering={FadeInDown.delay(120).springify()} style={[styles.name, { color: colors.ink }]}>
+          <Animated.Text entering={enter(120)} style={[styles.name, { color: colors.ink }]}>
             {friend.displayName}
           </Animated.Text>
           <Text style={{ color: colors.inkSoft, textAlign: "center" }}>@{friend.username}</Text>

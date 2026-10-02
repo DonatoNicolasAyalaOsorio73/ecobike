@@ -1,4 +1,4 @@
-import React, { type ReactElement } from "react";
+import React, { useMemo, useRef, useState, type ReactElement } from "react";
 import { StyleSheet, Text, View, type RefreshControlProps, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
@@ -12,6 +12,7 @@ import Animated, {
 } from "react-native-reanimated";
 import BackgroundBlobs from "./BackgroundBlobs";
 import GlassSurface from "./GlassSurface";
+import { ScrollRevealContext } from "./Reveal";
 import { useTheme } from "@/theme/useTheme";
 import { type } from "@/theme/typography";
 import { CONTENT_MAX_WIDTH, useLayout } from "@/hooks/useLayout";
@@ -100,7 +101,7 @@ export function useLargeTitle({ title, eyebrow, leading, trailing, titleAccessor
 
   const contentContainerStyle: ViewStyle = { paddingTop: top + NAV_H, paddingBottom: tabBar ? bottomInset : insets.bottom + 32 };
 
-  return { onScroll, header, navBar, contentContainerStyle, showsVerticalScrollIndicator: desktop };
+  return { onScroll, scrollOffset: y, header, navBar, contentContainerStyle, showsVerticalScrollIndicator: desktop };
 }
 
 interface Props extends TitleOptions {
@@ -113,6 +114,12 @@ interface Props extends TitleOptions {
 /** ScrollView screen built on useLargeTitle (every top-level screen uses it). */
 export default function LargeTitleScreen({ refreshControl, padded = true, children, ...titleOptions }: Props) {
   const lt = useLargeTitle(titleOptions);
+  // Scroll-reveal context: cards inside measure themselves against the
+  // content and animate in as they cross the bottom of the viewport.
+  const viewportH = useSharedValue(0);
+  const contentRef = useRef<View>(null);
+  const [version, setVersion] = useState(0);
+  const reveal = useMemo(() => ({ scrollY: lt.scrollOffset, viewportH, contentRef, version }), [lt.scrollOffset, viewportH, version]);
   return (
     <View style={styles.screen}>
       <BackgroundBlobs />
@@ -123,11 +130,15 @@ export default function LargeTitleScreen({ refreshControl, padded = true, childr
         showsVerticalScrollIndicator={lt.showsVerticalScrollIndicator}
         refreshControl={refreshControl}
         contentContainerStyle={lt.contentContainerStyle}
+        onLayout={(e) => (viewportH.value = e.nativeEvent.layout.height)}
+        onContentSizeChange={() => setVersion((v) => v + 1)}
       >
-        <View style={styles.column}>
-          {lt.header}
-          <View style={padded ? styles.pad : null}>{children}</View>
-        </View>
+        <ScrollRevealContext.Provider value={reveal}>
+          <View ref={contentRef} style={styles.column}>
+            {lt.header}
+            <View style={padded ? styles.pad : null}>{children}</View>
+          </View>
+        </ScrollRevealContext.Provider>
       </Animated.ScrollView>
       {lt.navBar}
     </View>

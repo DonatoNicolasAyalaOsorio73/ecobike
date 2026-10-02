@@ -8,8 +8,7 @@ import GlassCard from "@/components/ui/GlassCard";
 import GlassButton from "@/components/ui/GlassButton";
 import GlassIconButton from "@/components/ui/GlassIconButton";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
-import RewardList from "@/components/rewards/RewardList";
-import RewardCarousel from "@/components/rewards/RewardCarousel";
+import RewardsBrowser from "@/components/rewards/RewardsBrowser";
 import RedeemSheet from "@/components/rewards/RedeemSheet";
 import MissionsCard from "@/components/MissionsCard";
 import { useRiderStats } from "@/hooks/useRiderStats";
@@ -96,13 +95,8 @@ export default function PointsScreen() {
 
           {rewards.length > 0 && (
             <>
-              {/* Discover: featured carousel. Find: searchable list below. */}
-              <Text style={[styles.section, { color: colors.ink }]}>Destacadas</Text>
-              <RewardCarousel rewards={rewards} availablePoints={availablePoints} width={width} onPress={setSelected} />
-              <Text style={[styles.section, { color: colors.ink }]}>Tiendas</Text>
-              <View style={styles.pad}>
-                <RewardList rewards={rewards} availablePoints={availablePoints} onPress={setSelected} />
-              </View>
+              {/* Explore and find in one place: one search bar, carousel when idle, results when searching. */}
+              <RewardsBrowser rewards={rewards} availablePoints={availablePoints} width={width} onPress={setSelected} />
             </>
           )}
 

@@ -3,7 +3,8 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
+import Animated, { ZoomIn } from "react-native-reanimated";
+import { enter } from "@/theme/motion";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import RideMap from "@/components/map/RideMap";
@@ -75,7 +76,7 @@ export default function RideDetailScreen() {
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Animated.View entering={FadeInDown.springify()} style={styles.headRow}>
+        <Animated.View entering={enter()} style={styles.headRow}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.date, { color: colors.ink }]}>{sentenceCase(format(new Date(ride.startedAt), "EEEE d 'de' MMMM", { locale: es }))}</Text>
             <Text style={{ color: colors.inkSoft }}>

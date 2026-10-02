@@ -113,12 +113,6 @@ export default function LiquidTabBar({ state, descriptors, navigation }: TabBarP
     ],
   }));
 
-  // Lime glow under the lens: travels and stretches with it, brightens while
-  // it moves and when a tab is pressed (light refracted through the glass).
-  const glowStyle = useAnimatedStyle(() => ({
-    opacity: 0.55 + travel.value * 0.7 + press.value * 0.35,
-    transform: [{ scaleX: 1 + press.value * 0.08 }],
-  }));
 
   return (
     <Animated.View
@@ -129,7 +123,6 @@ export default function LiquidTabBar({ state, descriptors, navigation }: TabBarP
         <GlassSurface intensity={100} radius={BAR_RADIUS} specular={false} backgroundColor={BAR_FILL} borderColor="rgba(255,255,255,0.5)">
           <View style={styles.row} role="tablist" {...({ dataSet: { tabbar: "" } } as object)}>
             <Animated.View pointerEvents="none" style={[styles.lensSlot, { width: `${100 / tabCount}%` }, lensStyle]}>
-              <Animated.View style={[styles.glow, GLOW_WEB, glowStyle]} />
               <View style={[styles.lens, LENS_WEB]} />
             </Animated.View>
             {routes.map((route, index) => {
@@ -166,21 +159,14 @@ export default function LiquidTabBar({ state, descriptors, navigation }: TabBarP
   );
 }
 
-// Lens: lime glass with a top highlight and a soft lime glow (web
+// Lens: lime glass with a top highlight and a soft neutral shadow (web
 // renders the inset highlight; native gets the translucent fill).
 const LENS_WEB =
   Platform.OS === "web"
-    ? ({ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75), 0 2px 10px rgba(140,200,60,0.45)" } as object)
+    ? ({ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75), 0 1px 4px rgba(0,0,0,0.08)" } as object)
     : elevation("low");
 
-// Web: a blurred lime blob. Native: same blob with a lime shadow (no CSS blur on RN).
-const GLOW_WEB =
-  Platform.OS === "web"
-    ? ({ filter: "blur(9px)" } as object)
-    : { shadowColor: "#9EE23C", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, elevation: 0 };
-
 const styles = StyleSheet.create({
-  glow: { position: "absolute", left: "18%", right: "18%", bottom: 2, height: "55%", borderRadius: 999, backgroundColor: "rgba(173,241,75,0.75)" },
   wrap: { position: "absolute", left: 22, right: 22, pointerEvents: "box-none" },
   shadow: { borderRadius: BAR_RADIUS },
   row: { flexDirection: "row", margin: INSET, height: 46 },

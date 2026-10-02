@@ -22,8 +22,9 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarPosition: desktop ? "left" : "bottom",
-        // Cross-fade between tabs: no hard cut, no white flash.
-        animation: "fade",
+        // Shared-axis transition (Material/Flutter): the new tab slides in a
+        // short distance while cross-fading; no hard cut, no white flash.
+        animation: "shift",
         sceneStyle: { backgroundColor: "transparent" },
       }}
     >

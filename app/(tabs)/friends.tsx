@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Image, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import Animated, { FadeInUp, ZoomIn } from "react-native-reanimated";
+import Animated, { ZoomIn } from "react-native-reanimated";
+import { enter } from "@/theme/motion";
 import { formatDistanceToNowStrict } from "date-fns";
 import { es } from "date-fns/locale";
 import LargeTitleScreen from "@/components/ui/LargeTitleScreen";
@@ -256,7 +257,7 @@ export default function FriendsScreen() {
                   const p = profileOf(c.otherUid);
                   const name = p?.displayName ?? "Usuario";
                   return (
-                    <Animated.View key={c.id} entering={FadeInUp.delay(i * 35).springify().damping(18)}>
+                    <Animated.View key={c.id} entering={enter(i * 35)}>
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel={`Chat con ${name}${c.unread ? `, ${c.unread} sin leer` : ""}`}
@@ -388,7 +389,7 @@ export default function FriendsScreen() {
                   friends.map((f, i) => {
                     const confirming = confirmRemove === f.uid;
                     return (
-                      <Animated.View key={f.uid} entering={FadeInUp.duration(360).delay(i * 40).springify().damping(18)} style={styles.friendRow}>
+                      <Animated.View key={f.uid} entering={enter(i * 40)} style={styles.friendRow}>
                         <Pressable
                           accessibilityRole="button"
                           accessibilityLabel={`Ver perfil de ${f.displayName}`}
@@ -473,7 +474,7 @@ export default function FriendsScreen() {
                       if (!e) return <View key={pos} style={{ flex: 1 }} />;
                       const h = pos === 0 ? 130 : pos === 1 ? 100 : 80;
                       return (
-                        <Animated.View key={e.uid} entering={FadeInUp.delay(100 + pos * 80).duration(360)} style={styles.podiumCol}>
+                        <Animated.View key={e.uid} entering={enter(100 + pos * 80)} style={styles.podiumCol}>
                           <Avatar label={e.displayName} photoURL={e.photoURL} size={pos === 0 ? 58 : 48} />
                           <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 12.5, marginTop: 6 }} numberOfLines={1}>
                             {e.displayName.replace(" (tú)", "")}

@@ -1,3 +1,5 @@
+import { Easing, FadeInDown } from "react-native-reanimated";
+
 /**
  * Motion tokens in Apple's vocabulary, not magic numbers.
  *
@@ -61,4 +63,18 @@ export function projectDecay(velocity: number, decelerationRate = 0.998) {
 export function rubberband(overshoot: number, dimension: number, constant = 0.55) {
   "worklet";
   return (overshoot * dimension * constant) / (dimension + constant * Math.abs(overshoot));
+}
+
+/**
+ * Entrance motion, Flutter / Material 3 style: elements arrive fast and
+ * settle softly ("emphasized decelerate" curve), rising a short distance
+ * while fading in. One preset everywhere so the whole app moves alike.
+ */
+
+export const EASE_EMPHASIZED_DECEL = Easing.bezier(0.05, 0.7, 0.1, 1);
+export const DURATION = { enter: 460, quick: 220 } as const;
+
+/** Standard entrance; stagger lists by passing an index-based delay. */
+export function enter(delay = 0) {
+  return FadeInDown.duration(DURATION.enter).delay(delay).easing(EASE_EMPHASIZED_DECEL);
 }

@@ -1,6 +1,7 @@
 import React from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import Animated, { FadeIn, FadeInDown, FadeOut, FadeOutDown } from "react-native-reanimated";
+import Animated, { FadeIn, FadeOut, FadeOutDown } from "react-native-reanimated";
+import { enter } from "@/theme/motion";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import GlassSurface from "@/components/ui/GlassSurface";
@@ -33,14 +34,14 @@ export default function RideOptionsMenu({ onSelect, onClose }: Props) {
       </Pressable>
 
       <View style={styles.sheet} pointerEvents="box-none">
-        <Animated.Text entering={FadeInDown.springify().damping(18)} style={[styles.title, { color: colors.ink }]}>
+        <Animated.Text entering={enter()} style={[styles.title, { color: colors.ink }]}>
           ¿Cómo quieres pedalear?
         </Animated.Text>
         <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 8 }} showsVerticalScrollIndicator={false}>
           {RIDE_GOAL_OPTIONS.map((o, i) => (
             <Animated.View
               key={o.id}
-              entering={FadeInDown.delay(40 + i * 40).duration(300)}
+              entering={enter(40 + i * 40)}
               exiting={FadeOutDown.duration(140)}
             >
               <Pressable

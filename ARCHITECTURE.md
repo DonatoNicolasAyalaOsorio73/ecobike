@@ -87,6 +87,13 @@ semantics); the former iPhone-frame mock-up on desktop was removed so the web
 is a first-class layout, not a phone imitation. Tabs cross-fade (`animation:
 "fade"`); stack screens keep the native push.
 
+**Motion over color.** Lime marks state only; shadows are neutral
+(`elevation()`). Depth and delight come from motion: one entrance curve for
+the whole app (`enter()` in `theme/motion.ts`, Material 3 emphasized
+decelerate), scroll-driven reveal of every card inside a LargeTitleScreen
+(`components/ui/Reveal.tsx`, UI-thread, re-measured on content size change),
+and a shared-axis transition between tabs.
+
 **Type ramp and press feedback as tokens.** `src/theme/typography.ts` (SF
 sizes and tracking) and `src/components/ui/PressableScale.tsx` (UI-thread
 spring sink, haptic, hover lift) so cards and tiles respond like buttons.

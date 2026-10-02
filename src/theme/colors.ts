@@ -100,20 +100,19 @@ function buildShadow(color: string, offsetY: number, blurRadius: number, elevati
 }
 
 /**
- * Layered elevation (iOS 26 glass): a wide, soft LIME ambient glow plus a
- * tight NEUTRAL contact shadow. The glow is the brand's light green and is
- * spread far from the edge so it reads as light, never as an outline; the
- * contact layer is neutral because a tight tinted shadow looked like a green
- * border around glass.
+ * Layered elevation (iOS 26 glass): a wide, very soft neutral ambient
+ * shadow plus a tight neutral contact shadow. No tint: color is reserved
+ * for state, depth comes from light and motion.
  * Web stacks real layers; native RN supports one shadow, so it uses the
  * ambient glow. Apply on a wrapper WITHOUT overflow:hidden, or iOS clips it.
  */
 export const ELEVATION = {
-  low: { ambient: [8, 22, 0.18], contact: [1, 3, 0.05], elevation: 3 },
-  mid: { ambient: [12, 34, 0.24], contact: [1, 4, 0.06], elevation: 8 },
-  high: { ambient: [18, 48, 0.3], contact: [2, 8, 0.07], elevation: 14 },
+  low: { ambient: [6, 20, 0.06], contact: [1, 3, 0.05], elevation: 3 },
+  mid: { ambient: [10, 30, 0.08], contact: [1, 4, 0.06], elevation: 8 },
+  high: { ambient: [16, 44, 0.1], contact: [2, 8, 0.07], elevation: 14 },
 } as const;
-const GLOW = "140,200,60"; // light lime, a touch deeper than #ADF14B so it shows on white
+// Neutral ambient shadow: depth without tint (a colored glow on every card read as noise).
+const GLOW = "20,30,15";
 const CONTACT = "0,0,0";
 
 export function elevation(level: keyof typeof ELEVATION) {
@@ -123,7 +122,7 @@ export function elevation(level: keyof typeof ELEVATION) {
       boxShadow: `0px ${ambient[0]}px ${ambient[1]}px rgba(${GLOW},${ambient[2]}), 0px ${contact[0]}px ${contact[1]}px rgba(${CONTACT},${contact[2]})`,
     } as const;
   }
-  return buildShadow(`rgba(${GLOW},${ambient[2] + 0.1})`, ambient[0], ambient[1] / 2, el);
+  return buildShadow(`rgba(${GLOW},${ambient[2] + 0.04})`, ambient[0], ambient[1] / 2, el);
 }
 
 export function shadowStyle(theme: Theme) {

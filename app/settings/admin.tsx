@@ -277,9 +277,10 @@ export default function AdminScreen() {
                 }
               >
                 <View style={[styles.storeRow, { opacity: s.isActive === false ? 0.6 : 1 }]}>
-                  <View style={[styles.storeLogo, { backgroundColor: accents.green.soft, borderColor: "transparent" }]}>
+                  <View style={[styles.storeLogo, { backgroundColor: s.logo?.startsWith("https://") ? "#FFFFFF" : accents.green.soft, borderColor: "transparent" }]}>
                     {s.logo?.startsWith("https://") ? (
-                      <Image source={{ uri: s.logo }} style={StyleSheet.absoluteFill} />
+                      // Company logo shown whole (contain), never cropped.
+                      <Image source={{ uri: s.logo }} style={[StyleSheet.absoluteFill, { margin: 4 }]} resizeMode="contain" />
                     ) : (
                       <Ionicons name="storefront" size={20} color={accents.green.lip} />
                     )}

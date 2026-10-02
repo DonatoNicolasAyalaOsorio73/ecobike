@@ -1,7 +1,8 @@
 import React from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated from "react-native-reanimated";
+import { enter } from "@/theme/motion";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import BackButton from "@/components/ui/BackButton";
 import Logo from "@/components/ui/Logo";
@@ -75,7 +76,7 @@ export default function AuthScaffold({ children, back, logo = 200, title, subtit
 /** Staggered entrance: each block rises in a beat after the previous one. Short, so it never delays input. */
 export function Rise({ index, children, style }: { index: number; children: React.ReactNode; style?: any }) {
   return (
-    <Animated.View entering={FadeInDown.delay(120 + index * 70).duration(420).springify().damping(20)} style={style}>
+    <Animated.View entering={enter(120 + index * 70)} style={style}>
       {children}
     </Animated.View>
   );

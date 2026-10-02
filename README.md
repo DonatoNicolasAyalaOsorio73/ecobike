@@ -24,7 +24,7 @@ a glass sidebar and readable centered columns, with the map full-bleed.
 - **Stats:** period comparison, trend, habits by day/hour, ride types,
   environmental impact, heatmap, records, level, achievements with progress
 - **Ride detail:** framed route map, speed/altitude profile, km splits, CO₂
-- **Rewards:** featured 3D coverflow carousel (ambient blur, parallax, light sweep on redeemable cards) plus a searchable store list with a "can redeem now" filter, confirmation,
+- **Rewards:** one search bar with a "can redeem" chip; idle shows a 3D coverflow carousel (company logos as floating stamps) plus every store, searching shows matches only; confirmation,
   QR codes, store validation with camera scanner (partner/admin roles)
 - **Friends:** search, requests, real-time 1:1 chat with push, friend
   profiles, league/total ranking with podium

@@ -1,9 +1,11 @@
 import React from "react";
 import { StyleSheet, type StyleProp, type ViewStyle } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 import GlassSurface from "./GlassSurface";
+import Reveal from "./Reveal";
 import { useTheme } from "@/theme/useTheme";
 import { elevation } from "@/theme/colors";
+import { enter } from "@/theme/motion";
 
 interface Props {
   children: React.ReactNode;
@@ -16,21 +18,26 @@ interface Props {
   entranceDelay?: number;
 }
 
+/**
+ * Every card moves the same way: it enters with the shared emphasized curve
+ * when the screen opens, and inside a scrolling screen it also reveals as it
+ * scrolls into view (Reveal). Layout styles live on the outer wrapper so the
+ * animated layers never fight over size or opacity.
+ */
 export default function GlassCard({ children, style, containerStyle, intensity = 35, entranceDelay = 0 }: Props) {
   const { radii } = useTheme();
   return (
-    <Animated.View
-      // Rises into place, nearly critically damped: settles without a visible bounce.
-      entering={FadeInDown.duration(380).delay(entranceDelay).springify().damping(18).mass(0.8)}
-      style={[{ borderRadius: radii.card }, elevation("low"), containerStyle]}
-    >
-      <GlassSurface radius={radii.card} intensity={intensity} style={[styles.inner, style]}>
-        {children}
-      </GlassSurface>
-    </Animated.View>
+    <Reveal style={containerStyle}>
+      <Animated.View entering={enter(entranceDelay)} style={[styles.fill, { borderRadius: radii.card }, elevation("low")]}>
+        <GlassSurface radius={radii.card} intensity={intensity} style={[styles.inner, style]}>
+          {children}
+        </GlassSurface>
+      </Animated.View>
+    </Reveal>
   );
 }
 
 const styles = StyleSheet.create({
-  inner: { padding: 20 },
+  fill: { flexGrow: 1 },
+  inner: { padding: 20, flexGrow: 1 },
 });
