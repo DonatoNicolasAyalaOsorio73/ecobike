@@ -9,6 +9,7 @@ import GlassButton from "@/components/ui/GlassButton";
 import GlassIconButton from "@/components/ui/GlassIconButton";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import RewardsBrowser from "@/components/rewards/RewardsBrowser";
+import RewardsInfoSheet from "@/components/rewards/RewardsInfoSheet";
 import RedeemSheet from "@/components/rewards/RedeemSheet";
 import MissionsCard from "@/components/MissionsCard";
 import { useRiderStats } from "@/hooks/useRiderStats";
@@ -27,6 +28,7 @@ export default function PointsScreen() {
   const { rewards, usingRealCatalog, catalogError, loading, redeem, refresh } = useRewards(userId, isRealAccount);
   const [selected, setSelected] = useState<Reward | null>(null);
   const [width, setWidth] = useState(360);
+  const [info, setInfo] = useState(false);
   const { level, nextLevelAt } = levelForPoints(availablePoints);
   const { rides } = useRiderStats(userId);
 
@@ -45,7 +47,8 @@ export default function PointsScreen() {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={colors.primary} />}
         trailing={
           <>
-            <GlassIconButton icon="qr-code-outline" accessibilityLabel="Mis códigos" onPress={() => router.push("/points/my-codes")} size={36} />
+            <GlassIconButton liquid icon="information" accessibilityLabel="Cómo funciona" onPress={() => setInfo(true)} size={36} />
+            <GlassIconButton liquid icon="qr-code-outline" accessibilityLabel="Mis códigos" onPress={() => router.push("/points/my-codes")} size={36} />
             <ProfileButton />
           </>
         }
@@ -75,7 +78,7 @@ export default function PointsScreen() {
           <EmailVerifyBanner />
 
           {!isRealAccount && (
-            <Text style={[styles.notice, { color: colors.warning }]}>Catálogo de ejemplo. Inicia sesión para canjear en tiendas aliadas reales.</Text>
+            <Text style={[styles.notice, { color: colors.warning }]}>Catálogo de ejemplo · inicia sesión para canjear</Text>
           )}
           {catalogError && (
             <View style={styles.pad}>
@@ -108,6 +111,7 @@ export default function PointsScreen() {
         </View>
       </LargeTitleScreen>
 
+      <RewardsInfoSheet visible={info} onClose={() => setInfo(false)} />
       <RedeemSheet reward={selected} availablePoints={availablePoints} onClose={() => setSelected(null)} redeem={(r) => redeem(r, availablePoints)} />
     </>
   );

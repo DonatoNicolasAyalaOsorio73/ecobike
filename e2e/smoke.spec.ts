@@ -68,8 +68,12 @@ test("guest tour: home, map, stats, rewards, friends, profile, settings", async 
   await tab(page, "Premios").click();
   await expect(page.getByText("Recompensas").first()).toBeVisible();
   await page.getByRole("button", { name: /^Coldest,/ }).first().click();
-  await page.getByRole("button", { name: "Canjear", exact: true }).click();
-  await page.getByRole("button", { name: "Sí, canjear" }).click();
+  // Redeem is one press-and-hold (the button fills, then confirms)
+  const hold = page.getByRole("button", { name: "Mantén para canjear" });
+  await hold.hover();
+  await page.mouse.down();
+  await page.waitForTimeout(1400);
+  await page.mouse.up();
   await expect(page.getByText("¡Canje listo!")).toBeVisible();
   await page.getByRole("button", { name: "Listo", exact: true }).click();
 
