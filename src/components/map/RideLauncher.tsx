@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { BackHandler, Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Svg, { Circle } from "react-native-svg";
@@ -67,6 +67,16 @@ export default function RideLauncher({ open, onOpenChange, onSelect, weekProgres
   useEffect(() => {
     if (open) setView("menu");
   }, [open]);
+  // Android back closes a panel, then the menu, before it ever leaves the map.
+  useEffect(() => {
+    if (!open) return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (view !== "menu") setView("menu");
+      else onOpenChange(false);
+      return true;
+    });
+    return () => sub.remove();
+  }, [open, view, onOpenChange]);
   const turn = useSharedValue(0);
   const press = useSharedValue(0);
   const entry = useSharedValue(0);

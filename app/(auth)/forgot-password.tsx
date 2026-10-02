@@ -20,6 +20,7 @@ export default function ForgotPasswordScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const onSubmit = async () => {
+    if (loading) return; // the keyboard's Go/Send key can fire while a request is in flight
     if (!isFirebaseConfigured) {
       setError("Esta app no tiene un proyecto de Firebase configurado todavía.");
       return;

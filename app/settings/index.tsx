@@ -332,7 +332,6 @@ export default function SettingsScreen() {
             {Application.nativeBuildVersion ? ` (${Application.nativeBuildVersion})` : ""} · {Platform.OS === "web" ? "Web" : Platform.OS === "ios" ? "iOS" : "Android"}
           </Text>
 
-          <View style={{ height: 60 }} />
     </LargeTitleScreen>
   );
 }

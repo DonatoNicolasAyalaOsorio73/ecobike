@@ -123,7 +123,7 @@ function Card({ reward: source, index, cardWidth, cardHeight, step, scrollX, aff
   });
 
   return (
-    <Animated.View entering={enter(index * 90)} style={[{ width: cardWidth, marginRight: SPACING }, WEB_SNAP_ITEM]}>
+    <Animated.View entering={enter(Math.min(index, 4) * 90)} style={[{ width: cardWidth, marginRight: SPACING }, WEB_SNAP_ITEM]}>
       <Animated.View style={[{ borderRadius: RADIUS }, elevation("mid"), cardStyle]}>
         <Pressable
           accessibilityRole="button"
@@ -232,9 +232,17 @@ export default function RewardCarousel({ rewards, availablePoints, width, onPres
   const step = cardWidth + SPACING;
   const side = (width - cardWidth) / 2;
 
+  // Crosses to JS only when the centered card changes (not on every frame),
+  // clamped so iOS overscroll bounce never reports -1 or past the end.
+  const lastIndex = useSharedValue(0);
+  const count = rewards.length;
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollX.value = e.contentOffset.x;
-    runOnJS(setIndex)(Math.round(e.contentOffset.x / step));
+    const i = Math.max(0, Math.min(count - 1, Math.round(e.contentOffset.x / step)));
+    if (i !== lastIndex.value) {
+      lastIndex.value = i;
+      runOnJS(setIndex)(i);
+    }
   });
   // Light tick when a new card settles in the center (not on first render).
   const first = React.useRef(true);

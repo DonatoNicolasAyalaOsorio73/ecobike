@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 import { MapContainer, TileLayer, Polyline, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -8,9 +8,16 @@ import { useTheme } from "@/theme/useTheme";
 import { routeCamera } from "@/utils/mapCamera";
 
 const BOGOTA = { lat: 4.711, lng: -74.0721 };
-// Integer zooms: Leaflet snaps fractional ones (17.5 → 18, where OSM floods the map with shop icons).
-/** Navigation arrow rotated to the heading (Leaflet divIcon: plain HTML, no image asset). */
-function arrowIcon(deg: number) {
+/**
+ * The rider's marker (Leaflet divIcon: plain HTML, no image asset): an arrow
+ * rotated to the heading, or a plain dot when the heading is unknown (no
+ * compass, not moving) instead of an arrow confidently pointing north.
+ */
+function arrowIcon(deg: number | null) {
+  if (deg == null) {
+    const dot = `<div style="width:22px;height:22px;border-radius:50%;background:#1C2410;border:3px solid #FFFFFF;box-shadow:0 0 0 8px rgba(28,36,16,0.12)"></div>`;
+    return L.divIcon({ html: dot, className: "", iconSize: [22, 22], iconAnchor: [11, 11] });
+  }
   const html =
     `<div style="width:44px;height:44px;transform:rotate(${Math.round(deg)}deg);transition:transform .3s ease">` +
     `<svg viewBox="0 0 44 44" width="44" height="44">` +
@@ -20,6 +27,7 @@ function arrowIcon(deg: number) {
   return L.divIcon({ html, className: "", iconSize: [44, 44], iconAnchor: [22, 22] });
 }
 
+// Integer zooms: Leaflet snaps fractional ones (17.5 → 18, where OSM floods the map with shop icons).
 const STREET_ZOOM = 17;
 const FOLLOW_ZOOM = 16;
 
@@ -46,7 +54,8 @@ function Recenter({ center, recenterKey, fitTo, roomForCard }: { center: { lat: 
   useEffect(() => {
     if (fitTo) {
       // Full-screen preview: leave room for the top controls and the card at the bottom.
-      if (roomForCard) map.fitBounds(fitTo, { paddingTopLeft: [28, 90], paddingBottomRight: [28, 320] });
+      // Room for the preview card, but never more padding than a short window has.
+      if (roomForCard) map.fitBounds(fitTo, { paddingTopLeft: [28, 90], paddingBottomRight: [28, Math.min(320, map.getSize().y * 0.45)] });
       else map.fitBounds(fitTo, { padding: [28, 28] });
       return;
     }
@@ -67,6 +76,9 @@ export default function RideMap({ route, center, height = 260, fill, recenterKey
   const initialCenter = center ?? route[0] ?? BOGOTA;
   const positions = route.map((p) => [p.lat, p.lng] as [number, number]);
   const plannedPositions = (plannedRoute ?? []).map((p) => [p.lat, p.lng] as [number, number]);
+  // Rebuilt only when the heading moves ≥ 5°, not on every GPS fix.
+  const bucket = heading == null ? null : Math.round(heading / 5) * 5;
+  const icon = useMemo(() => arrowIcon(bucket), [bucket]);
 
   return (
     // zIndex 0 gives the map its own stacking context, so Leaflet's panes
@@ -95,7 +107,7 @@ export default function RideMap({ route, center, height = 260, fill, recenterKey
         {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: "#1C2410", weight: plannedPositions.length > 1 ? 5 : 9, opacity: plannedPositions.length > 1 ? 0.9 : 0.35, lineCap: "round" }} />}
         {positions.length > 1 && plannedPositions.length < 2 && <Polyline positions={positions} pathOptions={{ color: "#7BF510", weight: 6, lineCap: "round" }} />}
         {/* You-are-here: a heading arrow (ink with a white outline over a soft halo) so you can tell which way you face. */}
-        {center && <Marker position={[center.lat, center.lng]} icon={arrowIcon(heading ?? 0)} interactive={false} keyboard={false} zIndexOffset={1000} />}
+        {center && <Marker position={[center.lat, center.lng]} icon={icon} interactive={false} keyboard={false} zIndexOffset={1000} />}
         <Recenter center={center} recenterKey={recenterKey} fitTo={fitRoute ? routeCamera(route)?.bounds ?? null : fitPlanned && plannedRoute ? routeCamera(plannedRoute)?.bounds ?? null : null} roomForCard={!fitRoute && !!fitPlanned} />
       </MapContainer>
     </View>

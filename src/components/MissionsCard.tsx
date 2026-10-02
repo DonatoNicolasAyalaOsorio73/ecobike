@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { ZoomIn } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,8 +15,17 @@ export default function MissionsCard({ rides, entranceDelay = 0 }: { rides: Ride
   const { colors } = useTheme();
   const dailyGoal = useSettingsStore((s) => s.dailyGoalPoints);
   const userId = useCurrentUserId();
+  // A minute tick: the countdown moves and a new day's missions appear at
+  // midnight even if the screen stays open.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  const day = now.toDateString();
   // Drawn per user and day; only verified rides count (see utils/missions.ts).
-  const missions = useMemo(() => dailyMissions(rides, dailyGoal, new Date(), userId ?? ""), [rides, dailyGoal, userId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const missions = useMemo(() => dailyMissions(rides, dailyGoal, new Date(), userId ?? ""), [rides, dailyGoal, userId, day]);
   const done = missions.filter((m) => m.done).length;
 
   return (
@@ -24,7 +33,7 @@ export default function MissionsCard({ rides, entranceDelay = 0 }: { rides: Ride
       <View style={styles.head}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.title, { color: colors.ink }]}>Misiones de hoy</Text>
-          <Text style={{ color: colors.inkSoft, fontSize: 12 }}>Nuevas en {renewsIn()} · solo cuentan recorridos verificados</Text>
+          <Text style={{ color: colors.inkSoft, fontSize: 12 }}>Nuevas en {renewsIn(now)} · solo cuentan recorridos verificados</Text>
         </View>
         <View style={[styles.counter, { backgroundColor: done === missions.length ? colors.primary : colors.chipFill }]}>
           <Ionicons name="star" size={12} color={colors.ink} />

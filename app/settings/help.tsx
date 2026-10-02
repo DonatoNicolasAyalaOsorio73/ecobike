@@ -7,15 +7,16 @@ import BackButton from "@/components/ui/BackButton";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassButton from "@/components/ui/GlassButton";
 import { useTheme } from "@/theme/useTheme";
+import { DAILY_POINTS_CAP, MAX_RIDES_PER_DAY, MIN_DISTANCE_M, POINTS_PER_KM, RIDE_BONUS } from "@/utils/rideScore";
 
 const SUPPORT = process.env.EXPO_PUBLIC_SUPPORT_EMAIL;
 
 const FAQ: [string, string][] = [
-  ["¿Cómo gano puntos?", "5 puntos por kilómetro en bicicleta, más 5 de bono si el recorrido supera 1 km y 5 minutos. Máximo 150 puntos al día. Los calcula nuestro servidor al sincronizar, verificando que tu velocidad sea de bicicleta: caminar, ir en carro o bus, o usar GPS falso no suma puntos."],
-  ["No me aparecen los puntos de un recorrido", "Si estabas sin conexión, el recorrido se guarda en el teléfono y se sincroniza solo cuando vuelves a tener internet. No suman puntos los recorridos de menos de 500 m, a velocidad de caminata o de vehículo, con saltos de GPS, ni los que superan el límite diario. Al terminar un recorrido sin puntos te mostramos el motivo."],
+  ["¿Cómo gano puntos?", `${POINTS_PER_KM} puntos por kilómetro en bicicleta, más ${RIDE_BONUS} de bono si el recorrido supera 1 km y 5 minutos. Máximo ${DAILY_POINTS_CAP} puntos y ${MAX_RIDES_PER_DAY} recorridos cada 24 horas. Los calcula nuestro servidor al sincronizar, verificando que tu velocidad sea de bicicleta: caminar, ir en carro o bus, o usar GPS falso no suma puntos.`],
+  ["No me aparecen los puntos de un recorrido", `Si estabas sin conexión, el recorrido se guarda en el teléfono y se sincroniza solo cuando vuelves a tener internet. No suman puntos los recorridos de menos de ${MIN_DISTANCE_M} m, a velocidad de caminata o de vehículo, con saltos de GPS, ni los que superan el límite diario. Al terminar un recorrido sin puntos te mostramos el motivo, y también en el detalle del recorrido.`],
   ["¿Cómo funcionan las misiones y los logros?", "Cada día recibes 3 misiones nuevas elegidas al azar (se renuevan a medianoche). Misiones, logros y rachas solo cuentan recorridos en bicicleta verificados, es decir, los que ganaron puntos: caminar, ir en vehículo o usar GPS falso no suma. Las misiones y los logros no dan puntos extra; los puntos solo se ganan pedaleando."],
   ["¿Puedo usar EcoBike en la web y en el teléfono?", "Sí. Es la misma cuenta y la misma información: puntos, recorridos, amigos, mensajes y códigos se sincronizan entre la web y la app."],
-  ["¿Cómo canjeo una recompensa?", "En Recompensas, elige una tienda, confirma el canje y muestra el QR o el código en la caja. Cada código se usa una sola vez. Para canjear necesitas tu correo verificado y 3 recorridos en bicicleta verificados. Puedes hacer 1 canje al día y repetir la misma tienda cada 7 días."],
+  ["¿Cómo canjeo una recompensa?", "En Premios, elige una tienda, mantén presionado para canjear y muestra el QR o el código en la caja. Cada código se usa una sola vez. Para canjear necesitas tu correo verificado y 3 recorridos en bicicleta verificados. Puedes hacer 1 canje al día y repetir la misma tienda cada 7 días."],
   ["La app se detiene sola durante el recorrido", "Es la pausa automática: se activa cuando te detienes unos segundos y se reanuda al volver a moverte. Puedes desactivarla en Ajustes > Recorridos."],
   ["¿Mi ubicación es privada?", "El trazado GPS completo se queda en tu teléfono. Para verificar tus puntos enviamos una versión reducida que el servidor analiza y descarta sin guardar; en la nube solo queda el resumen (distancia, duración, velocidad). Ningún amigo ve tu ubicación."],
   ["¿Cómo agrego amigos?", "En Amigos > Amigos, busca su nombre de usuario y envía una solicitud. Cuando la acepten podrán escribirse y compararse en el ranking."],

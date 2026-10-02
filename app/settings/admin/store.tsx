@@ -5,6 +5,7 @@ import Animated, { FadeIn, ZoomIn } from "react-native-reanimated";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import LargeTitleScreen from "@/components/ui/LargeTitleScreen";
+import AdminOnly from "@/components/admin/AdminOnly";
 import BackButton from "@/components/ui/BackButton";
 import GlassInput from "@/components/ui/GlassInput";
 import GlassButton from "@/components/ui/GlassButton";
@@ -20,7 +21,15 @@ import { deleteStore, listStores, saveStore, uploadStoreLogo } from "@/services/
 const EMPTY = { name: "", description: "", logo: "", pointsRequired: "", isActive: true };
 
 /** Create or edit a store (reward). The logo is required: tap the stamp to upload it. */
-export default function StoreEditor() {
+export default function StoreEditorScreen() {
+  return (
+    <AdminOnly>
+      <StoreEditor />
+    </AdminOnly>
+  );
+}
+
+function StoreEditor() {
   const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [form, setForm] = useState(EMPTY);
@@ -28,6 +37,7 @@ export default function StoreEditor() {
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
   // Logos of a store not created yet go under a one-off folder.
   const [draftKey] = useState(() => `new-${Date.now().toString(36)}`);
 
@@ -36,7 +46,10 @@ export default function StoreEditor() {
     listStores()
       .then((all) => {
         const s = all.find((x) => x.id === id);
-        if (!s) throw new Error("La tienda no existe.");
+        if (!s) {
+          setNotFound(true);
+          throw new Error("La tienda no existe.");
+        }
         setForm({ name: s.name ?? "", description: s.description ?? "", logo: s.logo ?? "", pointsRequired: String(s.pointsRequired ?? ""), isActive: s.isActive !== false });
       })
       .catch((e) => setError(e.message))
@@ -47,8 +60,19 @@ export default function StoreEditor() {
 
   const pickLogo = async () => {
     setError(null);
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.9 });
+    let res: ImagePicker.ImagePickerResult;
+    try {
+      res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.9 });
+    } catch {
+      setError("No se pudo abrir la galería.");
+      return;
+    }
     if (res.canceled || !res.assets?.[0]) return;
+    // Checked here so the admin hears it now, not as a Storage error.
+    if (res.assets[0].fileSize && res.assets[0].fileSize > 2 * 1024 * 1024) {
+      setError("El logo debe pesar menos de 2 MB.");
+      return;
+    }
     setUploading(true);
     try {
       const a = res.assets[0];
@@ -89,7 +113,7 @@ export default function StoreEditor() {
     }
   };
 
-  const ready = form.name.trim() && Number(form.pointsRequired) > 0 && (id || form.logo);
+  const ready = !notFound && form.name.trim() && Number(form.pointsRequired) > 0 && (id || form.logo);
 
   return (
     <LargeTitleScreen title={id ? "Editar tienda" : "Nueva tienda"} leading={<BackButton size={36} />} tabBar={false}>

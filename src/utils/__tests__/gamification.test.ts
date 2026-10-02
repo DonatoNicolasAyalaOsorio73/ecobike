@@ -82,3 +82,16 @@ test("streak counts verified rides only; an earned streak achievement stays earn
   assert.ok(validAchievements(new Set(["streak_3"]), computeRiderStats(verified)).has("streak_3"));
   assert.equal(streakDays([r(1, 5, 0)]), 0);
 });
+
+test("streakDays (date-relative): verified rides only; capped-but-verified rides count", () => {
+  const daysAgo = (n: number, extra: Partial<ReturnType<typeof createEmptyRide>> = {}) => {
+    const d = new Date();
+    d.setHours(12, 0, 0, 0);
+    d.setDate(d.getDate() - n);
+    return { ...createEmptyRide("u1", `s${n}${extra.verified}`), startedAt: d.getTime(), endedAt: d.getTime() + 1800_000, distanceMeters: 5000, pointsEarned: 30, ...extra };
+  };
+  assert.equal(streakDays([daysAgo(0), daysAgo(1)]), 2);
+  assert.equal(streakDays([daysAgo(0), daysAgo(1, { pointsEarned: 0 })]), 1); // a walk yesterday breaks it
+  assert.equal(streakDays([daysAgo(0), daysAgo(1, { pointsEarned: 0, verified: true })]), 2); // daily cap hit, still a real ride
+  assert.equal(streakDays([daysAgo(0, { verified: false }), daysAgo(1)]), 1); // server refused today's ride
+});

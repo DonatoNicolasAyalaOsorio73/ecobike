@@ -1,9 +1,10 @@
 import AppModal from "@/components/ui/AppModal";
 import React, { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, FadeInDown, SlideInDown, ZoomIn } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
+import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import GlassSurface from "@/components/ui/GlassSurface";
 import GlassButton from "@/components/ui/GlassButton";
@@ -53,6 +54,7 @@ export default function RedeemSheet({ reward, availablePoints, onClose, redeem }
       setResult(await redeem(reward));
       setPhase("done");
     } catch (e: any) {
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
       setError(e?.message ?? "No se pudo canjear. Inténtalo de nuevo.");
       setPhase("error");
     }
@@ -113,6 +115,12 @@ export default function RedeemSheet({ reward, availablePoints, onClose, redeem }
                   </Animated.Text>
                 ) : null}
 
+                {reward.details && reward.details !== reward.subtitle ? (
+                  // Conditions of the reward ("no acumulable..."): short, but never hidden.
+                  <Animated.Text entering={enter(110)} style={[type.footnote, styles.center, { color: colors.inkFaint, marginTop: 6 }]} numberOfLines={3}>
+                    {reward.details}
+                  </Animated.Text>
+                ) : null}
                 <Animated.View entering={enter(130)} style={styles.priceRow}>
                   <Ionicons name="ribbon" size={20} color={colors.ink} />
                   <Text style={[styles.price, { color: colors.ink }]}>{reward.pointsCost.toLocaleString("es-CO")}</Text>

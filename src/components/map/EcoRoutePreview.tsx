@@ -47,6 +47,7 @@ export default function EcoRoutePreview({ eco, onSelect, onCancel, onStart }: Pr
         )}
 
         {eco.error && <Text style={[type.subhead, styles.error, { color: colors.danger }]}>{eco.error}</Text>}
+        {!eco.loading && !eco.error && !r && <Text style={[type.subhead, styles.error, { color: colors.inkSoft }]}>No encontramos una ruta en bici hasta ese lugar.</Text>}
 
         {r && (
           <>

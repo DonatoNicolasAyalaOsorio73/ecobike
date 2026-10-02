@@ -143,7 +143,7 @@ export default function HomeScreen() {
       <MissionsCard rides={rides} entranceDelay={80} />
 
       {rewards.length > 0 && (
-        <PressableScale style={{ marginTop: 12 }} onPress={() => router.navigate("/(tabs)/points")} accessibilityLabel="Abrir recompensas">
+        <PressableScale style={{ marginTop: 12 }} onPress={() => router.navigate("/(tabs)/points")} accessibilityLabel="Abrir premios">
           <GlassCard entranceDelay={120} style={styles.rewardRow}>
             <View style={[styles.rewardIcon, { backgroundColor: nextReward ? colors.chipFill : colors.primary }]}>
               <Ionicons name={((nextReward ?? sorted[0])?.icon as any) ?? "gift"} size={20} color={colors.onPrimary} />

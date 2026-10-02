@@ -127,6 +127,10 @@ export default function LargeTitleScreen({ refreshControl, padded = true, childr
         onScroll={lt.onScroll}
         scrollEventThrottle={16}
         keyboardShouldPersistTaps="handled"
+        // iOS: the keyboard pushes the content up so inputs low on long forms
+        // (admin reasons, profile fields) stay visible. Android resizes the window itself.
+        automaticallyAdjustKeyboardInsets
+        keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={lt.showsVerticalScrollIndicator}
         refreshControl={refreshControl}
         contentContainerStyle={lt.contentContainerStyle}

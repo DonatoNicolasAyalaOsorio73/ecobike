@@ -22,7 +22,18 @@ export default function HoldToConfirm({ label, onConfirm, loading, disabled }: {
 
   useEffect(() => {
     AccessibilityInfo.isScreenReaderEnabled().then(setScreenReader).catch(() => {});
+    // VoiceOver/TalkBack can be switched on while the sheet is open.
+    const sub = AccessibilityInfo.addEventListener("screenReaderChanged", setScreenReader);
+    return () => sub.remove();
   }, []);
+
+  // When the action finishes (e.g. a failed redeem), drain the fill and allow
+  // another attempt; otherwise the button stays lime and retries are ignored.
+  useEffect(() => {
+    if (loading) return;
+    fired.current = false;
+    fill.value = withSpring(0, SPRING.default);
+  }, [loading, disabled, fill]);
 
   const fire = () => {
     if (fired.current) return;

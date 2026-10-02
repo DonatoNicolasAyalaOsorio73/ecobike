@@ -1,5 +1,6 @@
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { effectiveDailyGoal } from "@/utils/streak";
 import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -45,7 +46,7 @@ function StatBox({ accent, label, children, delay }: { accent: AccentName; label
 export default function RideCompleteOverlay({ ride, streak, pointsToday, goal, goalReached, unlocked, pointsBefore, onClose }: Props) {
   const levelBefore = levelForPoints(pointsBefore).level;
   const levelAfter = levelForPoints(pointsBefore + ride.pointsEarned).level;
-  const dailyGoal = useSettingsStore((s) => s.dailyGoalPoints);
+  const dailyGoal = effectiveDailyGoal(useSettingsStore((s) => s.dailyGoalPoints)); // same capped goal as the home card
   const units = useSettingsStore((s) => s.units);
   const km = ride.distanceMeters / 1000;
   const shownDistance = units === "metric" ? km : km * 0.621371;
@@ -82,7 +83,7 @@ export default function RideCompleteOverlay({ ride, streak, pointsToday, goal, g
             <Animated.View entering={FadeInDown.delay(620)} style={styles.noPoints}>
               <Ionicons name="information-circle-outline" size={18} color="#5B6660" />
               <Text style={styles.noPointsText}>
-                Sin puntos esta vez: {ride.pointsReason ?? scoreLocalRide(ride).reason ?? "no cumple las reglas de verificación."} Los puntos se ganan pedaleando de verdad.
+                Sin puntos esta vez: {ride.pointsReason || scoreLocalRide(ride).reason || "no cumple las reglas de verificación."} Los puntos se ganan pedaleando de verdad.
               </Text>
             </Animated.View>
           )}

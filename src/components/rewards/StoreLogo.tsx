@@ -31,8 +31,9 @@ export default function StoreLogo({ uri, name, size, style }: { uri?: string; na
 
 /** A user's profile photo, or the same monogram fallback store logos use. */
 export function Avatar({ name, photo, size = 44 }: { name: string; photo: string | null; size?: number }) {
-  return photo?.startsWith("https://") ? (
-    <Image source={{ uri: photo }} style={{ width: size, height: size, borderRadius: size / 2 }} accessibilityIgnoresInvertColors />
+  const [broken, setBroken] = useState<string | null>(null);
+  return photo?.startsWith("https://") && broken !== photo ? (
+    <Image source={{ uri: photo }} style={{ width: size, height: size, borderRadius: size / 2 }} onError={() => setBroken(photo)} accessibilityIgnoresInvertColors />
   ) : (
     <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
       <StoreLogo name={name} size={size / 0.82} />

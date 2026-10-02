@@ -3,7 +3,7 @@ import { Platform, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
-import Animated, { FadeIn, FadeInDown, FadeOutDown, ZoomIn, useAnimatedStyle, withSpring } from "react-native-reanimated";
+import Animated, { FadeInDown, FadeOutDown, ZoomIn, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import RideMap from "@/components/map/RideMap";
 import RideLauncher from "@/components/map/RideLauncher";
 import EcoRoutePreview from "@/components/map/EcoRoutePreview";
@@ -19,13 +19,11 @@ import GlassSurface from "@/components/ui/GlassSurface";
 import GlassButton from "@/components/ui/GlassButton";
 import GlassIconButton from "@/components/ui/GlassIconButton";
 import ProgressRing from "@/components/ui/ProgressRing";
-import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import PulseDot from "@/components/ui/PulseDot";
 import RideCompleteOverlay from "@/components/RideCompleteOverlay";
 import Flame from "@/components/ui/Flame";
 import { useTheme } from "@/theme/useTheme";
 import { SPRING, enter } from "@/theme/motion";
-import { accents } from "@/theme/colors";
 import { useRideStore } from "@/stores/rideStore";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useRiderStats } from "@/hooks/useRiderStats";
@@ -100,9 +98,15 @@ export default function MapScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // A newer locate (or leaving the screen) cancels the slow background refine
+  // of an older one, so a late fix never yanks the map back after a pan.
+  const locateSeq = React.useRef(0);
+  useEffect(() => () => void (locateSeq.current = -1), []);
+
   async function locate(ask: boolean) {
+    const seq = ++locateSeq.current;
     const go = (p: Location.LocationObject | null) => {
-      if (!p) return false;
+      if (!p || seq !== locateSeq.current) return false;
       setIdleCenter({ lat: p.coords.latitude, lng: p.coords.longitude });
       setRecenterKey((k) => k + 1);
       return true;
@@ -123,7 +127,9 @@ export default function MapScreen() {
       const quick = await within(8000, Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
       const moved = go(quick) || movedFast;
       // 3) Refine with GPS in the background (can take a while indoors; never blocks).
-      within(15000, Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High })).then((p) => go(p));
+      within(15000, Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High })).then((p) => {
+        if (useRideStore.getState().status === "IDLE") go(p);
+      });
       // 4) Last resort: any known position, else tell the rider why nothing moved.
       if (!moved && !go(await within(1500, Location.getLastKnownPositionAsync())) && ask) {
         toast("No pudimos obtener tu ubicación. Revisa que el GPS esté activo.", "error");
@@ -138,20 +144,26 @@ export default function MapScreen() {
   // The Eco ruta being ridden (route + where to), for the green path and turn-by-turn.
   const [activeEco, setActiveEco] = useState<{ route: BikeRoute; place: Place; prefs: RoutePrefs } | null>(null);
   const [recalculating, setRecalculating] = useState(false);
+  // Only the latest planning request may update the preview (re-picks, new prefs).
+  const ecoReq = React.useRef(0);
   const pickEco = async (place: Place, prefs: RoutePrefs) => {
     setMenuOpen(false);
-    if (!center) return;
+    if (!center) {
+      toast("Necesitamos tu ubicación para planear la ruta. Toca el botón de ubicación.", "error");
+      return;
+    }
+    const req = ++ecoReq.current;
     setEco({ place, prefs, routes: [], idx: 0, loading: true, error: null });
     try {
       const routes = await planBikeRoute(center, place, prefs);
-      setEco((e) => (e && e.place === place ? { ...e, routes, loading: false } : e));
+      if (req === ecoReq.current) setEco((e) => (e ? { ...e, routes, loading: false } : e));
     } catch (err: any) {
-      setEco((e) => (e && e.place === place ? { ...e, loading: false, error: err?.message ?? "No pudimos calcular la ruta." } : e));
+      if (req === ecoReq.current) setEco((e) => (e ? { ...e, loading: false, error: err?.message ?? "No pudimos calcular la ruta." } : e));
     }
   };
   const startEco = () => {
     const r = eco?.routes[eco.idx];
-    if (!r) return;
+    if (!r || !userId) return; // nothing to ride without an account; the line must not stay on an idle map
     setActiveEco({ route: r, place: eco!.place, prefs: eco!.prefs });
     setEco(null);
     begin({ kind: "distance", meters: Math.max(500, Math.round(r.km * 1000)) });
@@ -194,12 +206,17 @@ export default function MapScreen() {
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
     }
   }, [nav]);
+  // A new route means new turns to announce.
+  useEffect(() => {
+    announced.current = null;
+  }, [activeEco?.route]);
   const recalculate = async () => {
-    if (!activeEco || !currentLocation) return;
+    if (!activeEco || !currentLocation || recalculating) return;
     setRecalculating(true);
     try {
       const [route] = await planBikeRoute(currentLocation, activeEco.place, activeEco.prefs);
-      if (route) setActiveEco({ ...activeEco, route });
+      // The ride may have ended while this was in flight: never revive the line on an idle map.
+      if (route && useRideStore.getState().status !== "IDLE") setActiveEco((a) => (a ? { ...a, route } : a));
     } catch {
       toast("No pudimos recalcular la ruta. Sigue la línea verde.", "error");
     } finally {
@@ -370,7 +387,10 @@ export default function MapScreen() {
         )}
 
         <View style={styles.rail} pointerEvents="box-none">
-          <GlassIconButton liquid icon="navigate" accessibilityLabel="Centrar en mi ubicación" onPress={() => locate(true)} />
+          <GlassIconButton liquid icon="navigate" accessibilityLabel="Centrar en mi ubicación" onPress={() => {
+            askCompassPermission();
+            locate(true);
+          }} />
         </View>
       </SafeAreaView>
 
@@ -432,6 +452,15 @@ const styles = StyleSheet.create({
  * Native maps draw the system location marker, which already shows heading.
  * Throttled: orientation fires ~60 Hz, the arrow only needs a few updates a second.
  */
+/**
+ * iPhone Safari (13+) only delivers compass events after the page asks, and
+ * only from a tap: called from the locate button. No-op everywhere else.
+ */
+function askCompassPermission() {
+  const DOE = typeof window !== "undefined" ? (window as any).DeviceOrientationEvent : undefined;
+  if (Platform.OS === "web" && typeof DOE?.requestPermission === "function") DOE.requestPermission().catch(() => {});
+}
+
 function useCompassHeading(): number | null {
   const [deg, setDeg] = useState<number | null>(null);
   useEffect(() => {

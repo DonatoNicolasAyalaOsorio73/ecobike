@@ -42,7 +42,7 @@ export default function PointsScreen() {
   return (
     <>
       <LargeTitleScreen
-        title="Recompensas"
+        title="Premios"
         padded={false}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={colors.primary} />}
         trailing={

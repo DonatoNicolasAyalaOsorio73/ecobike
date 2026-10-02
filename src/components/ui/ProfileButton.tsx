@@ -15,6 +15,8 @@ export default function ProfileButton() {
   const local = useLocalProfileStore();
   const name = profile?.displayName ?? local.displayName ?? "";
   const photo = profile?.photoURL ?? local.photoUri;
+  // A dead photo URL falls back to the initial instead of an empty lime circle.
+  const [broken, setBroken] = React.useState<string | null>(null);
 
   return (
     <PressableScale
@@ -23,8 +25,8 @@ export default function ProfileButton() {
       onPress={() => router.navigate("/(tabs)/profile")}
       style={[styles.ring, { borderColor: "rgba(255,255,255,0.95)", backgroundColor: colors.primary }]}
     >
-      {photo ? (
-        <Image source={{ uri: photo }} style={styles.img} accessibilityIgnoresInvertColors />
+      {photo && broken !== photo ? (
+        <Image source={{ uri: photo }} style={styles.img} onError={() => setBroken(photo)} accessibilityIgnoresInvertColors />
       ) : (
         <Text style={[styles.initial, { color: colors.onPrimary }]}>{name.trim().slice(0, 1).toUpperCase() || "E"}</Text>
       )}

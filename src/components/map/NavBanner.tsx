@@ -1,5 +1,5 @@
 import React from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { AccessibilityInfo, ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeIn, FadeInDown, LinearTransition } from "react-native-reanimated";
 import GlassSurface from "@/components/ui/GlassSurface";
@@ -7,7 +7,7 @@ import { useTheme } from "@/theme/useTheme";
 import { elevation } from "@/theme/colors";
 import { type } from "@/theme/typography";
 import { LIQUID_BORDER, LIQUID_FILL_STRONG, LIQUID_RIM } from "@/theme/glass";
-import { distanceLabel, maneuverIcon, type NavState } from "@/utils/navigation";
+import { distanceLabel, remainingLabel, maneuverIcon, type NavState } from "@/utils/navigation";
 
 interface Props {
   nav: NavState;
@@ -23,7 +23,7 @@ interface Props {
  */
 export default function NavBanner({ nav, destination, recalculating, onRecalculate }: Props) {
   const { colors } = useTheme();
-  const remaining = nav.remainingM >= 1000 ? `${(nav.remainingM / 1000).toFixed(1).replace(".", ",")} km` : `${Math.round(nav.remainingM / 10) * 10} m`;
+  const remaining = remainingLabel(nav.remainingM);
 
   let icon = maneuverIcon(nav.next?.type ?? 8);
   let title = distanceLabel(nav.distanceM);
@@ -37,6 +37,11 @@ export default function NavBanner({ nav, destination, recalculating, onRecalcula
     title = "Fuera de la ruta";
     line = "Vuelve a la línea verde o recalcula desde aquí.";
   }
+
+  // iOS ignores accessibilityLiveRegion: announce each new turn / state explicitly.
+  React.useEffect(() => {
+    AccessibilityInfo.announceForAccessibility(`${title}. ${line}`);
+  }, [title, line]);
 
   return (
     <Animated.View entering={FadeInDown.duration(320)} layout={LinearTransition.springify().damping(20)} style={[styles.wrap, elevation("mid")]}>

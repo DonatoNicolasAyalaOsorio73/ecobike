@@ -5,6 +5,7 @@ import * as Haptics from "expo-haptics";
 import Animated, { FadeIn, FadeOut, LinearTransition } from "react-native-reanimated";
 import GlassSurface from "@/components/ui/GlassSurface";
 import StoreLogo from "./StoreLogo";
+import { POINTS_PER_KM } from "@/utils/rideScore";
 import PressableScale from "@/components/ui/PressableScale";
 import RewardCarousel from "./RewardCarousel";
 import { useTheme } from "@/theme/useTheme";
@@ -83,7 +84,7 @@ export default function RewardsBrowser({ rewards, availablePoints, width, onPres
             {shown.length === 0
               ? query.trim()
                 ? `Ninguna tienda coincide con "${query.trim()}".`
-                : "Aún no te alcanza para ninguna. Sigue pedaleando: 5 pts por km."
+                : `Aún no te alcanza para ninguna. Sigue pedaleando: ${POINTS_PER_KM} pts por km.`
               : `${shown.length} ${shown.length === 1 ? "tienda" : "tiendas"}${onlyAffordable ? " que puedes canjear" : ""}`}
           </Text>
           <List rewards={shown} availablePoints={availablePoints} onPress={onPress} />

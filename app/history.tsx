@@ -35,7 +35,6 @@ const PERIOD_OPTIONS: { label: string; value: StatsPeriod }[] = [
   { label: "Todo", value: "all" },
 ];
 
-/** Short / medium / long rides get their own color, like the stats donut. */
 export default function HistoryScreen() {
   const { colors } = useTheme();
   const lt = useLargeTitle({ title: "Actividad", leading: <BackButton size={36} />, tabBar: false });

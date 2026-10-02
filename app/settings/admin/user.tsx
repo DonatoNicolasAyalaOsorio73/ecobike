@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { router, useLocalSearchParams } from "expo-router";
 import LargeTitleScreen from "@/components/ui/LargeTitleScreen";
+import AdminOnly from "@/components/admin/AdminOnly";
 import BackButton from "@/components/ui/BackButton";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassInput from "@/components/ui/GlassInput";
@@ -19,7 +20,15 @@ import { useAuthStore } from "@/stores/authStore";
 import { deleteUser, describeLog, getUser, listStores, updateUser, type AdminLog, type AdminStore, type AdminUserDetail, type Role } from "@/services/admin.service";
 
 /** One user: activity at a glance, then each change in its own small card. */
-export default function UserAdmin() {
+export default function UserAdminScreen() {
+  return (
+    <AdminOnly>
+      <UserAdmin />
+    </AdminOnly>
+  );
+}
+
+function UserAdmin() {
   const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const myUid = useAuthStore((s) => s.firebaseUser?.uid);
@@ -38,29 +47,43 @@ export default function UserAdmin() {
   const [apellido, setApellido] = useState("");
   const [deleteReason, setDeleteReason] = useState("");
 
-  const apply = useCallback((r: { user: AdminUserDetail; logs: AdminLog[] }) => {
+  // Each card owns its fields: a save refreshes only the card that saved, so
+  // half-typed edits in the other cards are never wiped.
+  type Section = "role" | "points" | "names" | "disabled";
+  const apply = useCallback((r: { user: AdminUserDetail; logs: AdminLog[] }, only?: Section) => {
     setUser(r.user);
     setLogs(r.logs);
-    setRole(r.user.role);
-    setStoreId(r.user.storeId ?? "");
-    setPoints(String(r.user.points));
-    setReason("");
-    setNombre(r.user.nombre);
-    setApellido(r.user.apellido);
+    if (!only || only === "role") {
+      setRole(r.user.role);
+      setStoreId(r.user.storeId ?? "");
+    }
+    if (!only || only === "points") {
+      setPoints(String(r.user.points));
+      setReason("");
+    }
+    if (!only || only === "names") {
+      setNombre(r.user.nombre);
+      setApellido(r.user.apellido);
+    }
   }, []);
 
   useEffect(() => {
-    if (!id) return;
-    getUser(id).then(apply).catch((e) => setError(e.message));
-    listStores().then(setStores).catch(() => {});
+    if (!id) {
+      setError("Usuario no especificado.");
+      return;
+    }
+    getUser(id).then((r) => apply(r)).catch((e) => setError(e.message));
+    listStores()
+      .then(setStores)
+      .catch((e) => setError(`No se pudieron cargar las tiendas: ${e.message}`));
   }, [id, apply]);
 
-  const run = async (key: string, patch: Parameters<typeof updateUser>[0], done: string) => {
+  const run = async (key: Section, patch: Parameters<typeof updateUser>[0], done: string) => {
     setBusy(key);
     setError(null);
     setNotice(null);
     try {
-      apply(await updateUser(patch));
+      apply(await updateUser(patch), key);
       setNotice(done);
     } catch (e: any) {
       setError(e.message);
@@ -147,7 +170,7 @@ export default function UserAdmin() {
         />
         {role === "partner" && (
           <Animated.View entering={FadeIn} style={{ marginTop: 12 }}>
-            <ChoiceChips accessibilityLabel="Tienda del partner" allowClear={false} value={storeId} onChange={setStoreId} choices={stores.map((s) => ({ value: s.id, label: s.name }))} />
+            <ChoiceChips accessibilityLabel="Tienda del partner" allowClear={false} value={storeId} onChange={setStoreId} choices={stores.filter((s) => s.isActive !== false || s.id === storeId).map((s) => ({ value: s.id, label: s.name }))} />
           </Animated.View>
         )}
         {roleChanged && (

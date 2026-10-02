@@ -75,6 +75,11 @@ export function distanceLabel(m: number): string {
 }
 
 /** Ionicons glyph for a Valhalla maneuver type. */
+/** "Quedan …" distance to the destination, with the same rounding as distanceLabel. */
+export function remainingLabel(m: number): string {
+  return distanceLabel(m).replace(/^En /, "");
+}
+
 export function maneuverIcon(type: number): string {
   if ([4, 5, 6].includes(type)) return "flag";
   if ([9, 10, 11, 2, 20].includes(type)) return "return-up-forward";

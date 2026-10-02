@@ -30,29 +30,40 @@ export default function EcoRoutePanel({ near, prefs, onPrefsChange, onPick, onBa
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Bias only needs ~100 m: keyed on rounded coordinates so each GPS fix
+  // doesn't cancel and resend the search (and flicker the list).
+  const nearKey = near ? `${near.lat.toFixed(3)},${near.lng.toFixed(3)}` : "";
+
   // Debounced search; a newer query cancels the previous request.
   useEffect(() => {
     if (query.trim().length < 3) {
       setResults([]);
       setError(null);
+      setLoading(false);
       return;
     }
     const ctrl = new AbortController();
+    const bias = nearKey ? { lat: Number(nearKey.split(",")[0]), lng: Number(nearKey.split(",")[1]) } : null;
     const t = setTimeout(() => {
       setLoading(true);
-      searchPlaces(query, near, ctrl.signal)
+      searchPlaces(query, bias, ctrl.signal)
         .then((r) => {
           setResults(r);
           setError(r.length ? null : "Sin resultados. Prueba con otro nombre o dirección.");
         })
-        .catch((e) => !ctrl.signal.aborted && setError(e.message))
+        .catch(() => {
+          if (ctrl.signal.aborted) return;
+          setResults([]);
+          setError("No pudimos buscar lugares ahora. Revisa tu conexión.");
+        })
         .finally(() => !ctrl.signal.aborted && setLoading(false));
     }, 400);
     return () => {
       clearTimeout(t);
       ctrl.abort();
+      setLoading(false);
     };
-  }, [query, near]);
+  }, [query, nearKey]);
 
   return (
     <View style={styles.wrap}>

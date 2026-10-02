@@ -29,6 +29,10 @@ export default function AdminScreen() {
   const isAdmin = role === "admin";
   const isStaff = isAdmin || role === "partner";
   const [section, setSection] = useState<Section>(isAdmin ? "stores" : "validate");
+  // The role can arrive after the first render: land admins on Tiendas then too.
+  useEffect(() => {
+    if (isAdmin) setSection((v) => (v === "validate" ? "stores" : v));
+  }, [isAdmin]);
 
   return (
     <LargeTitleScreen title={isStaff && !isAdmin ? "Tienda aliada" : "Administración"} leading={<BackButton size={36} />} tabBar={false}>
@@ -163,7 +167,7 @@ function StoresSection() {
                 {s.name}
               </Text>
               <Text style={[type.footnote, { color: colors.inkSoft }]} numberOfLines={1}>
-                {Number(s.pointsRequired).toLocaleString("es-CO")} pts{s.isActive === false ? " · Inactiva" : ""}
+                {Number.isFinite(Number(s.pointsRequired)) ? Number(s.pointsRequired).toLocaleString("es-CO") : "–"} pts{s.isActive === false ? " · Inactiva" : ""}
                 {!hasLogo(s) ? " · Sin logo" : ""}
               </Text>
             </View>
@@ -195,9 +199,9 @@ function UsersSection() {
       setNext(r.next);
       setError(null);
     } catch (e: any) {
-      setError(e.message);
+      if (text === query.current.trim()) setError(e.message); // ignore errors of superseded searches
     } finally {
-      setLoading(false);
+      if (text === query.current.trim()) setLoading(false);
     }
   }, []);
 
@@ -292,11 +296,12 @@ function ValidateCard() {
         }}
         autoCapitalize="characters"
         autoCorrect={false}
-        onSubmitEditing={() => validate(false)}
+        onSubmitEditing={() => code.trim() && validate(false)}
       />
       {check && (
-        <Text style={[type.headline, { color: check.status === "used" ? colors.danger : colors.ink, marginBottom: 10 }]}>
-          {check.store} · {check.status === "used" ? "Ya usado" : "Válido, sin usar"}
+        // Right after confirming, "used" is the success state, not an error.
+        <Text style={[type.headline, { color: check.status === "used" && !msg ? colors.danger : colors.ink, marginBottom: 10 }]}>
+          {check.store} · {check.status === "used" ? (msg ? "Canje confirmado" : "Ya usado") : "Válido, sin usar"}
         </Text>
       )}
       {msg && <Text style={[type.footnote, { color: colors.inkSoft, marginBottom: 10 }]}>{msg}</Text>}

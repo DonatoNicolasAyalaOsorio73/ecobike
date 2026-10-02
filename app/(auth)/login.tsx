@@ -21,6 +21,7 @@ export default function LoginScreen() {
   const continueAsGuest = useAuthStore((s) => s.continueAsGuest);
 
   const onSubmit = async () => {
+    if (loading) return; // the keyboard's Go/Send key can fire while a request is in flight
     if (!isFirebaseConfigured) {
       setError("Esta app no tiene un proyecto de Firebase configurado todavía — usa \"Explorar sin cuenta\" para probarla ahora.");
       return;

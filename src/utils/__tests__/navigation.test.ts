@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cumulativeMeters, distanceLabel, maneuverIcon, navigate, type Maneuver } from "../navigation.ts";
+import { cumulativeMeters, distanceLabel, maneuverIcon, navigate, remainingLabel, type Maneuver } from "../navigation.ts";
 
 // A straight 1 km route due north, one point every 100 m (≈ 0.0009° of latitude).
 const STEP = 100 / 111194.93;
@@ -54,4 +54,9 @@ test("maneuverIcon maps turn directions", () => {
 test("distanceLabel never shows 1000 m", () => {
   assert.equal(distanceLabel(996), "En 1,0 km");
   assert.equal(distanceLabel(994), "En 990 m");
+});
+
+test("remainingLabel uses the same rounding (never 1000 m)", () => {
+  assert.equal(remainingLabel(996), "1,0 km");
+  assert.equal(remainingLabel(450), "450 m");
 });
