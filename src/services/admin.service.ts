@@ -58,7 +58,7 @@ export interface Kpis {
   stores: number;
 }
 
-export const getKpis = () => api<Kpis>("admin-stats", "GET");
+export const getKpis = () => api<Kpis>("users?stats=1", "GET");
 
 export const listStores = () =>
   api<{ stores: AdminStore[] }>("stores", "GET").then((r) => r.stores.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "")));

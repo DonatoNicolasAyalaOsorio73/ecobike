@@ -50,7 +50,7 @@ Storage:
 | `GET /api/users?id=` | detalle: cuenta, actividad y últimos cambios |
 | `PUT /api/users` | rol (partner con tienda), puntos (con motivo), suspender, nombre |
 | `DELETE /api/users` | elimina la cuenta y todos sus datos (con motivo) |
-| `GET /api/admin-stats` | KPIs del panel |
+| `GET /api/users?stats=1` | KPIs del panel |
 
 Cada cambio queda en `admin_logs`. Un admin no puede quitarse el rol,
 suspenderse ni borrarse a sí mismo.
@@ -58,3 +58,10 @@ suspenderse ni borrarse a sí mismo.
 Para nombrar al primer admin: en la consola de Firestore, en
 `usuarios/{tu uid}`, pon `role: "admin"`. Después todo se gestiona desde la app
 (Ajustes → Administración).
+
+## Límite de Vercel
+
+El plan Hobby admite como máximo 12 funciones por despliegue: cada archivo de
+`api/` cuenta, salvo los que empiezan con `_` (por eso `_lib.js` y los tests
+`_*.test.mjs`). Hoy hay 11. Antes de añadir un endpoint nuevo, súmalo a uno
+existente.

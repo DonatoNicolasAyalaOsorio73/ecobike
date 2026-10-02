@@ -1,6 +1,7 @@
 // Admin user management (all audited in admin_logs).
 // GET    /api/users?q=texto&after=uid   → search (username prefix, or exact email) / page through users
 // GET    /api/users?id=uid              → detail: profile, account status, activity counts, recent admin log
+// GET    /api/users?stats=1             → dashboard KPIs (aggregation queries only)
 // PUT    /api/users { id, role?, storeId?, points?, reason?, disabled?, nombre?, apellido? } → update
 // DELETE /api/users { id, reason }      → permanently delete the user and their data
 const { admin, httpError, requireAdmin, logAdmin, deleteUserData, body, handler, isDocId } = require("./_lib");
@@ -91,6 +92,29 @@ async function list(db, q, after) {
   return { users: snap.docs.map((d, i) => summary(d.id, d.data(), pubs[i].data())), next: snap.size === PAGE ? snap.docs[snap.size - 1].id : null };
 }
 
+// Lives here (not its own file) because the Hobby plan allows 12 functions per deployment.
+async function stats(db) {
+  const { AggregateField, Timestamp } = require("firebase-admin/firestore");
+  const weekAgoMs = Date.now() - 7 * 86_400_000;
+  const [users, rides, codes, used, stores] = await Promise.all([
+    db.collection("usuarios").count().get(),
+    db.collectionGroup("rides").where("startedAt", ">=", weekAgoMs).aggregate({ n: AggregateField.count(), meters: AggregateField.sum("distanceMeters"), pts: AggregateField.sum("pointsEarned") }).get(),
+    db.collectionGroup("codigos_canjeados").where("createdAt", ">=", Timestamp.fromMillis(weekAgoMs)).count().get(),
+    db.collectionGroup("codigos_canjeados").where("status", "==", "used").count().get(),
+    db.collection("tiendas").count().get(),
+  ]);
+  const r = rides.data();
+  return {
+    users: users.data().count,
+    ridesWeek: r.n ?? 0,
+    kmWeek: Math.round((r.meters ?? 0) / 1000),
+    pointsWeek: r.pts ?? 0,
+    redemptionsWeek: codes.data().count,
+    codesUsedTotal: used.data().count,
+    stores: stores.data().count,
+  };
+}
+
 async function detail(db, uid) {
   const ref = db.collection("usuarios").doc(uid);
   const [d, p, rides, verified, codes, logs] = await Promise.all([
@@ -124,6 +148,7 @@ module.exports = handler(["GET", "PUT", "DELETE"], async (req) => {
   const { FieldValue } = require("firebase-admin/firestore");
 
   if (req.method === "GET") {
+    if (req.query?.stats !== undefined) return stats(db);
     const id = req.query?.id;
     if (id !== undefined) {
       if (!isDocId(id)) throw httpError(400, "id inválido.");
