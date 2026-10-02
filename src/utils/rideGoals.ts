@@ -11,6 +11,9 @@ export interface RideGoalOption {
 /** Options shown in the map's ride menu. */
 export const RIDE_GOAL_OPTIONS: RideGoalOption[] = [
   { id: "free", label: "Recorrido libre", subtitle: "Sin meta, pedalea a tu ritmo", icon: "bicycle", goal: null },
+  // Eco ruta: a goal sized to avoid ~1 kg of CO₂ vs. driving (CO2_KG_PER_KM in rideStats: 8.5 km × 0.12 ≈ 1 kg).
+  // ponytail: a distance goal, not turn-by-turn routing; add real route planning if riders ask for it.
+  { id: "eco", label: "Eco ruta", subtitle: "8.5 km: evitas ~1 kg de CO₂ frente al carro", icon: "leaf", goal: { kind: "distance", meters: 8500 } },
   { id: "5km", label: "5 km", subtitle: "Ideal para ir al trabajo", icon: "flag-outline", goal: { kind: "distance", meters: 5000 } },
   { id: "10km", label: "10 km", subtitle: "Ruta media", icon: "flag", goal: { kind: "distance", meters: 10_000 } },
   { id: "20km", label: "20 km", subtitle: "Reto de fin de semana", icon: "trophy-outline", goal: { kind: "distance", meters: 20_000 } },

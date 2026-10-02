@@ -39,23 +39,17 @@ test("guest tour: home, map, stats, rewards, friends, profile, settings", async 
   await tab(page, "Inicio").click();
   await expect(page.getByText("Misiones de hoy")).toBeVisible();
 
-  // Map: ride options menu opens and closes
   await tab(page, "Mapa").click();
-  await expect(page.getByText("Listo para pedalear")).toBeVisible();
+  // Map: the round EcoBike button opens the ride modes (incl. Eco ruta) and closes them
   await page.getByRole("button", { name: "Opciones de recorrido" }).click();
   await expect(page.getByText("¿Cómo quieres pedalear?")).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Eco ruta/ })).toBeVisible();
   await page.getByRole("button", { name: "Cerrar opciones de recorrido" }).click();
   await expect(page.getByText("¿Cómo quieres pedalear?")).toHaveCount(0);
 
-  // Map panel folds to one line and unfolds (grabber is also a button)
-  await page.getByRole("button", { name: "Contraer panel" }).click();
-  await expect(page.getByRole("button", { name: "Expandir panel" })).toBeVisible();
-  await page.getByRole("button", { name: "Expandir panel" }).click();
-  await expect(page.getByText("Listo para pedalear")).toBeVisible();
-
   // Guest session survives a reload
   await page.reload();
-  await expect(page.getByText("Listo para pedalear")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Opciones de recorrido" })).toBeVisible();
 
   // Stats with example data
   await tab(page, "Progreso").click();

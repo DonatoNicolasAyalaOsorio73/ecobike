@@ -10,7 +10,10 @@ const BOGOTA = { lat: 4.711, lng: -74.0721 };
 
 // Dark mode for OSM tiles without another tile provider: invert + hue-rotate
 // keeps streets readable and matches the app's dark glass surfaces.
-const DARK_TILES_CSS = ".ecobike-dark .leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9)}";
+const DARK_TILES_CSS =
+  ".ecobike-dark .leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9)}" +
+  // Light map: calmer colors (less saturated POIs/landuse), labels stay crisp.
+  ".ecobike-clean{filter:saturate(0.55) brightness(1.04) contrast(0.97)}";
 let cssInjected = false;
 function injectCss() {
   if (cssInjected || typeof document === "undefined") return;
@@ -50,15 +53,20 @@ export default function RideMap({ route, center, height = 260, fill, recenterKey
         className={isDark ? "ecobike-dark" : undefined}
         style={{ height: "100%", width: "100%" }}
       >
+        {/* Standard OSM tiles (keyless, reliable), softened by .ecobike-clean so
+            the base recedes and the route + street names stand out. */}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          className="ecobike-clean"
         />
         {/* Lime route with an ink casing (Apple Maps style) so a light line stays legible on any tile. */}
         {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: "#1C2410", weight: 9, opacity: 0.35, lineCap: "round" }} />}
         {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: "#ADF14B", weight: 6, lineCap: "round" }} />}
+        {/* You-are-here: soft accuracy halo + ink dot with a white ring (readable on any street color). */}
+        {center && <CircleMarker center={[center.lat, center.lng]} radius={22} pathOptions={{ stroke: false, fillColor: "#1C2410", fillOpacity: 0.1 }} />}
         {center && (
-          <CircleMarker center={[center.lat, center.lng]} radius={9} pathOptions={{ color: "#fff", weight: 3, fillColor: "#ADF14B", fillOpacity: 1 }} />
+          <CircleMarker center={[center.lat, center.lng]} radius={8} pathOptions={{ color: "#fff", weight: 3, fillColor: "#1C2410", fillOpacity: 1 }} />
         )}
         <Recenter center={center} recenterKey={recenterKey} fitTo={fitRoute ? routeCamera(route)?.bounds ?? null : null} />
       </MapContainer>

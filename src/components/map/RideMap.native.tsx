@@ -4,6 +4,16 @@ import { AppleMaps, GoogleMaps } from "expo-maps";
 import { useTheme } from "@/theme/useTheme";
 import { routeCamera } from "@/utils/mapCamera";
 
+// Google Maps: hide business pins and POI icons (keep park names) so streets read clearly.
+const GOOGLE_CLEAN_STYLE = JSON.stringify([
+  { featureType: "poi.business", stylers: [{ visibility: "off" }] },
+  { featureType: "poi", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", elementType: "labels.icon", stylers: [{ visibility: "simplified" }] },
+]);
+
+// expo-maps doesn't export the POI enum publicly; its values are these strings.
+const APPLE_POIS = ["PARK", "NATIONAL_PARK", "PUBLIC_TRANSPORT"] as unknown as NonNullable<NonNullable<AppleMaps.MapProperties["pointsOfInterest"]>["including"]>;
+
 export interface RideMapProps {
   route: { lat: number; lng: number }[];
   center: { lat: number; lng: number } | null;
@@ -42,7 +52,11 @@ export default function RideMap({ route, center, height = 260, fill, recenterKey
           style={StyleSheet.absoluteFill}
           cameraPosition={cameraPosition}
           colorScheme={isDark ? AppleMaps.MapColorScheme.DARK : AppleMaps.MapColorScheme.LIGHT}
-          properties={{ isMyLocationEnabled: true }}
+          // Only what matters on a bike: parks and transit; shops and the rest stay hidden.
+          properties={{
+            isMyLocationEnabled: true,
+            pointsOfInterest: { including: APPLE_POIS },
+          }}
           uiSettings={{ myLocationButtonEnabled: false, compassEnabled: true }}
           polylines={polylines}
         />
@@ -51,7 +65,7 @@ export default function RideMap({ route, center, height = 260, fill, recenterKey
           style={StyleSheet.absoluteFill}
           cameraPosition={cameraPosition}
           colorScheme={isDark ? GoogleMaps.MapColorScheme.DARK : GoogleMaps.MapColorScheme.LIGHT}
-          properties={{ isMyLocationEnabled: true }}
+          properties={{ isMyLocationEnabled: true, mapStyleOptions: { json: GOOGLE_CLEAN_STYLE } }}
           uiSettings={{ myLocationButtonEnabled: false, compassEnabled: true, zoomControlsEnabled: false }}
           polylines={polylines}
         />

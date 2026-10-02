@@ -15,7 +15,7 @@ a glass sidebar and readable centered columns, with the map full-bleed.
 
 - **Inicio:** greeting, weekly goal hero with parallax, quick actions, next
   reward progress, daily missions, week chart, last ride and CO₂ saved
-- **Map:** full-screen map, glass control rail, ride options (free or
+- **Map:** clean full-screen map, one round EcoBike button that opens the ride modes (free, Eco ruta, or
   distance/time goals), daily points goal, streak, background tracking,
   auto-pause, keep-screen-on, live stats, lesson-complete style celebration
   with level-ups and new achievements

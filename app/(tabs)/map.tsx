@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import Animated, { FadeIn, FadeInDown, FadeOutDown, ZoomIn, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import RideMap from "@/components/map/RideMap";
-import RideOptionsMenu from "@/components/map/RideOptionsMenu";
+import RideLauncher from "@/components/map/RideLauncher";
 import MapSheet from "@/components/map/MapSheet";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassSurface from "@/components/ui/GlassSurface";
@@ -129,43 +129,6 @@ export default function MapScreen() {
 
 
       <Animated.View style={[styles.bottom, desktop ? styles.bottomDesktop : { bottom: bottomInset - 8 }, cardStyle]} pointerEvents={menuOpen ? "none" : "box-none"}>
-        {status === "IDLE" && (
-          <MapSheet
-            expanded={sheetOpen}
-            onExpandedChange={setSheetOpen}
-            compact={
-              <View style={styles.compactRow}>
-                <ProgressRing progress={weekProgress} size={40} thickness={5}>
-                  <Text style={{ fontSize: 10, fontWeight: "700", color: colors.ink }}>{Math.round(Math.min(999, weekProgress * 100))}%</Text>
-                </ProgressRing>
-                <Text style={[styles.title, { color: colors.ink, flex: 1 }]}>Listo para pedalear</Text>
-                <GlassIconButton icon="play" accessibilityLabel="Iniciar recorrido" active onPress={() => begin(null)} size={44} />
-              </View>
-            }
-          >
-            <View style={styles.idleRow}>
-              <ProgressRing progress={weekProgress} size={72} thickness={8}>
-                <AnimatedNumber
-                  value={Math.round(Math.min(999, weekProgress * 100))}
-                  style={{ fontSize: 15, fontWeight: "700", color: colors.ink }}
-                  format={(v) => `${v}%`}
-                />
-              </ProgressRing>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.title, { color: colors.ink }]}>Listo para pedalear</Text>
-                <Text style={[styles.subtitle, { color: colors.inkSoft }]}>
-                  {weekProgress >= 1
-                    ? `Meta semanal cumplida: ${weekKm.toFixed(1)} de ${weeklyGoalKm} km.`
-                    : `Te faltan ${Math.max(0, weeklyGoalKm - weekKm).toFixed(1)} km para tu meta semanal.`}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.controlsRow}>
-              <GlassButton label="Iniciar recorrido" icon="play" variant="primary" onPress={() => begin(null)} disabled={!userId} style={{ flex: 1 }} />
-            </View>
-          </MapSheet>
-        )}
-
         {status === "PREPARING" && (
           <GlassCard>
             <Text style={[styles.title, { color: colors.ink }]}>Obteniendo tu ubicación…</Text>
@@ -259,9 +222,6 @@ export default function MapScreen() {
         />
       )}
 
-      {/* Layers: map < ride card < options menu (frosted) < top controls */}
-      {menuOpen && <RideOptionsMenu onSelect={begin} onClose={() => setMenuOpen(false)} />}
-
       <SafeAreaView style={styles.safe} edges={["top"]} pointerEvents="box-none">
         <View style={styles.topRow} pointerEvents="box-none">
           <Animated.View entering={FadeIn.duration(400)}>
@@ -294,17 +254,20 @@ export default function MapScreen() {
 
         <View style={styles.rail} pointerEvents="box-none">
           <GlassIconButton icon="locate" accessibilityLabel="Centrar en mi ubicación" onPress={() => locate(true)} />
-          {status === "IDLE" && (
-            <GlassIconButton
-              icon={menuOpen ? "close" : "options"}
-              accessibilityLabel={menuOpen ? "Cerrar opciones de recorrido" : "Opciones de recorrido"}
-              active={menuOpen}
-              onPress={() => setMenuOpen((o) => !o)}
-              size={56}
-            />
-          )}
         </View>
       </SafeAreaView>
+
+      {/* Layers: map < ride panel < top controls < launcher (its menu frosts everything below). */}
+      {status === "IDLE" && (
+        <RideLauncher
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          onSelect={begin}
+          weekProgress={weekProgress}
+          disabled={!userId}
+          bottom={desktop ? 28 : bottomInset - 2}
+        />
+      )}
     </View>
   );
 }
@@ -332,7 +295,6 @@ const styles = StyleSheet.create({
   bottomDesktop: { right: undefined, left: 24, bottom: 24, width: 400 },
   title: { fontSize: 17, fontWeight: "700" },
   subtitle: { fontSize: 13, marginTop: 6, lineHeight: 18 },
-  idleRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   compactRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   goalRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
   statsRow: { flexDirection: "row", justifyContent: "space-between" },
