@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import * as client from "@/utils/rideScore";
 import { isVerified } from "@/utils/verified";
+import { weekKey } from "@/utils/week";
 
 // The device and the server score rides with hand-copied rules (rideScore.ts
 // and api/_lib.js). This keeps the two copies from drifting apart.
@@ -45,4 +46,12 @@ test("verified: the server's flag wins; old rides fall back to points", () => {
   assert.equal(isVerified({ pointsEarned: 30, verified: false }), false); // server refused it
   assert.equal(isVerified({ pointsEarned: 30 }), true);
   assert.equal(isVerified({ pointsEarned: 0 }), false);
+});
+
+test("league weeks: device and server agree (Colombia time, ISO weeks)", () => {
+  const start = Date.UTC(2026, 0, 1);
+  for (let h = 0; h < 24 * 400; h += 7) {
+    const ms = start + h * 3600_000;
+    assert.equal(weekKey(ms), server.weekKey(ms), new Date(ms).toISOString());
+  }
 });
