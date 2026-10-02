@@ -1,8 +1,10 @@
 // POST   /api/rides       — sync a finished ride and award its points (server-side).
+//                           The body carries a downsampled GPS track that is
+//                           verified (bike speeds, no GPS jumps) and discarded.
 //                           Idempotent: re-sending the same ride id never awards twice.
 // DELETE /api/rides {id}  — delete one of my rides and take back its points
 //                           (never below 0), so deleting can't be used to farm.
-const { admin, httpError, requireUser, body, handler, validateRide, weekKey, isDocId, clampNum, MAX_RIDES_PER_DAY, MAX_RIDE_DURATION_S } = require("./_lib");
+const { admin, httpError, requireUser, body, handler, validateRide, weekKey, isDocId, clampNum, MAX_RIDES_PER_DAY, MAX_RIDE_DURATION_S, DAILY_POINTS_CAP } = require("./_lib");
 
 /** Weekly league points after adding `delta` for a ride in `rideWeek` (resets when the week changes). */
 function nextWeekly(pub, rideWeek, delta) {
@@ -26,9 +28,9 @@ module.exports = handler(["POST", "DELETE"], async (req) => {
 
   const { Timestamp } = require("firebase-admin/firestore");
   const rides = userRef.collection("rides");
-  // Daily cap counts by SERVER time (createdAt). Counting by the client's
+  // Daily caps count by SERVER time (createdAt). Counting by the client's
   // startedAt let a backdated ride skip the cap entirely.
-  const recentQ = rides.where("createdAt", ">=", Timestamp.fromMillis(Date.now() - 24 * 3600_000)).select().limit(MAX_RIDES_PER_DAY);
+  const recentQ = rides.where("createdAt", ">=", Timestamp.fromMillis(Date.now() - 24 * 3600_000)).select("pointsEarned").limit(MAX_RIDES_PER_DAY);
   // A rider can't be on two rides at once: any stored ride whose time range
   // intersects this one means a duplicate or a fabricated ride.
   const overlapQ = rides
@@ -47,7 +49,12 @@ module.exports = handler(["POST", "DELETE"], async (req) => {
     if (around.docs.some((d) => (d.data().endedAt ?? 0) > v.startedAt)) {
       throw httpError(409, "Este recorrido se superpone con otro ya registrado.");
     }
-    const points = recent.size >= MAX_RIDES_PER_DAY ? 0 : v.points;
+    // Caps: rides per day and points per day (earning stays slow on purpose,
+    // so rewards take real riding and can't be emptied in one burst).
+    const earnedToday = recent.docs.reduce((s, d) => s + (d.data().pointsEarned ?? 0), 0);
+    const rideCapHit = recent.size >= MAX_RIDES_PER_DAY;
+    const points = rideCapHit ? 0 : Math.max(0, Math.min(v.points, DAILY_POINTS_CAP - earnedToday));
+    const reason = v.reason ?? (rideCapHit ? "Límite diario de recorridos alcanzado." : points < v.points ? `Límite diario de ${DAILY_POINTS_CAP} puntos alcanzado.` : null);
     tx.set(rideRef, {
       userId: user.uid,
       startedAt: v.startedAt,
@@ -59,13 +66,15 @@ module.exports = handler(["POST", "DELETE"], async (req) => {
       elevationGainMeters: clampNum(ride.elevationGainMeters, 10_000),
       caloriesKcal: clampNum(ride.caloriesKcal, 20_000),
       pointsEarned: points,
+      verified: v.points > 0,
+      pointsReason: reason,
       createdAt: FieldValue.serverTimestamp(),
     });
     const balance = (userSnap.data().puntosAcumulados ?? 0) + points;
     tx.update(userRef, { puntosAcumulados: FieldValue.increment(points), updatedAt: FieldValue.serverTimestamp() });
     const weekly = nextWeekly(pubSnap.data(), weekKey(v.startedAt), points);
     tx.set(pubRef, { puntosAcumulados: balance, ...(weekly ?? {}) }, { merge: true });
-    return { pointsEarned: points, balance, duplicate: false };
+    return { pointsEarned: points, reason, balance, duplicate: false };
   });
 });
 

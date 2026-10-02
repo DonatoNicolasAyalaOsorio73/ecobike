@@ -82,7 +82,7 @@ export default function RewardsBrowser({ rewards, availablePoints, width, onPres
             {shown.length === 0
               ? query.trim()
                 ? `Ninguna tienda coincide con "${query.trim()}".`
-                : "Aún no te alcanza para ninguna. Sigue pedaleando: 10 pts por km."
+                : "Aún no te alcanza para ninguna. Sigue pedaleando: 5 pts por km."
               : `${shown.length} ${shown.length === 1 ? "tienda" : "tiendas"}${onlyAffordable ? " que puedes canjear" : ""}`}
           </Text>
           <List rewards={shown} availablePoints={availablePoints} onPress={onPress} />

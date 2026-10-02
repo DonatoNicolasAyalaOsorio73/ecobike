@@ -15,7 +15,8 @@ import { formatDuration } from "@/utils/format";
 import { goalLabel, type RideGoal } from "@/utils/rideGoals";
 import type { Ride } from "@/types/ride";
 import type { AchievementDef } from "@/types/achievement";
-import { levelForPoints } from "@/utils/gamification";
+import { levelForPoints, rideTrack } from "@/utils/gamification";
+import { analyzeTrack, scoreRide } from "@/utils/rideScore";
 import { shareText } from "@/services/share";
 import { rideShareText } from "@/utils/shareText";
 
@@ -76,6 +77,16 @@ export default function RideCompleteOverlay({ ride, streak, pointsToday, goal, g
               <AnimatedNumber value={ride.pointsEarned} style={[styles.boxValue, { color: accents.gold.lip }]} format={(v) => `+${v}`} />
             </StatBox>
           </View>
+
+          {/* A ride that earned nothing says why (same rules the server applies). */}
+          {ride.pointsEarned === 0 && (
+            <Animated.View entering={FadeInDown.delay(620)} style={styles.noPoints}>
+              <Ionicons name="information-circle-outline" size={18} color="#5B6660" />
+              <Text style={styles.noPointsText}>
+                Sin puntos esta vez: {scoreRide(ride.distanceMeters, ride.durationSeconds, analyzeTrack(rideTrack(ride))).reason ?? "no cumple las reglas de verificación."} Los puntos se ganan pedaleando de verdad.
+              </Text>
+            </Animated.View>
+          )}
 
           {levelAfter > levelBefore && (
             <Animated.View entering={ZoomIn.delay(640).springify().damping(16)} style={[styles.levelUp, { backgroundColor: accents.purple.soft, borderColor: accents.purple.base }]}>
@@ -147,6 +158,8 @@ export default function RideCompleteOverlay({ ride, streak, pointsToday, goal, g
 }
 
 const styles = StyleSheet.create({
+  noPoints: { flexDirection: "row", gap: 8, alignItems: "flex-start", marginTop: 14, padding: 12, borderRadius: 14, backgroundColor: "rgba(20,23,26,0.05)" },
+  noPointsText: { flex: 1, fontSize: 13, lineHeight: 18, color: "#5B6660" },
   root: { flex: 1, backgroundColor: "#FFFFFF" },
   content: { alignItems: "center", paddingHorizontal: 22, paddingTop: 80, paddingBottom: 40 },
   hero: { width: 128, height: 128, borderRadius: 64, alignItems: "center", justifyContent: "center", borderWidth: 4 },

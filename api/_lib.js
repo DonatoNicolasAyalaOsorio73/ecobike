@@ -115,19 +115,87 @@ function handler(methods, fn) {
   };
 }
 
-// ─── Ride scoring (pure, see api/_lib.test.mjs) ─────────────────────────────
-// Same formula as src/utils/gamification.ts pointsForRide(), but computed
-// here from validated numbers so a client can't send its own points.
-const POINTS_PER_KM = 10;
-const POINTS_PER_COMPLETED_RIDE = 20;
-const MIN_DISTANCE_M = 200;
+// ─── Ride scoring + bicycle detection (pure, see api/_lib.test.mjs) ─────────
+// KEEP IDENTICAL to src/utils/rideScore.ts (same rules, same test cases).
+// The client uploads a downsampled track ONLY for this check; it is analysed
+// here and never stored (privacy: the polyline still lives only on-device).
+const POINTS_PER_KM = 5;
+const RIDE_BONUS = 5; // only for a real ride: >= BONUS_MIN_M and >= BONUS_MIN_S
+const BONUS_MIN_M = 1000;
+const BONUS_MIN_S = 300;
+const MIN_DISTANCE_M = 500;
+const DAILY_POINTS_CAP = 150; // rolling 24 h by server time, see api/rides.js
+const MOVING_KMH = 3;
+const BIKE_MIN_KMH = 7; // walking is ~4-6 km/h
+const BIKE_MAX_KMH = 50; // sustained faster than this is a vehicle
+const TELEPORT_KMH = 80; // a jump this fast between two fixes is fake/broken GPS
+const MIN_BIKE_SHARE = 0.6;
+const MAX_TELEPORT_M = 200;
+const MAX_TRACK_POINTS = 800;
 const MAX_DISTANCE_M = 200_000;
-const MAX_AVG_KMH = 45; // faster than this is a car, not a bike
+const MAX_AVG_KMH = 45; // faster than this on average is a car, not a bike
 const MAX_RIDES_PER_DAY = 20;
 const MAX_RIDE_DURATION_S = 12 * 3600; // also bounds the overlap-check window in api/rides.js
-// ponytail: plausibility checks on the summary only; the GPS polyline stays on
-// the device for privacy. Upgrade path: upload the polyline and re-measure it
-// server-side if cheating shows up in practice.
+
+function haversine(a, b) {
+  const R = 6371000;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(b[0] - a[0]);
+  const dLng = toRad(b[1] - a[1]);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a[0])) * Math.cos(toRad(b[0])) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/** Re-measures a [lat, lng, tMs][] track and classifies how it was travelled; null if unusable. */
+function analyzeTrack(track) {
+  if (!Array.isArray(track) || track.length < 2) return null;
+  let distanceMeters = 0;
+  let movingSeconds = 0;
+  let bikeSeconds = 0;
+  let teleportMeters = 0;
+  for (let i = 1; i < track.length; i++) {
+    const a = track[i - 1];
+    const b = track[i];
+    const dt = (b[2] - a[2]) / 1000;
+    if (!(dt > 0)) return null;
+    const d = haversine(a, b);
+    const kmh = (d / dt) * 3.6;
+    if (kmh > TELEPORT_KMH) {
+      teleportMeters += d;
+      continue;
+    }
+    distanceMeters += d;
+    if (kmh >= MOVING_KMH) {
+      movingSeconds += dt;
+      if (kmh >= BIKE_MIN_KMH && kmh <= BIKE_MAX_KMH) bikeSeconds += dt;
+    }
+  }
+  return { distanceMeters, movingSeconds, bikeShare: movingSeconds > 0 ? bikeSeconds / movingSeconds : 0, teleportMeters };
+}
+
+function scoreRide(claimedMeters, durationSeconds, analysis) {
+  if (!analysis) return { points: 0, reason: "Sin ruta GPS verificable." };
+  if (analysis.teleportMeters > MAX_TELEPORT_M) return { points: 0, reason: "Detectamos saltos de GPS imposibles en bicicleta." };
+  const credited = Math.min(claimedMeters, analysis.distanceMeters * 1.1);
+  if (credited < MIN_DISTANCE_M) return { points: 0, reason: "Recorrido muy corto (mínimo 500 m)." };
+  if (analysis.bikeShare < MIN_BIKE_SHARE) return { points: 0, reason: "No parece un recorrido en bicicleta (velocidad de caminata o de vehículo)." };
+  const bonus = credited >= BONUS_MIN_M && durationSeconds >= BONUS_MIN_S ? RIDE_BONUS : 0;
+  return { points: Math.round((credited / 1000) * POINTS_PER_KM) + bonus, reason: null };
+}
+
+/**
+ * Shape-checks an uploaded track: finite in-range coordinates, timestamps
+ * inside the ride window (±2 min). Anything else counts as "no track".
+ */
+function sanitizeTrack(track, startedAt, endedAt) {
+  if (!Array.isArray(track) || track.length < 2 || track.length > MAX_TRACK_POINTS) return null;
+  for (const p of track) {
+    if (!Array.isArray(p) || p.length !== 3 || !p.every((x) => typeof x === "number" && Number.isFinite(x))) return null;
+    if (Math.abs(p[0]) > 90 || Math.abs(p[1]) > 180) return null;
+    if (p[2] < startedAt - 120_000 || p[2] > endedAt + 120_000) return null;
+  }
+  return track;
+}
 
 function validateRide(r, now = Date.now()) {
   const n = (v) => (typeof v === "number" && Number.isFinite(v) ? v : NaN);
@@ -144,8 +212,8 @@ function validateRide(r, now = Date.now()) {
   if (distanceMeters < 0 || distanceMeters > MAX_DISTANCE_M) return { error: "Distancia fuera de rango." };
   const avgKmh = distanceMeters / 1000 / (durationSeconds / 3600);
   if (avgKmh > MAX_AVG_KMH) return { error: "Velocidad media no plausible para bicicleta." };
-  const points = distanceMeters < MIN_DISTANCE_M ? 0 : Math.round((distanceMeters / 1000) * POINTS_PER_KM + POINTS_PER_COMPLETED_RIDE);
-  return { points, startedAt, endedAt, distanceMeters, durationSeconds };
+  const { points, reason } = scoreRide(distanceMeters, durationSeconds, analyzeTrack(sanitizeTrack(r.track, startedAt, endedAt)));
+  return { points, reason, startedAt, endedAt, distanceMeters, durationSeconds };
 }
 
 // Best-effort Expo push to users who registered a token (src/services/push.ts).
@@ -219,4 +287,4 @@ function redemptionCode() {
   return require("crypto").randomBytes(6).toString("hex").toUpperCase();
 }
 
-module.exports = { isDocId, clampNum, MAX_RIDE_DURATION_S, weekKey, chatIdFor, cleanMessage, MAX_MESSAGE_LENGTH, sendPush, admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };
+module.exports = { analyzeTrack, scoreRide, DAILY_POINTS_CAP, isDocId, clampNum, MAX_RIDE_DURATION_S, weekKey, chatIdFor, cleanMessage, MAX_MESSAGE_LENGTH, sendPush, admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };

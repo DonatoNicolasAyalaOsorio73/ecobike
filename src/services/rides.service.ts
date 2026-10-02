@@ -2,7 +2,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { getDb, isFirebaseConfigured } from "./firebase";
 import { api } from "./api";
 import { deleteRide, getRide, initDb, listRides, markSynced, saveRide, unlockAchievement, unsyncedRides, wipeAllLocalData } from "./db";
-import { computeRiderStats, evaluateAchievements } from "@/utils/gamification";
+import { computeRiderStats, evaluateAchievements, rideTrack } from "@/utils/gamification";
 import type { Ride } from "@/types/ride";
 
 /**
@@ -19,7 +19,7 @@ export async function queueRideForSync(ride: Ride) {
   // Clients can no longer write either (firestore.rules). Idempotent by id,
   // so retries never double-award.
   try {
-    await api("rides", "POST", {
+    const res = await api<{ pointsEarned?: number }>("rides", "POST", {
       id: ride.id,
       startedAt: ride.startedAt,
       endedAt: ride.endedAt,
@@ -29,8 +29,15 @@ export async function queueRideForSync(ride: Ride) {
       maxSpeedKmh: ride.maxSpeedKmh,
       elevationGainMeters: ride.elevationGainMeters,
       caloriesKcal: ride.caloriesKcal,
-      // Full GPS polyline stays local-only (privacy, small docs).
+      // Downsampled track for server-side bike verification only: the server
+      // analyses it and discards it (the polyline is never stored remotely).
+      track: rideTrack(ride),
     });
+    // The server is the authority on points (caps, verification): keep the
+    // local history in agreement with what was actually awarded.
+    if (typeof res?.pointsEarned === "number" && res.pointsEarned !== ride.pointsEarned) {
+      saveRide({ ...ride, pointsEarned: res.pointsEarned });
+    }
   } catch (e: any) {
     // 4xx = the server rejected this ride for good (implausible data);
     // stop retrying it. Network/5xx errors stay unsynced and retry later.

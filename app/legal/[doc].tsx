@@ -22,7 +22,7 @@ const DOCS: Record<string, { title: string; sections: Section[] }> = {
         "Qué datos recogemos",
         "Cuenta: correo, nombre, apellido, nombre de usuario y foto de perfil (opcional).\n" +
           "Recorridos: distancia, duración, velocidad, desnivel, calorías estimadas y puntos de cada recorrido.\n" +
-          "Ubicación: se usa solo mientras registras un recorrido, incluso con la pantalla bloqueada si lo permites. El trazado GPS completo se queda en tu dispositivo; a la nube solo sube el resumen del recorrido.\n" +
+          "Ubicación: se usa solo mientras registras un recorrido, incluso con la pantalla bloqueada si lo permites. El trazado GPS completo se queda en tu dispositivo. Al sincronizar, enviamos una versión reducida del trazado solo para verificar que el recorrido fue en bicicleta y calcular tus puntos; el servidor la analiza y la descarta sin guardarla. En la nube solo queda el resumen del recorrido.\n" +
           "Social: tus amigos, solicitudes y tus puntos visibles para otros usuarios en búsquedas y rankings.\n" +
           "Canjes: los códigos que generas y si ya se usaron.",
       ],

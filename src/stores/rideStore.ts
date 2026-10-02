@@ -79,6 +79,8 @@ function onLocations(locs: Location.LocationObject[]) {
   const store = useRideStore;
   for (const loc of locs) {
     if (loc.coords.accuracy != null && loc.coords.accuracy > MAX_ACCURACY_M) continue;
+    // Android reports fixes from fake-GPS apps as mocked: never count them.
+    if (loc.mocked) continue;
     const before = store.getState();
     if (!before.ride) return;
     const last = before.ride.points[before.ride.points.length - 1];

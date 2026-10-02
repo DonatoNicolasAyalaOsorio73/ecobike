@@ -1,17 +1,60 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-const { validateRide, isDocId, clampNum } = createRequire(import.meta.url)("./_lib.js");
+const { validateRide, isDocId, clampNum, analyzeTrack, scoreRide } = createRequire(import.meta.url)("./_lib.js");
 
 const now = 1_800_000_000_000;
-const ride = (o = {}) => ({ id: "ride_abc123", startedAt: now - 3600_000, endedAt: now, distanceMeters: 15_000, durationSeconds: 3600, ...o });
+// Same cases as src/utils/__tests__/rideScore.test.ts (identical rules).
+const M_PER_DEG = 111194.93;
+function line(kmh, km, dtS = 5, t0 = now - 3600_000) {
+  const stepM = (kmh / 3.6) * dtS;
+  const n = Math.round((km * 1000) / stepM);
+  return Array.from({ length: n + 1 }, (_, i) => [4.6 + (i * stepM) / M_PER_DEG, -74.08, t0 + i * dtS * 1000]);
+}
+const score = (track, claimedM, durS) => scoreRide(claimedM, durS, analyzeTrack(track));
+const ride = (o = {}) => ({ id: "ride_abc123", startedAt: now - 3600_000, endedAt: now, distanceMeters: 15_000, durationSeconds: 3600, track: line(15, 15), ...o });
 
-test("awards points from distance, same formula as the app", () => {
-  assert.equal(validateRide(ride(), now).points, 170); // 15 km * 10 + 20
+test("awards points only from a verified bike track: 5 pts/km + bonus", () => {
+  assert.equal(validateRide(ride(), now).points, 80);
 });
 
-test("tiny rides earn nothing (no +20 farming)", () => {
+test("a ride without a track (or with a malformed one) earns nothing", () => {
+  assert.equal(validateRide(ride({ track: undefined }), now).points, 0);
+  assert.equal(validateRide(ride({ track: [[1, 2]] }), now).points, 0);
+  assert.equal(validateRide(ride({ track: line(15, 15, 5, now - 10 * 3600_000) }), now).points, 0); // outside the ride window
+});
+
+test("tiny rides earn nothing", () => {
   assert.equal(validateRide(ride({ distanceMeters: 50 }), now).points, 0);
+});
+
+test("a real 15 km bike ride at 18 km/h earns 5 pts/km + 5 bonus", () => {
+  assert.deepEqual(score(line(18, 15), 15_000, 3000), { points: 80, reason: null });
+});
+
+test("walking earns nothing", () => {
+  assert.equal(score(line(5, 3), 3_000, 2160).points, 0);
+  assert.match(score(line(5, 3), 3_000, 2160).reason, /bicicleta/);
+});
+
+test("car or bus speeds earn nothing", () => {
+  assert.equal(score(line(60, 15), 15_000, 900).points, 0);
+});
+
+test("GPS teleports (fake location) earn nothing", () => {
+  const jumped = line(18, 5).map((p, i) => (i > 20 ? [p[0] + 0.02, p[1], p[2]] : p));
+  assert.match(score(jumped, 7_000, 1000).reason, /saltos/);
+});
+
+test("can't claim more distance than the track shows (10% tolerance)", () => {
+  // Claims 15 km, the track shows ~5 km: credited = track × 1.1, never the claim.
+  const credited = analyzeTrack(line(18, 5)).distanceMeters * 1.1;
+  assert.equal(score(line(18, 5), 15_000, 1000).points, Math.round((credited / 1000) * 5) + 5);
+  assert.ok(score(line(18, 5), 15_000, 1000).points < 40);
+});
+
+test("short rides get no completion bonus (no bonus farming)", () => {
+  assert.equal(score(line(18, 0.8), 800, 160).points, 4);
 });
 
 test("rejects car-speed rides", () => {

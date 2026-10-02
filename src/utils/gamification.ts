@@ -1,12 +1,15 @@
 import { ACHIEVEMENTS, type RiderStats } from "@/types/achievement";
 import type { Ride } from "@/types/ride";
+import { analyzeTrack, downsample, scoreRide, type TrackSample } from "@/utils/rideScore";
 
-const POINTS_PER_KM = 10;
-const POINTS_PER_COMPLETED_RIDE = 20;
+/** The ride's GPS track in the compact form the server verifies. */
+export function rideTrack(ride: Ride): TrackSample[] {
+  return downsample(ride.points).map((p) => [Math.round(p.lat * 1e6) / 1e6, Math.round(p.lng * 1e6) / 1e6, p.timestamp] as TrackSample);
+}
 
+/** Points the server will award (same rules, see rideScore.ts); 0 if it isn't a verifiable bike ride. */
 export function pointsForRide(ride: Ride): number {
-  const km = ride.distanceMeters / 1000;
-  return Math.round(km * POINTS_PER_KM + POINTS_PER_COMPLETED_RIDE);
+  return scoreRide(ride.distanceMeters, ride.durationSeconds, analyzeTrack(rideTrack(ride))).points;
 }
 
 // Level thresholds are cumulative points; extend this table to add levels

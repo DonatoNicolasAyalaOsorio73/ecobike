@@ -16,7 +16,7 @@ import { isFirebaseConfigured } from "@/services/firebase";
 import { useAuthStore } from "@/stores/authStore";
 
 const FEATURES: { icon: keyof typeof Ionicons.glyphMap; title: string; text: string }[] = [
-  { icon: "ribbon-outline", title: "Gana puntos", text: "10 por km, canjeables en tiendas" },
+  { icon: "ribbon-outline", title: "Gana puntos", text: "Pedaleando, canjeables en tiendas" },
   { icon: "flame-outline", title: "Mantén tu racha", text: "Pedalea cada día y sube de nivel" },
   { icon: "people-outline", title: "Reta a tus amigos", text: "Ranking, chat y logros" },
 ];
