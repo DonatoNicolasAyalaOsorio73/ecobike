@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import BackButton from "@/components/ui/BackButton";
+import { columnStyle, useLargeTitle } from "@/components/ui/LargeTitleScreen";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassButton from "@/components/ui/GlassButton";
 import ProgressRing from "@/components/ui/ProgressRing";
@@ -30,6 +30,8 @@ export default function FriendProfileScreen() {
   const [rank, setRank] = useState<{ pos: number; of: number } | null>(null);
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Hero carries the name; the compact nav title takes over once it scrolls away.
+  const lt = useLargeTitle({ title: friend?.displayName ?? "", leading: <BackButton size={36} />, tabBar: false });
 
   useEffect(() => {
     if (!friendUid) return;
@@ -92,14 +94,15 @@ export default function FriendProfileScreen() {
   return (
     <View style={styles.screen}>
       <BackgroundBlobs />
-      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-        <View style={styles.header}>
-          <BackButton />
-        </View>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <Animated.ScrollView
+          onScroll={lt.onScroll}
+          scrollEventThrottle={16}
+          contentContainerStyle={[lt.contentContainerStyle, styles.scroll, columnStyle]}
+          showsVerticalScrollIndicator={lt.showsVerticalScrollIndicator}
+        >
           <Animated.View entering={ZoomIn.springify().damping(16)} style={{ alignItems: "center" }}>
             <ProgressRing progress={progress} size={130} thickness={8}>
-              <View style={[styles.avatar, { backgroundColor: accents.blue.soft, borderColor: accents.blue.base }]}>
+              <View style={[styles.avatar, { backgroundColor: accents.blue.soft, borderColor: "transparent" }]}>
                 {friend.photoURL ? (
                   <Image source={{ uri: friend.photoURL }} style={StyleSheet.absoluteFill} />
                 ) : (
@@ -138,8 +141,8 @@ export default function FriendProfileScreen() {
               </Text>
             </View>
           </GlassCard>
-        </ScrollView>
-      </SafeAreaView>
+        </Animated.ScrollView>
+        {lt.navBar}
     </View>
   );
 }
@@ -162,8 +165,7 @@ function Tile({ accent, icon, value, label, delay }: { accent: AccentName; icon:
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   center: { alignItems: "center", justifyContent: "center" },
-  header: { paddingHorizontal: 16, paddingTop: 4 },
-  scroll: { padding: 20, paddingBottom: 60 },
+  scroll: { paddingHorizontal: 20 },
   avatar: { width: 108, height: 108, borderRadius: 54, borderWidth: 3, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   name: { fontSize: 24, fontWeight: "700", textAlign: "center", marginTop: 14 },
   tiles: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 22 },

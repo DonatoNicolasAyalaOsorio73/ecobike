@@ -1,8 +1,7 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
+import LargeTitleScreen from "@/components/ui/LargeTitleScreen";
 import BackButton from "@/components/ui/BackButton";
 import GlassCard from "@/components/ui/GlassCard";
 import { useTheme } from "@/theme/useTheme";
@@ -64,17 +63,7 @@ export default function LegalScreen() {
   const content = DOCS[doc ?? ""] ?? DOCS.privacy;
 
   return (
-    <View style={styles.screen}>
-      <BackgroundBlobs />
-      <SafeAreaView style={styles.safe} edges={["top"]}>
-        <View style={styles.headerRow}>
-          <BackButton />
-          <Text style={[styles.header, { color: colors.ink }]} accessibilityRole="header">
-            {content.title}
-          </Text>
-          <View style={{ width: 44 }} />
-        </View>
-        <ScrollView contentContainerStyle={styles.scroll}>
+    <LargeTitleScreen title={content.title} leading={<BackButton size={36} />} tabBar={false}>
           <GlassCard>
             {content.sections.map(([title, body]) => (
               <View key={title} style={{ marginBottom: 16 }}>
@@ -83,18 +72,11 @@ export default function LegalScreen() {
               </View>
             ))}
           </GlassCard>
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+    </LargeTitleScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  safe: { flex: 1, paddingHorizontal: 20 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
-  header: { fontSize: 18, fontWeight: "700", flexShrink: 1, textAlign: "center" },
-  scroll: { paddingBottom: 60 },
   title: { fontSize: 15, fontWeight: "700", marginBottom: 4 },
   body: { fontSize: 13.5, lineHeight: 20 },
 });

@@ -16,14 +16,10 @@ import { useTheme } from "@/theme/useTheme";
 import { elevation } from "@/theme/colors";
 import type { Reward } from "@/types/reward";
 
-// Art for rewards without a logo: each card gets its own gradient.
-const GRADIENTS: [string, string][] = [
-  ["#E4FBC0", "#ADF14B"],
-  ["#F1FBE2", "#C3F57A"],
-  ["#EAFBD0", "#B9F45F"],
-  ["#F4FCE6", "#CDF78C"],
-  ["#EEFADA", "#A6EC45"],
-];
+// Art for rewards without a logo. Color carries meaning: lime when you can
+// redeem it now, a quiet neutral while it's still out of reach.
+const AFFORDABLE: [string, string] = ["#EEFAD9", "#B9F45F"];
+const LOCKED: [string, string] = ["#F7F8F6", "#E6E9E4"];
 
 const SPACING = 14;
 
@@ -77,7 +73,7 @@ function Card({ reward, index, cardWidth, scrollX, affordable, missing, onPress 
     transform: [{ translateX: interpolate(scrollX.value, range, [-cardWidth * 0.18, 0, cardWidth * 0.18], Extrapolation.CLAMP) }, { scale: 1.25 }],
   }));
 
-  const [from, to] = GRADIENTS[index % GRADIENTS.length];
+  const [from, to] = affordable ? AFFORDABLE : LOCKED;
 
   return (
     <Animated.View style={[{ width: cardWidth, marginRight: SPACING, borderRadius: 30 }, elevation("mid"), WEB_SNAP_ITEM, cardStyle]}>

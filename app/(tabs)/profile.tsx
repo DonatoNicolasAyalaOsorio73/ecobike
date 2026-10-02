@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import Animated, { FadeIn } from "react-native-reanimated";
-import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
+import LargeTitleScreen from "@/components/ui/LargeTitleScreen";
+import BackButton from "@/components/ui/BackButton";
+import { useLayout } from "@/hooks/useLayout";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassButton from "@/components/ui/GlassButton";
 import GlassIconButton from "@/components/ui/GlassIconButton";
@@ -44,6 +45,7 @@ export default function ProfileScreen() {
   const { stats, refresh } = useRiderStats(userId, points);
   const [friendCount, setFriendCount] = useState<number | null>(isGuest ? DEMO_FRIENDS.length : null);
   const [uploading, setUploading] = useState(false);
+  const { desktop } = useLayout();
 
   useFocusEffect(
     useCallback(() => {
@@ -95,21 +97,17 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={styles.screen}>
-      <BackgroundBlobs />
-      <SafeAreaView style={styles.safe} edges={["top"]}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <View style={styles.headerRow}>
-            <Text style={[styles.header, { color: colors.ink }]} accessibilityRole="header">
-              Perfil
-            </Text>
-            <GlassIconButton icon="settings-outline" accessibilityLabel="Ajustes" onPress={() => router.push("/settings")} size={44} />
-          </View>
+    <LargeTitleScreen
+      title="Perfil"
+      // Phones reach Perfil from the avatar, so it needs a way back; desktop has it in the sidebar.
+      leading={desktop ? null : <BackButton size={36} />}
+      trailing={<GlassIconButton icon="settings-outline" accessibilityLabel="Ajustes" onPress={() => router.push("/settings")} size={36} />}
+    >
 
-          <GlassCard intensity={45} style={styles.hero}>
+          <View style={styles.hero}>
             <Pressable onPress={onChangeAvatar} accessibilityRole="button" accessibilityLabel="Cambiar foto de perfil" style={styles.avatarWrap}>
               <ProgressRing progress={levelProgress} size={124} thickness={7}>
-                <View style={[styles.avatar, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
+                <View style={[styles.avatar, { backgroundColor: colors.chipFill, borderColor: colors.chipBorder }]}>
                   {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.avatarImage} /> : <Ionicons name="person" size={40} color={colors.primaryDark} />}
                   {uploading && (
                     <View style={[StyleSheet.absoluteFill, styles.uploading]}>
@@ -138,7 +136,7 @@ export default function ProfileScreen() {
               <ProfileStat label="recorridos" value={String(stats.totalRides)} />
               <ProfileStat label="amigos" value={friendCount === null ? "…" : String(friendCount)} />
             </View>
-          </GlassCard>
+          </View>
 
           {isGuest && (
             <GlassCard style={{ marginTop: 16 }}>
@@ -195,9 +193,7 @@ export default function ProfileScreen() {
           <Pressable accessibilityRole="button" onPress={signOut} style={({ pressed }) => [styles.signOut, { opacity: pressed ? 0.5 : 1 }]}>
             <Text style={{ color: colors.danger, fontSize: 16, fontWeight: "500" }}>{isGuest ? "Salir del modo invitado" : "Cerrar sesión"}</Text>
           </Pressable>
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+    </LargeTitleScreen>
   );
 }
 
@@ -233,12 +229,7 @@ function Action({ icon, label, onPress, delay, first }: { icon: any; label: stri
 }
 
 const styles = StyleSheet.create({
-  bikeBadge: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#ADF14B" },
-  screen: { flex: 1 },
-  safe: { flex: 1 },
-  scroll: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 130 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
-  header: { fontSize: 28, fontWeight: "700", letterSpacing: -0.5 },
+  bikeBadge: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(20,23,26,0.05)" },
   hero: { alignItems: "center", paddingTop: 28, paddingBottom: 22, paddingHorizontal: 22 },
   avatarWrap: { alignItems: "center", justifyContent: "center" },
   avatar: { width: 100, height: 100, borderRadius: 50, alignItems: "center", justifyContent: "center", borderWidth: 1, overflow: "hidden" },
@@ -252,7 +243,6 @@ const styles = StyleSheet.create({
   actions: { paddingVertical: 2, paddingHorizontal: 14 },
   actionSep: { position: "absolute", top: 0, left: 44, right: 0, height: StyleSheet.hairlineWidth },
   action: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 11 },
-  actionIcon: { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "#ADF14B" },
-  section: { fontSize: 20, fontWeight: "700", marginTop: 32, marginBottom: 12, letterSpacing: -0.3 },
+  actionIcon: { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(20,23,26,0.05)" },
   signOut: { alignItems: "center", paddingVertical: 14, marginTop: 28 },
 });

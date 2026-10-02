@@ -103,7 +103,7 @@ export default function OnboardingScreen() {
         if (uid && answers[0]) await updateUserProfile(uid, { ridingGoal: answers[0] }).catch(() => {});
       }
       await update({ onboardingDone: true });
-      router.replace("/(tabs)/map");
+      router.replace("/(tabs)/home");
     } finally {
       setSaving(false);
     }

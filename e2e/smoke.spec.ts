@@ -13,7 +13,8 @@ async function enterAsGuest(page: Page) {
   await page.goto("/");
   await expect(page.getByText("Muévete mejor.", { exact: false })).toBeVisible();
   await page.getByRole("button", { name: "Explorar sin cuenta" }).click();
-  await expect(page.getByText("Listo para pedalear")).toBeVisible();
+  // Lands on Inicio (dashboard).
+  await expect(page.getByText("Misiones de hoy")).toBeVisible();
 }
 
 const tab = (page: Page, name: string) => page.getByRole("tab", { name });
@@ -28,15 +29,29 @@ test("legal pages are public", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test("guest tour: map, stats, rewards, friends, profile, settings", async ({ page }) => {
+test("guest tour: home, map, stats, rewards, friends, profile, settings", async ({ page }) => {
   const errors = trackErrors(page);
   await enterAsGuest(page);
 
+  // Home: avatar opens the profile (phone: back button; desktop: sidebar)
+  await page.getByRole("button", { name: "Tu perfil" }).click();
+  await expect(page.getByText("Crea tu cuenta gratis")).toBeVisible();
+  await tab(page, "Inicio").click();
+  await expect(page.getByText("Misiones de hoy")).toBeVisible();
+
   // Map: ride options menu opens and closes
+  await tab(page, "Mapa").click();
+  await expect(page.getByText("Listo para pedalear")).toBeVisible();
   await page.getByRole("button", { name: "Opciones de recorrido" }).click();
   await expect(page.getByText("¿Cómo quieres pedalear?")).toBeVisible();
   await page.getByRole("button", { name: "Cerrar opciones de recorrido" }).click();
   await expect(page.getByText("¿Cómo quieres pedalear?")).toHaveCount(0);
+
+  // Map panel folds to one line and unfolds (grabber is also a button)
+  await page.getByRole("button", { name: "Contraer panel" }).click();
+  await expect(page.getByRole("button", { name: "Expandir panel" })).toBeVisible();
+  await page.getByRole("button", { name: "Expandir panel" }).click();
+  await expect(page.getByText("Listo para pedalear")).toBeVisible();
 
   // Guest session survives a reload
   await page.reload();
@@ -49,7 +64,7 @@ test("guest tour: map, stats, rewards, friends, profile, settings", async ({ pag
   await expect(page.getByText("Impacto ambiental")).toBeVisible();
 
   // Rewards: redeem an example reward and get a code
-  await tab(page, "Puntos").click();
+  await tab(page, "Premios").click();
   await expect(page.getByText("Recompensas").first()).toBeVisible();
   await page.getByRole("button", { name: /^Coldest,/ }).click();
   await page.getByRole("button", { name: "Canjear", exact: true }).click();
@@ -68,7 +83,7 @@ test("guest tour: map, stats, rewards, friends, profile, settings", async ({ pag
 
   // Friend profile
   await page.goto("/friend/demo_friend_laura");
-  await expect(page.getByText("Laura Gómez")).toBeVisible();
+  await expect(page.getByText("Laura Gómez").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Enviar mensaje" })).toBeVisible();
 
   // Profile and settings

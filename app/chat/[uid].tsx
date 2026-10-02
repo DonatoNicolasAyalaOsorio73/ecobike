@@ -116,7 +116,7 @@ export default function ChatScreen() {
       <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
         <View style={styles.header}>
           <BackButton />
-          <View style={[styles.avatar, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
+          <View style={[styles.avatar, { backgroundColor: colors.chipFill, borderColor: colors.chipBorder }]}>
             <Text style={{ color: colors.primaryDark, fontWeight: "700" }}>{(name || "?").slice(0, 1).toUpperCase()}</Text>
           </View>
           <View style={{ flex: 1 }}>

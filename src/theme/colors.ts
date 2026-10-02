@@ -29,8 +29,10 @@ const lightColorTokens = {
   glassFillStrong: "rgba(255,255,255,0.56)",
   glassBorder: "rgba(255,255,255,0.9)",
   glassBorderSoft: "rgba(255,255,255,0.55)",
-  glassGreenFill: "rgba(173,241,75,0.28)",
-  glassGreenBorder: "rgba(173,241,75,0.9)",
+  // Neutral chip/icon-bubble material. Lime is reserved for functional state
+  // (progress, selection, primary actions); decorative surfaces stay neutral.
+  chipFill: "rgba(20,23,26,0.05)",
+  chipBorder: "rgba(20,23,26,0.06)",
   shadow: "rgba(40, 60, 20, 0.16)",
 
   placeholder: "#9AA69C",
@@ -45,19 +47,20 @@ const lightColorTokens = {
 export const lightColors: Theme = lightColorTokens;
 
 /**
- * Accent palette: light lime only (the primary button's green). Bases are
- * lime fills; "lip" is near-black ink for text/icons drawn on them, exactly
- * like the button label. Only destructive actions use red.
+ * Accent palette: light lime only (the primary button's green). `base` is
+ * the lime fill for functional state (progress, selection, done); `soft` is
+ * deliberately neutral, so decorative bubbles never tint the UI; `lip` is
+ * near-black ink for text/icons. Only destructive actions use red.
  */
 export const accents = {
-  green: { base: "#ADF14B", soft: "#F1FBE2", lip: "#1C2410" },
-  lime: { base: "#C3F57A", soft: "#F4FCE6", lip: "#1C2410" },
-  blue: { base: "#B9F45F", soft: "#F1FBE2", lip: "#1C2410" },
-  orange: { base: "#A6EC45", soft: "#EFFADC", lip: "#1C2410" },
-  gold: { base: "#BDF26A", soft: "#F3FBE4", lip: "#1C2410" },
-  purple: { base: "#9EE23C", soft: "#EEFADA", lip: "#1C2410" },
+  green: { base: "#ADF14B", soft: "#F1F2F0", lip: "#1C2410" },
+  lime: { base: "#C3F57A", soft: "#F1F2F0", lip: "#1C2410" },
+  blue: { base: "#B9F45F", soft: "#F1F2F0", lip: "#1C2410" },
+  orange: { base: "#A6EC45", soft: "#F1F2F0", lip: "#1C2410" },
+  gold: { base: "#BDF26A", soft: "#F1F2F0", lip: "#1C2410" },
+  purple: { base: "#9EE23C", soft: "#F1F2F0", lip: "#1C2410" },
   red: { base: "#E5484D", soft: "#FDE7E8", lip: "#B83236" },
-  teal: { base: "#CDF78C", soft: "#F5FCEA", lip: "#1C2410" },
+  teal: { base: "#CDF78C", soft: "#F1F2F0", lip: "#1C2410" },
 } as const;
 export type AccentName = keyof typeof accents;
 

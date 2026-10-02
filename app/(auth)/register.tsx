@@ -1,19 +1,18 @@
 import React, { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
-import BackButton from "@/components/ui/BackButton";
+import Animated, { FadeIn } from "react-native-reanimated";
+import AuthScaffold, { AuthLink, Rise } from "@/components/auth/AuthScaffold";
 import GlassInput from "@/components/ui/GlassInput";
 import GlassButton from "@/components/ui/GlassButton";
-import GlassCard from "@/components/ui/GlassCard";
 import { useTheme } from "@/theme/useTheme";
 import { signUpWithEmail } from "@/services/auth.service";
 import { isFirebaseConfigured } from "@/services/firebase";
 import { useAuthStore } from "@/stores/authStore";
 import { passwordStrength, validateEmail, validateName } from "@/utils/profileForm";
 
-const STRENGTH_COLORS = ["#E5484D", "#E2F8BE", "#CDF78C", "#B9F45F", "#ADF14B"];
+// Weak reads as an error; the rest step up through the brand lime (functional color).
+const STRENGTH_COLORS = ["#E5484D", "#E5484D", "#CDF78C", "#B9F45F", "#ADF14B"];
 
 export default function RegisterScreen() {
   const { colors } = useTheme();
@@ -55,90 +54,62 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View style={styles.screen}>
-      <BackgroundBlobs variant="auth" />
-      <SafeAreaView style={styles.safe}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-            <BackButton />
+    <AuthScaffold back logo={130} title="Crea tu cuenta" subtitle="Únete a la comunidad EcoBike" center={false}>
+      <Rise index={1} style={styles.nameRow}>
+        <GlassInput containerStyle={{ flex: 1 }} icon="person-outline" placeholder="Nombres" value={firstName} onChangeText={setFirstName} autoCapitalize="words" autoComplete="given-name" errorText={show(fieldErrors.firstName)} />
+        <GlassInput containerStyle={{ flex: 1 }} placeholder="Apellidos" value={lastName} onChangeText={setLastName} autoCapitalize="words" autoComplete="family-name" />
+      </Rise>
+      <Rise index={2}>
+        <GlassInput
+          icon="mail-outline"
+          placeholder="Correo electrónico"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+          errorText={show(fieldErrors.email)}
+        />
+      </Rise>
+      <Rise index={3}>
+        <GlassInput icon="lock-closed-outline" placeholder="Contraseña" value={password} onChangeText={setPassword} secure autoComplete="new-password" errorText={show(fieldErrors.password)} />
+        {password.length > 0 && (
+          <Animated.View entering={FadeIn.duration(200)} style={styles.strength} accessibilityLabel={`Seguridad de la contraseña: ${strength.label}`}>
+            <View style={styles.strengthBars}>
+              {[0, 1, 2, 3].map((i) => (
+                <View key={i} style={[styles.strengthBar, { backgroundColor: i < Math.max(1, strength.score) ? STRENGTH_COLORS[strength.score] : colors.divider }]} />
+              ))}
+            </View>
+            <Text style={{ color: strength.score <= 1 ? colors.danger : colors.inkSoft, fontWeight: "600", fontSize: 12 }}>{strength.label}</Text>
+          </Animated.View>
+        )}
+        <GlassInput
+          icon="lock-closed-outline"
+          placeholder="Confirmar contraseña"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secure
+          autoComplete="new-password"
+          errorText={show(fieldErrors.confirm) ?? error}
+        />
+      </Rise>
 
-            <Text style={[styles.title, { color: colors.ink }]}>Crea tu cuenta</Text>
-            <Text style={[styles.subtitle, { color: colors.inkSoft }]}>
-              Únete a la comunidad <Text style={{ color: colors.primaryDark, fontWeight: "700" }}>EcoBike</Text>
-            </Text>
-
-            <GlassCard>
-              <GlassInput icon="person-outline" placeholder="Nombres" value={firstName} onChangeText={setFirstName} autoCapitalize="words" errorText={show(fieldErrors.firstName)} />
-              <GlassInput icon="person-outline" placeholder="Apellidos" value={lastName} onChangeText={setLastName} autoCapitalize="words" />
-              <GlassInput
-                icon="mail-outline"
-                placeholder="Correo electrónico"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                errorText={show(fieldErrors.email)}
-              />
-              <GlassInput icon="lock-closed-outline" placeholder="Contraseña" value={password} onChangeText={setPassword} secure autoComplete="new-password" errorText={show(fieldErrors.password)} />
-              {password.length > 0 && (
-                <View style={styles.strength} accessibilityLabel={`Seguridad de la contraseña: ${strength.label}`}>
-                  <View style={styles.strengthBars}>
-                    {[0, 1, 2, 3].map((i) => (
-                      <View key={i} style={[styles.strengthBar, { backgroundColor: i < Math.max(1, strength.score) ? STRENGTH_COLORS[strength.score] : "#E6EAE3" }]} />
-                    ))}
-                  </View>
-                  <Text style={{ color: STRENGTH_COLORS[strength.score], fontWeight: "700", fontSize: 12 }}>{strength.label}</Text>
-                </View>
-              )}
-              <GlassInput
-                icon="lock-closed-outline"
-                placeholder="Confirmar contraseña"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secure
-                autoComplete="new-password"
-                errorText={show(fieldErrors.confirm) ?? error}
-              />
-
-              <GlassButton
-                label="Crear cuenta"
-                icon="person-add-outline"
-                variant="primary"
-                onPress={onSubmit}
-                loading={loading}
-                style={{ marginTop: 4 }}
-              />
-
-              <Text style={[styles.loginLine, { color: colors.inkFaint, fontSize: 12 }]}>
-                Al crear tu cuenta aceptas los{" "}
-                <Text style={{ color: colors.primaryDark, fontWeight: "700" }} onPress={() => router.push("/legal/terms")}>
-                  Términos de uso
-                </Text>{" "}
-                y la{" "}
-                <Text style={{ color: colors.primaryDark, fontWeight: "700" }} onPress={() => router.push("/legal/privacy")}>
-                  Política de privacidad
-                </Text>
-                .
-              </Text>
-
-              <Text style={[styles.loginLine, { color: colors.inkSoft }]}>
-                ¿Ya tienes cuenta?{" "}
-                <Text style={[styles.loginLink, { color: colors.primaryDark }]} onPress={() => router.push("/(auth)/login")}>
-                  Inicia sesión
-                </Text>
-              </Text>
-            </GlassCard>
-
-            {!isFirebaseConfigured && (
-              <Text style={[styles.guestLink, { color: colors.inkSoft }]} onPress={continueAsGuest}>
-                O continúa explorando sin cuenta →
-              </Text>
-            )}
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </View>
+      <Rise index={4}>
+        <GlassButton label="Crear cuenta" onPress={onSubmit} loading={loading} style={{ marginTop: 8 }} />
+        <Text style={[styles.legal, { color: colors.inkFaint }]}>
+          Al continuar aceptas los <AuthLink onPress={() => router.push("/legal/terms")}>Términos</AuthLink> y la{" "}
+          <AuthLink onPress={() => router.push("/legal/privacy")}>Política de privacidad</AuthLink>.
+        </Text>
+        <Text style={[styles.footer, { color: colors.inkSoft }]}>
+          ¿Ya tienes cuenta? <AuthLink onPress={() => router.replace("/(auth)/login")}>Inicia sesión</AuthLink>
+        </Text>
+        {!isFirebaseConfigured && (
+          <View style={{ marginTop: 18 }}>
+            <AuthLink role="button" onPress={continueAsGuest}>Explorar sin cuenta</AuthLink>
+          </View>
+        )}
+      </Rise>
+    </AuthScaffold>
   );
 }
 
@@ -158,15 +129,10 @@ function mapAuthError(code?: string): string {
 }
 
 const styles = StyleSheet.create({
-  strength: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: -4, marginBottom: 12, marginHorizontal: 8 },
+  nameRow: { flexDirection: "row", gap: 10 },
+  strength: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: -4, marginBottom: 14, marginHorizontal: 10 },
   strengthBars: { flex: 1, flexDirection: "row", gap: 5 },
-  strengthBar: { flex: 1, height: 6, borderRadius: 3 },
-  screen: { flex: 1 },
-  safe: { flex: 1, paddingHorizontal: 24 },
-  scroll: { paddingBottom: 32, paddingTop: 8 },
-  title: { marginTop: 22, fontSize: 26, fontWeight: "700" },
-  subtitle: { marginTop: 4, fontSize: 14.5, marginBottom: 18 },
-  loginLine: { textAlign: "center", marginTop: 14, fontSize: 13.5 },
-  loginLink: { fontWeight: "700" },
-  guestLink: { textAlign: "center", marginTop: 18, fontSize: 13, fontWeight: "700", textDecorationLine: "underline" },
+  strengthBar: { flex: 1, height: 4, borderRadius: 2 },
+  legal: { textAlign: "center", marginTop: 16, fontSize: 12, lineHeight: 17 },
+  footer: { textAlign: "center", marginTop: 18, fontSize: 13 },
 });

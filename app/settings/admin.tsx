@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View, Image } from "react-native";
+import { Pressable, StyleSheet, Switch, Text, View, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
-import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
+import LargeTitleScreen from "@/components/ui/LargeTitleScreen";
 import BackButton from "@/components/ui/BackButton";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassInput from "@/components/ui/GlassInput";
@@ -138,21 +137,13 @@ export default function AdminScreen() {
   const set = (k: keyof typeof EMPTY) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   return (
-    <View style={styles.screen}>
-      <BackgroundBlobs />
-      <SafeAreaView style={styles.safe} edges={["top"]}>
-        <View style={styles.headerRow}>
-          <BackButton />
-          <Text style={[styles.header, { color: colors.ink }]}>{isAdmin ? "Administración" : "Tienda aliada"}</Text>
-          <View style={{ width: 44 }} />
-        </View>
-
+    <LargeTitleScreen title={isAdmin ? "Administración" : "Tienda aliada"} leading={<BackButton size={36} />} tabBar={false}>
         {!isStaff ? (
           <GlassCard>
             <Text style={{ color: colors.inkSoft, textAlign: "center" }}>No tienes permisos de administrador.</Text>
           </GlassCard>
         ) : (
-          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <>
             {isAdmin && (
               <>
                 <View style={styles.kpis}>
@@ -286,7 +277,7 @@ export default function AdminScreen() {
                 }
               >
                 <View style={[styles.storeRow, { opacity: s.isActive === false ? 0.6 : 1 }]}>
-                  <View style={[styles.storeLogo, { backgroundColor: accents.green.soft, borderColor: accents.green.base }]}>
+                  <View style={[styles.storeLogo, { backgroundColor: accents.green.soft, borderColor: "transparent" }]}>
                     {s.logo?.startsWith("https://") ? (
                       <Image source={{ uri: s.logo }} style={StyleSheet.absoluteFill} />
                     ) : (
@@ -312,19 +303,13 @@ export default function AdminScreen() {
             ))}
             </>
             )}
-          </ScrollView>
+          </>
         )}
-      </SafeAreaView>
-    </View>
+    </LargeTitleScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  safe: { flex: 1, paddingHorizontal: 20 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
-  header: { fontSize: 20, fontWeight: "700" },
-  scroll: { paddingBottom: 60 },
   section: { fontSize: 16, fontWeight: "700", marginBottom: 12 },
   row: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   kpis: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },

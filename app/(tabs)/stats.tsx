@@ -1,9 +1,9 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
+import LargeTitleScreen from "@/components/ui/LargeTitleScreen";
+import ProfileButton from "@/components/ui/ProfileButton";
 import GlassCard from "@/components/ui/GlassCard";
 import StatTile from "@/components/ui/StatTile";
 import SegmentedControl from "@/components/ui/SegmentedControl";
@@ -53,6 +53,7 @@ export default function StatsScreen() {
   const { rides, stats, unlockedCodes, refresh } = useRiderStats(userId, availablePoints);
   const [period, setPeriod] = useState<StatsPeriod>("week");
   const [habit, setHabit] = useState<"day" | "hour">("day");
+  const [detail, setDetail] = useState<"habits" | "activity" | "records">("habits");
 
   useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
 
@@ -73,24 +74,21 @@ export default function StatsScreen() {
   const toUnit = (km: number) => (units === "metric" ? km : km * 0.621371);
 
   return (
-    <View style={styles.screen}>
-      <BackgroundBlobs />
-      <SafeAreaView style={styles.safe} edges={["top"]}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <View style={styles.headerRow}>
-            <Text style={[styles.header, { color: colors.ink }]} accessibilityRole="header">
-              Progreso
-            </Text>
-            {isGuest && (
-              <View style={[styles.demoPill, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
-                <Text style={{ color: colors.primaryDark, fontSize: 11, fontWeight: "700" }}>DATOS DE EJEMPLO</Text>
-              </View>
-            )}
+    <LargeTitleScreen
+      title="Progreso"
+      trailing={<ProfileButton />}
+      titleAccessory={
+        isGuest ? (
+          <View style={[styles.demoPill, { backgroundColor: colors.chipFill, borderColor: colors.chipBorder }]}>
+            <Text style={{ color: colors.primaryDark, fontSize: 11, fontWeight: "700" }}>DATOS DE EJEMPLO</Text>
           </View>
+        ) : null
+      }
+    >
 
           <SegmentedControl options={PERIOD_OPTIONS} value={period} onChange={setPeriod} style={{ marginBottom: 16 }} />
 
-          <GlassCard intensity={45}>
+          <View style={styles.hero}>
             <Text style={[styles.eyebrow, { color: colors.inkSoft }]}>Distancia {PERIOD_NAME[period]}</Text>
             <View style={styles.heroRow}>
               <AnimatedNumber
@@ -110,7 +108,7 @@ export default function StatsScreen() {
               <Kpi label="Recorridos" value={String(cur.rides)} pct={comparison.change?.rides} />
               <Kpi label="Puntos" value={String(cur.points)} pct={comparison.change?.points} />
             </View>
-          </GlassCard>
+          </View>
 
           <Section title="Tu racha" />
           <StreakCard rides={rides} entranceDelay={30} />
@@ -126,7 +124,7 @@ export default function StatsScreen() {
           </GlassCard>
 
           <View style={styles.grid}>
-            <StatTile icon="flash-outline" label="Vel. promedio" value={formatSpeed(avgSpeedKmh(cur.distanceMeters, cur.durationSeconds), units)} accent />
+            <StatTile icon="flash-outline" label="Vel. promedio" value={formatSpeed(avgSpeedKmh(cur.distanceMeters, cur.durationSeconds), units)} />
             <StatTile icon="triangle-outline" label="Desnivel +" value={`${Math.round(elevation)} m`} />
             <StatTile icon="flame-outline" label="Calorías" value={`${Math.round(calories).toLocaleString("es-CO")} kcal`} />
             <StatTile icon="calendar-outline" label="Días activos" value={String(activeDays)} />
@@ -141,41 +139,57 @@ export default function StatsScreen() {
             </View>
           </GlassCard>
 
-          <Section title="Tus hábitos" />
+          {/* Depth on demand: one container, one view at a time. */}
+          <Section title="Más detalle" />
           <GlassCard entranceDelay={100}>
             <SegmentedControl
               options={[
-                { label: "Por día", value: "day" },
-                { label: "Por hora", value: "hour" },
+                { label: "Hábitos", value: "habits" },
+                { label: "Actividad", value: "activity" },
+                { label: "Récords", value: "records" },
               ]}
-              value={habit}
-              onChange={setHabit}
-              style={{ marginBottom: 14 }}
+              value={detail}
+              onChange={setDetail}
+              style={{ marginBottom: 16 }}
             />
-            {habit === "day" ? (
-              <BarChart
-                values={weekdays.values.map(toUnit)}
-                labels={weekdays.labels}
-                formatMax={(v) => `${v.toFixed(1)} ${unit}`}
-                accessibilityLabel="Distancia por día de la semana"
-              />
-            ) : (
-              <BarChart values={hours.values} labels={hours.labels} formatMax={(v) => `${v} recorridos`} accessibilityLabel="Recorridos por franja horaria" />
+            {detail === "habits" && (
+              <>
+                <SegmentedControl
+                  options={[
+                    { label: "Por día", value: "day" },
+                    { label: "Por hora", value: "hour" },
+                  ]}
+                  value={habit}
+                  onChange={setHabit}
+                  style={{ marginBottom: 14 }}
+                />
+                {habit === "day" ? (
+                  <BarChart
+                    values={weekdays.values.map(toUnit)}
+                    labels={weekdays.labels}
+                    formatMax={(v) => `${v.toFixed(1)} ${unit}`}
+                    accessibilityLabel="Distancia por día de la semana"
+                  />
+                ) : (
+                  <BarChart values={hours.values} labels={hours.labels} formatMax={(v) => `${v} recorridos`} accessibilityLabel="Recorridos por franja horaria" />
+                )}
+              </>
             )}
-          </GlassCard>
-
-          <Section title="Actividad (12 semanas)" />
-          <GlassCard entranceDelay={140}>
-            <ActivityHeatmap cells={heatmap} />
-          </GlassCard>
-
-          <Section title="Récords personales" />
-          <GlassCard entranceDelay={160}>
-            <RecordRow icon="map-outline" label="Recorrido más largo" value={records.longestRideMeters ? formatDistance(records.longestRideMeters, units) : "—"} />
-            <RecordRow icon="hourglass-outline" label="Más tiempo en ruta" value={records.longestDurationSeconds ? formatDuration(records.longestDurationSeconds) : "—"} />
-            <RecordRow icon="flash-outline" label="Mejor velocidad promedio" value={records.fastestAvgSpeedKmh ? formatSpeed(records.fastestAvgSpeedKmh, units) : "—"} />
-            <RecordRow icon="sunny-outline" label="Mejor día" value={records.bestDayMeters ? formatDistance(records.bestDayMeters, units) : "—"} />
-            <RecordRow icon="ribbon-outline" label="Más puntos en un recorrido" value={records.mostPointsInRide ? `${records.mostPointsInRide} pts` : "—"} last />
+            {detail === "activity" && (
+              <>
+                <Text style={{ color: colors.inkSoft, fontSize: 12.5, marginBottom: 10 }}>Últimas 12 semanas</Text>
+                <ActivityHeatmap cells={heatmap} />
+              </>
+            )}
+            {detail === "records" && (
+              <>
+                <RecordRow icon="map-outline" label="Recorrido más largo" value={records.longestRideMeters ? formatDistance(records.longestRideMeters, units) : "—"} />
+                <RecordRow icon="hourglass-outline" label="Más tiempo en ruta" value={records.longestDurationSeconds ? formatDuration(records.longestDurationSeconds) : "—"} />
+                <RecordRow icon="flash-outline" label="Mejor velocidad promedio" value={records.fastestAvgSpeedKmh ? formatSpeed(records.fastestAvgSpeedKmh, units) : "—"} />
+                <RecordRow icon="sunny-outline" label="Mejor día" value={records.bestDayMeters ? formatDistance(records.bestDayMeters, units) : "—"} />
+                <RecordRow icon="ribbon-outline" label="Más puntos en un recorrido" value={records.mostPointsInRide ? `${records.mostPointsInRide} pts` : "—"} last />
+              </>
+            )}
           </GlassCard>
 
           <Section title={`Logros · ${unlockedCodes.size}/${ACHIEVEMENTS.length}`} />
@@ -184,7 +198,7 @@ export default function StatsScreen() {
               const unlocked = unlockedCodes.has(a.code);
               const p = unlocked ? 1 : a.progress(stats);
               return (
-                <GlassCard key={a.code} containerStyle={[styles.achievementCard, !unlocked && { opacity: 0.7 }]} entranceDelay={Math.min(i, 8) * 30}>
+                <GlassCard key={a.code} containerStyle={styles.achievementCard} style={!unlocked ? { opacity: 0.7 } : undefined} entranceDelay={Math.min(i, 8) * 30}>
                   <View style={styles.achievementHead}>
                     <Ionicons name={a.icon as any} size={22} color={unlocked ? colors.primaryDark : colors.inkFaint} />
                     {unlocked && <Ionicons name="checkmark-circle" size={16} color={colors.primaryDark} />}
@@ -210,10 +224,7 @@ export default function StatsScreen() {
             </GlassCard>
           </Pressable>
 
-          <View style={{ height: 120 }} />
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+    </LargeTitleScreen>
   );
 }
 
@@ -244,7 +255,7 @@ function Impact({ icon, value, label }: { icon: any; value: string; label: strin
   const { colors } = useTheme();
   return (
     <View style={styles.impact}>
-      <View style={[styles.impactIcon, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
+      <View style={[styles.impactIcon, { backgroundColor: colors.chipFill, borderColor: colors.chipBorder }]}>
         <Ionicons name={icon} size={18} color={colors.primaryDark} />
       </View>
       <Text style={{ color: colors.ink, fontSize: 16, fontWeight: "700", marginTop: 8 }}>{value}</Text>
@@ -279,11 +290,8 @@ function RecordRow({ icon, label, value, last }: { icon: any; label: string; val
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  safe: { flex: 1 },
-  scroll: { paddingHorizontal: 20, paddingTop: 8 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
-  header: { fontSize: 28, fontWeight: "700", letterSpacing: -0.5 },
+  // Essential level sits on the page (no card), like Inicio.
+  hero: { paddingBottom: 4 },
   demoPill: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   eyebrow: { fontSize: 12.5, fontWeight: "600" },
   heroRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 2 },

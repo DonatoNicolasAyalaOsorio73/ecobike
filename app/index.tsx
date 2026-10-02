@@ -6,5 +6,5 @@ import { useAuthStore } from "@/stores/authStore";
 // auth status, but something still has to own "/" itself to bootstrap that.
 export default function Index() {
   const status = useAuthStore((s) => s.status);
-  return <Redirect href={status === "signedOut" ? "/(auth)/welcome" : "/(tabs)/map"} />;
+  return <Redirect href={status === "signedOut" ? "/(auth)/welcome" : "/(tabs)/home"} />;
 }

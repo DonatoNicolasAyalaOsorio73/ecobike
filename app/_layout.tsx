@@ -18,6 +18,7 @@ import OfflineBanner from "@/components/ui/OfflineBanner";
 import ToastHost from "@/components/ui/ToastHost";
 import Logo from "@/components/ui/Logo";
 import { initDb } from "@/services/db";
+import { useLayout } from "@/hooks/useLayout";
 import { pullRemoteRides, syncPendingRides } from "@/services/rides.service";
 import { disablePush, enablePush, listenForPushTaps } from "@/services/push";
 import { setWeeklyReminder } from "@/services/reminders";
@@ -38,6 +39,7 @@ function RootLayout() {
   const status = useAuthStore((s) => s.status);
   const init = useAuthStore((s) => s.init);
   const [ready, setReady] = useState(false);
+  const { desktop } = useLayout();
 
   useEffect(() => {
     initDb();
@@ -135,13 +137,20 @@ function RootLayout() {
             <StatusBar style="dark" />
             {/* Honor the OS "reduce motion" accessibility setting app-wide. */}
             <ReducedMotionConfig mode={ReduceMotion.System} />
-            <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                animation: "slide_from_right",
+                // Desktop: detail screens read as a centered column, not a stretched phone screen.
+                contentStyle: desktop ? { width: "100%", maxWidth: 760, alignSelf: "center" } : undefined,
+              }}
+            >
               <Stack.Screen name="index" />
               <Stack.Protected guard={status === "signedOut"}>
-                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(auth)" options={{ contentStyle: undefined }} />
               </Stack.Protected>
               <Stack.Protected guard={status === "signedIn"}>
-                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="(tabs)" options={{ contentStyle: undefined }} />
                 <Stack.Screen name="onboarding" options={{ animation: "fade", gestureEnabled: false }} />
                 <Stack.Screen name="ride/[id]" options={{ presentation: "card" }} />
                 <Stack.Screen name="history" options={{ presentation: "card" }} />

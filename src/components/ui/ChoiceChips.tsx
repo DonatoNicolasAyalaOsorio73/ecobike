@@ -44,7 +44,7 @@ function Chip({ choice, selected, onPress, accent }: { choice: Choice; selected:
         style={[
           styles.chip,
           selected
-            ? { backgroundColor: a.soft, borderColor: a.base }
+            ? { backgroundColor: a.base, borderColor: a.base }
             : { backgroundColor: "rgba(255,255,255,0.85)", borderColor: "rgba(20,40,25,0.08)" },
         ]}
       >

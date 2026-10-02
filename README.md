@@ -7,12 +7,15 @@ Android apps** and the **web version** (same account, same Firebase data, same
 features). Visual language: Apple-style light UI with Duolingo-style motion
 (3D buttons, bouncy feedback, celebrations).
 
-On desktop browsers the app is shown inside an iPhone frame; on phones (native
-or mobile browser) it runs full screen.
+On phones (native or mobile browser) it runs full screen with the floating
+Liquid Glass tab bar; desktop browsers (1024 px and wider) get their own layout:
+a glass sidebar and readable centered columns, with the map full-bleed.
 
 ## Features
 
-- **Home / Map:** full-screen map, glass control rail, ride options (free or
+- **Inicio:** greeting, weekly goal hero with parallax, quick actions, next
+  reward progress, daily missions, week chart, last ride and CO₂ saved
+- **Map:** full-screen map, glass control rail, ride options (free or
   distance/time goals), daily points goal, streak, background tracking,
   auto-pause, keep-screen-on, live stats, lesson-complete style celebration
   with level-ups and new achievements

@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeIn, LinearTransition } from "react-native-reanimated";
-import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
+import LargeTitleScreen from "@/components/ui/LargeTitleScreen";
 import BackButton from "@/components/ui/BackButton";
 import GlassCard from "@/components/ui/GlassCard";
 import DuoProgressBar from "@/components/ui/DuoProgressBar";
@@ -46,17 +45,7 @@ export default function MaintenanceScreen() {
   };
 
   return (
-    <View style={styles.screen}>
-      <BackgroundBlobs />
-      <SafeAreaView style={styles.safe} edges={["top"]}>
-        <View style={styles.headerRow}>
-          <BackButton />
-          <Text style={[styles.header, { color: colors.ink }]} accessibilityRole="header">
-            Mantenimiento
-          </Text>
-          <View style={{ width: 44 }} />
-        </View>
-        <ScrollView contentContainerStyle={styles.scroll}>
+    <LargeTitleScreen title={"Mantenimiento"} leading={<BackButton size={36} />} tabBar={false}>
           <GlassCard style={styles.summary}>
             <View style={[styles.summaryIcon, { backgroundColor: due ? accents.green.base : accents.green.soft }]}>
               <Ionicons name={due ? "construct" : "checkmark-done"} size={22} color={accents.green.lip} />
@@ -78,7 +67,7 @@ export default function MaintenanceScreen() {
                 entering={FadeIn.duration(240).delay(i * 40)}
                 style={[styles.row, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.divider }]}
               >
-                <View style={[styles.badge, { backgroundColor: accents.green.base }]}>
+                <View style={[styles.badge, { backgroundColor: accents.green.soft }]}>
                   <Ionicons name={s.part.icon as any} size={16} color={accents.green.lip} />
                 </View>
                 <View style={{ flex: 1, gap: 6 }}>
@@ -107,18 +96,11 @@ export default function MaintenanceScreen() {
           <Text style={[styles.foot, { color: colors.inkFaint }]}>
             Los kilómetros se cuentan con tus recorridos registrados en EcoBike. Empezamos a contar la primera vez que abriste esta sección. Marca "Hecho" cuando hagas el servicio y el contador vuelve a cero.
           </Text>
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+    </LargeTitleScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  safe: { flex: 1 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 4 },
-  header: { fontSize: 17, fontWeight: "700" },
-  scroll: { padding: 20, paddingBottom: 60 },
   summary: { flexDirection: "row", alignItems: "center", gap: 14 },
   summaryIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   summaryTitle: { fontSize: 16, fontWeight: "700", marginBottom: 2 },

@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeIn } from "react-native-reanimated";
@@ -8,12 +7,13 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import BackButton from "@/components/ui/BackButton";
+import { columnStyle, useLargeTitle } from "@/components/ui/LargeTitleScreen";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassInput from "@/components/ui/GlassInput";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import SwipeableRow from "@/components/ui/SwipeableRow";
 import { useTheme } from "@/theme/useTheme";
-import { accents, type AccentName } from "@/theme/colors";
+import { accents } from "@/theme/colors";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useRiderStats } from "@/hooks/useRiderStats";
 import { useAvailablePoints } from "@/hooks/useAvailablePoints";
@@ -25,6 +25,9 @@ import { useAuthStore } from "@/stores/authStore";
 import { toast } from "@/stores/toastStore";
 import type { Ride } from "@/types/ride";
 
+// Virtualized list that can take a Reanimated scroll handler (large-title collapse).
+const AnimatedSectionList = Animated.createAnimatedComponent(SectionList) as unknown as typeof SectionList;
+
 const PERIOD_OPTIONS: { label: string; value: StatsPeriod }[] = [
   { label: "Semana", value: "week" },
   { label: "Mes", value: "month" },
@@ -33,12 +36,9 @@ const PERIOD_OPTIONS: { label: string; value: StatsPeriod }[] = [
 ];
 
 /** Short / medium / long rides get their own color, like the stats donut. */
-function rideAccent(meters: number): AccentName {
-  return meters < 5000 ? "teal" : meters <= 15000 ? "green" : "orange";
-}
-
 export default function HistoryScreen() {
   const { colors } = useTheme();
+  const lt = useLargeTitle({ title: "Actividad", leading: <BackButton size={36} />, tabBar: false });
   const userId = useCurrentUserId();
   const units = useSettingsStore((s) => s.units);
   const { isRealAccount } = useAvailablePoints(userId);
@@ -88,7 +88,6 @@ export default function HistoryScreen() {
   // iOS grouped inset list: each month is one rounded block; only its first
   // and last rows carry the corners, rows are split by inset hairlines.
   const renderItem = ({ item, index, section }: { item: Ride; index: number; section: { data: readonly Ride[] } }) => {
-    const a = accents[rideAccent(item.distanceMeters)];
     const first = index === 0;
     const last = index === section.data.length - 1;
     return (
@@ -103,8 +102,8 @@ export default function HistoryScreen() {
             onPress={() => router.push(`/ride/${item.id}`)}
             style={({ pressed, hovered }: any) => [styles.row, { backgroundColor: pressed ? "#EEF3EC" : hovered ? "#F6F9F5" : "#FFFFFF" }]}
           >
-            <View style={[styles.iconWrap, { backgroundColor: a.base }]}>
-              <Ionicons name="bicycle" size={17} color={a.lip} />
+            <View style={[styles.iconWrap, { backgroundColor: colors.chipFill }]}>
+              <Ionicons name="bicycle" size={17} color={colors.ink} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.date, { color: colors.ink }]}>{sentenceCase(format(new Date(item.startedAt), "EEEE d, HH:mm", { locale: es }))}</Text>
@@ -126,28 +125,22 @@ export default function HistoryScreen() {
   return (
     <View style={styles.screen}>
       <BackgroundBlobs />
-      <SafeAreaView style={styles.safe} edges={["top"]}>
-        <View style={styles.headerRow}>
-          <BackButton />
-          <Text style={[styles.header, { color: colors.ink }]} accessibilityRole="header">
-            Actividad
-          </Text>
-          <View style={{ width: 44 }} />
-        </View>
-
-        <SectionList
+        <AnimatedSectionList
+          onScroll={lt.onScroll as any}
+          scrollEventThrottle={16}
           sections={sections}
           keyExtractor={(r) => r.id}
           renderItem={renderItem}
           stickySectionHeadersEnabled={false}
           initialNumToRender={14}
           windowSize={9}
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[lt.contentContainerStyle, styles.scroll, columnStyle]}
+          showsVerticalScrollIndicator={lt.showsVerticalScrollIndicator}
           keyboardShouldPersistTaps="handled"
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           ListHeaderComponent={
             <>
+              <View style={{ marginHorizontal: -20 }}>{lt.header}</View>
               <SegmentedControl options={PERIOD_OPTIONS} value={period} onChange={setPeriod} style={{ marginBottom: 12 }} />
               <GlassInput icon="search-outline" placeholder="Buscar por fecha o distancia" value={query} onChangeText={setQuery} autoCapitalize="none" />
               <Text style={{ color: colors.inkFaint, fontSize: 12, marginBottom: 4, marginLeft: 6 }}>Desliza un recorrido a la izquierda para eliminarlo.</Text>
@@ -168,19 +161,15 @@ export default function HistoryScreen() {
               </Text>
             </GlassCard>
           }
-          ListFooterComponent={<View style={{ height: 120 }} />}
         />
-      </SafeAreaView>
+        {lt.navBar}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  safe: { flex: 1 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 4, marginBottom: 8 },
-  header: { fontSize: 17, fontWeight: "700" },
-  scroll: { paddingHorizontal: 20, paddingTop: 4 },
+  scroll: { paddingHorizontal: 20 },
   sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginTop: 14, marginBottom: 8 },
   monthLabel: { fontSize: 17, fontWeight: "700" },
   // Lightweight cells (no blur) so long histories scroll smoothly on any phone.

@@ -1,9 +1,9 @@
 import React, { useCallback, useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { RefreshControl, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
+import LargeTitleScreen from "@/components/ui/LargeTitleScreen";
+import ProfileButton from "@/components/ui/ProfileButton";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassButton from "@/components/ui/GlassButton";
 import GlassIconButton from "@/components/ui/GlassIconButton";
@@ -40,23 +40,22 @@ export default function PointsScreen() {
   const affordable = rewards.filter((r) => r.pointsCost <= availablePoints).length;
 
   return (
-    <View style={styles.screen} onLayout={onLayout}>
-      <BackgroundBlobs />
-      <SafeAreaView style={styles.safe} edges={["top"]}>
-        <ScrollView
-          contentContainerStyle={{ paddingBottom: 130 }}
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={colors.primary} />}
-        >
-          <View style={styles.headerRow}>
-            <Text style={[styles.header, { color: colors.ink }]} accessibilityRole="header">
-              Recompensas
-            </Text>
-            <GlassIconButton icon="qr-code-outline" accessibilityLabel="Mis códigos" onPress={() => router.push("/points/my-codes")} size={44} />
-          </View>
+    <>
+      <LargeTitleScreen
+        title="Recompensas"
+        padded={false}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={colors.primary} />}
+        trailing={
+          <>
+            <GlassIconButton icon="qr-code-outline" accessibilityLabel="Mis códigos" onPress={() => router.push("/points/my-codes")} size={36} />
+            <ProfileButton />
+          </>
+        }
+      >
+        <View onLayout={onLayout}>
 
           <View style={styles.pad}>
-            <GlassCard intensity={45}>
+            <View style={styles.hero}>
               <Text style={{ color: colors.inkSoft, fontSize: 12.5, fontWeight: "600" }}>Tus puntos</Text>
               <AnimatedNumber
                 value={availablePoints}
@@ -64,7 +63,7 @@ export default function PointsScreen() {
                 format={(v) => v.toLocaleString("es-CO")}
               />
               <View style={styles.balanceRow}>
-                <View style={[styles.levelPill, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
+                <View style={[styles.levelPill, { backgroundColor: colors.chipFill, borderColor: colors.chipBorder }]}>
                   <Ionicons name="trending-up" size={12} color={colors.primaryDark} />
                   <Text style={{ color: colors.primaryDark, fontSize: 12, fontWeight: "700", marginLeft: 4 }}>Nivel {level}</Text>
                 </View>
@@ -77,7 +76,7 @@ export default function PointsScreen() {
                   {affordable > 0 ? `Puedes canjear ${affordable} de ${rewards.length} recompensas` : "Sigue pedaleando para tu primer canje"}
                 </Text>
               )}
-            </GlassCard>
+            </View>
           </View>
 
           <EmailVerifyBanner />
@@ -113,24 +112,21 @@ export default function PointsScreen() {
             <MissionsCard rides={rides} />
           </View>
 
-        </ScrollView>
-      </SafeAreaView>
+        </View>
+      </LargeTitleScreen>
 
       <RedeemSheet reward={selected} availablePoints={availablePoints} onClose={() => setSelected(null)} redeem={(r) => redeem(r, availablePoints)} />
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  safe: { flex: 1 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 8, marginBottom: 14 },
-  header: { fontSize: 28, fontWeight: "700", letterSpacing: -0.5 },
   pad: { paddingHorizontal: 20 },
+  // Essential level sits on the page (no card), like Inicio.
+  hero: { paddingTop: 4, paddingBottom: 8 },
   balance: { fontSize: 44, fontWeight: "700", letterSpacing: -1.2, marginTop: 2 },
   balanceRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 6 },
   levelPill: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },
   notice: { fontSize: 12, textAlign: "center", fontWeight: "600", marginTop: 12, paddingHorizontal: 20 },
   section: { fontSize: 20, fontWeight: "700", paddingHorizontal: 20, marginTop: 32, marginBottom: 12, letterSpacing: -0.3 },
-  howIcon: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", borderWidth: 1 },
 });

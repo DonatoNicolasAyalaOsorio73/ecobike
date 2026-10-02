@@ -3,41 +3,38 @@ import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } fro
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import Animated, { Easing, FadeInDown, FadeInUp, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import GlassButton from "@/components/ui/GlassButton";
 import SocialRow from "@/components/ui/SocialRow";
 import Logo from "@/components/ui/Logo";
+import { AuthLink, Rise } from "@/components/auth/AuthScaffold";
 import { useTheme } from "@/theme/useTheme";
-import { accents, type AccentName } from "@/theme/colors";
+import { type } from "@/theme/typography";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { signInWithApple, isAppleAuthAvailable } from "@/services/auth.service";
 import { isFirebaseConfigured } from "@/services/firebase";
 import { useAuthStore } from "@/stores/authStore";
 
-const FEATURES: { icon: keyof typeof Ionicons.glyphMap; accent: AccentName; title: string; text: string }[] = [
-  { icon: "ribbon", accent: "gold", title: "Gana puntos", text: "10 por km, canjeables en tiendas" },
-  { icon: "flame", accent: "orange", title: "Mantén tu racha", text: "Pedalea cada día y sube de nivel" },
-  { icon: "people", accent: "blue", title: "Reta a tus amigos", text: "Ranking, chat y logros" },
+const FEATURES: { icon: keyof typeof Ionicons.glyphMap; title: string; text: string }[] = [
+  { icon: "ribbon-outline", title: "Gana puntos", text: "10 por km, canjeables en tiendas" },
+  { icon: "flame-outline", title: "Mantén tu racha", text: "Pedalea cada día y sube de nivel" },
+  { icon: "people-outline", title: "Reta a tus amigos", text: "Ranking, chat y logros" },
 ];
 
-/** Gentle up-and-down float, staggered per element (decorative). */
-function Floating({ children, delay = 0, distance = 8, style }: { children: React.ReactNode; delay?: number; distance?: number; style?: any }) {
-  const t = useSharedValue(0);
-  useEffect(() => {
-    t.value = withRepeat(withSequence(withTiming(1, { duration: 1600 + delay, easing: Easing.inOut(Easing.sin) }), withTiming(0, { duration: 1600 + delay, easing: Easing.inOut(Easing.sin) })), -1);
-  }, [t, delay]);
-  const s = useAnimatedStyle(() => ({ transform: [{ translateY: -distance * t.value }] }));
-  return <Animated.View style={[style, s]}>{children}</Animated.View>;
-}
-
+/**
+ * First impression: the logo is the protagonist, one calm headline, three
+ * quiet reasons (neutral icons, no boxes), and the actions anchored at the
+ * bottom where the thumb is. Lime appears only on the primary button.
+ */
 export default function WelcomeScreen() {
   const { colors } = useTheme();
   const [error, setError] = useState<string | null>(null);
   const [appleAvailable, setAppleAvailable] = useState(false);
   const { available: googleAvailable, promptAsync } = useGoogleAuth(setError);
   const continueAsGuest = useAuthStore((s) => s.continueAsGuest);
-  const compact = useWindowDimensions().height < 740; // iPhone SE / small Androids
+  const { width, height } = useWindowDimensions();
+  const compact = height < 740; // iPhone SE / small Androids
+  const logoSize = Math.min(compact ? 220 : 300, width * 0.78);
 
   useEffect(() => {
     if (Platform.OS === "ios") isAppleAuthAvailable().then(setAppleAvailable);
@@ -45,54 +42,53 @@ export default function WelcomeScreen() {
 
   return (
     <View style={styles.screen}>
-      <BackgroundBlobs />
+      <BackgroundBlobs variant="auth" />
       <SafeAreaView style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.safe} showsVerticalScrollIndicator={false} bounces={false}>
-        <View style={styles.hero}>
-          <View>
-            <Floating distance={6}>
-              <Logo size={compact ? "small" : "large"} />
-            </Floating>
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} bounces={false}>
+          <View style={styles.column}>
+            <View style={styles.hero}>
+              <Logo size={logoSize} />
+              <Rise index={0}>
+                <Text style={[styles.headline, { color: colors.ink }, compact && styles.headlineCompact]}>
+                  Muévete mejor.{"\n"}
+                  <Text style={{ color: colors.inkSoft }}>Vive sostenible.</Text>
+                </Text>
+              </Rise>
+
+              <View style={[styles.features, compact && { marginTop: 22, gap: 12 }]}>
+                {FEATURES.map((f, i) => (
+                  <Rise key={f.title} index={1 + i} style={styles.feature}>
+                    <View style={styles.featureIcon}>
+                      <Ionicons name={f.icon} size={18} color={colors.ink} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[type.callout, { color: colors.ink, fontWeight: "600" }]}>{f.title}</Text>
+                      <Text style={[type.footnote, { color: colors.inkSoft }]}>{f.text}</Text>
+                    </View>
+                  </Rise>
+                ))}
+              </View>
+
+              {!isFirebaseConfigured && (
+                <Text style={[styles.notice, { color: colors.inkSoft }]}>Sin conexión con el servidor: puedes explorar sin cuenta.</Text>
+              )}
+              {error && <Text style={[styles.notice, { color: colors.danger }]}>{error}</Text>}
+            </View>
+
+            <Rise index={4} style={styles.actions}>
+              <GlassButton label="Empezar gratis" onPress={() => router.push("/(auth)/register")} />
+              <GlassButton label="Ya tengo cuenta" variant="secondary" onPress={() => router.push("/(auth)/login")} style={{ marginTop: 12 }} />
+
+              <SocialRow
+                onGoogle={googleAvailable ? () => promptAsync() : undefined}
+                onApple={appleAvailable ? () => signInWithApple().catch((e) => setError(e.message)) : undefined}
+              />
+
+              <View style={{ marginTop: 20 }}>
+                <AuthLink role="button" onPress={continueAsGuest}>Explorar sin cuenta</AuthLink>
+              </View>
+            </Rise>
           </View>
-
-          <Animated.Text entering={FadeInDown.delay(150).springify()} style={[styles.headline, { color: colors.ink }, compact && { fontSize: 26, lineHeight: 31, marginTop: 14 }]}>
-            Muévete mejor.{"\n"}
-            Vive <Text style={{ backgroundColor: accents.green.base, borderRadius: 8 }}> sostenible. </Text>
-          </Animated.Text>
-
-          <View style={[styles.features, compact && { marginTop: 16, gap: 8 }]}>
-            {FEATURES.map((f, i) => (
-              <Animated.View key={f.title} entering={FadeInUp.delay(300 + i * 110).springify().damping(13)} style={styles.feature}>
-                <View style={[styles.featureIcon, { backgroundColor: accents[f.accent].soft, borderColor: accents[f.accent].base }]}>
-                  <Ionicons name={f.icon} size={20} color={accents[f.accent].lip} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 15 }}>{f.title}</Text>
-                  <Text style={{ color: colors.inkSoft, fontSize: 13 }}>{f.text}</Text>
-                </View>
-              </Animated.View>
-            ))}
-          </View>
-
-          {!isFirebaseConfigured && (
-            <Text style={[styles.notice, { color: colors.warning }]}>Sin conexión con el servidor: puedes explorar sin cuenta.</Text>
-          )}
-          {error && <Text style={[styles.notice, { color: colors.danger }]}>{error}</Text>}
-        </View>
-
-        <Animated.View entering={FadeInUp.delay(650).springify()} style={styles.actions}>
-          <GlassButton label="Empezar gratis" icon="rocket-outline" onPress={() => router.push("/(auth)/register")} style={{ marginBottom: 12 }} />
-          <GlassButton label="Ya tengo cuenta" variant="secondary" onPress={() => router.push("/(auth)/login")} />
-
-          <SocialRow
-            onGoogle={googleAvailable ? () => promptAsync() : undefined}
-            onApple={appleAvailable ? () => signInWithApple().catch((e) => setError(e.message)) : undefined}
-          />
-
-          <Text style={[styles.guestLink, { color: colors.inkSoft }]} onPress={continueAsGuest} accessibilityRole="button">
-            Explorar sin cuenta
-          </Text>
-        </Animated.View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -101,15 +97,15 @@ export default function WelcomeScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  safe: { flexGrow: 1, justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 12 },
+  scroll: { flexGrow: 1, paddingHorizontal: 28, paddingTop: 8 },
+  column: { flex: 1, width: "100%", maxWidth: 400, alignSelf: "center", justifyContent: "space-between" },
   hero: { flexGrow: 1, alignItems: "center", justifyContent: "center", paddingVertical: 12 },
-  headline: { marginTop: 22, fontSize: 30, fontWeight: "700", textAlign: "center", lineHeight: 36, letterSpacing: -0.5 },
-  features: { alignSelf: "stretch", gap: 12, marginTop: 26 },
-  feature: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "rgba(255,255,255,0.75)", borderRadius: 18, borderWidth: 2, borderColor: "#EDF1EA", padding: 12 },
-  featureIcon: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", borderWidth: 2 },
-  notice: { marginTop: 14, fontSize: 12.5, textAlign: "center", fontWeight: "600" },
-  guestLink: { marginTop: 16, fontSize: 14, textAlign: "center", fontWeight: "700" },
-  actions: { paddingBottom: 18 },
-  deco: { position: "absolute" },
-  decoBubble: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
+  headline: { marginTop: 4, fontSize: 32, fontWeight: "700", textAlign: "center", lineHeight: 38, letterSpacing: -0.8 },
+  headlineCompact: { fontSize: 26, lineHeight: 31 },
+  // A centered block of left-aligned rows (iOS "what's new" pattern), not edge to edge.
+  features: { alignSelf: "center", width: "100%", maxWidth: 300, gap: 16, marginTop: 34 },
+  feature: { flexDirection: "row", alignItems: "center", gap: 14 },
+  featureIcon: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(20,23,26,0.05)" },
+  notice: { marginTop: 18, fontSize: 12.5, textAlign: "center", fontWeight: "600" },
+  actions: { paddingTop: 20, paddingBottom: 18 },
 });

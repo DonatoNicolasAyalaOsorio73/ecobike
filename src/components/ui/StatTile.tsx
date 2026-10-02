@@ -3,43 +3,25 @@ import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/theme/useTheme";
 import GlassCard from "./GlassCard";
-import { accents, type AccentName } from "@/theme/colors";
 
 interface Props {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value: string;
-  /** Kept for compatibility; color now comes from `color` or the icon. */
-  accent?: boolean;
-  color?: AccentName;
 }
 
-// Each metric gets its own color (Duolingo-style), derived from its icon.
-const ICON_ACCENT: Partial<Record<string, AccentName>> = {
-  "speedometer-outline": "blue",
-  "time-outline": "purple",
-  "flash-outline": "gold",
-  "trending-up-outline": "orange",
-  "triangle-outline": "teal",
-  "flame-outline": "orange",
-  "calendar-outline": "blue",
-  "bonfire-outline": "orange",
-  "bicycle-outline": "green",
-  "leaf-outline": "green",
-};
-
-export default function StatTile({ icon, label, value, color }: Props) {
+// The number is the content; the icon is a quiet label (neutral, no accent).
+export default function StatTile({ icon, label, value }: Props) {
   const { colors } = useTheme();
-  const a = accents[color ?? ICON_ACCENT[icon] ?? "green"];
   return (
     <GlassCard containerStyle={styles.card}>
       <View
         style={[
           styles.iconWrap,
-          { backgroundColor: a.soft, borderColor: a.base },
+          { backgroundColor: colors.chipFill },
         ]}
       >
-        <Ionicons name={icon} size={18} color={a.lip} />
+        <Ionicons name={icon} size={18} color={colors.ink} />
       </View>
       <Text style={[styles.value, { color: colors.ink }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
         {value}
@@ -60,7 +42,6 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
     marginBottom: 10,
   },
   value: { fontSize: 20, fontWeight: "700" },

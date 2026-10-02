@@ -5,7 +5,6 @@ import { Ionicons } from "@expo/vector-icons";
 import GlassCard from "@/components/ui/GlassCard";
 import DuoProgressBar from "@/components/ui/DuoProgressBar";
 import { useTheme } from "@/theme/useTheme";
-import { accents } from "@/theme/colors";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { dailyMissions } from "@/utils/missions";
 import type { Ride } from "@/types/ride";
@@ -21,19 +20,19 @@ export default function MissionsCard({ rides, entranceDelay = 0 }: { rides: Ride
     <GlassCard entranceDelay={entranceDelay}>
       <View style={styles.head}>
         <Text style={[styles.title, { color: colors.ink }]}>Misiones de hoy</Text>
-        <View style={[styles.counter, { backgroundColor: done === missions.length ? accents.gold.base : accents.gold.soft }]}>
-          <Ionicons name="star" size={12} color={done === missions.length ? "#fff" : accents.gold.lip} />
-          <Text style={{ color: done === missions.length ? "#fff" : accents.gold.lip, fontWeight: "700", fontSize: 12 }}>
+        <View style={[styles.counter, { backgroundColor: done === missions.length ? colors.primary : colors.chipFill }]}>
+          <Ionicons name="star" size={12} color={colors.ink} />
+          <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 12 }}>
             {done}/{missions.length}
           </Text>
         </View>
       </View>
       {missions.map((m, i) => {
-        const a = accents[m.accent];
         return (
           <View key={m.id} style={[styles.row, i > 0 && { borderTopWidth: 1, borderTopColor: colors.divider }]}>
-            <View style={[styles.icon, { backgroundColor: m.done ? a.base : a.soft, borderColor: a.base }]}>
-              <Ionicons name={(m.done ? "checkmark" : m.icon) as any} size={20} color={m.done ? "#fff" : a.lip} />
+            {/* Lime = done (state); pending missions stay neutral. */}
+            <View style={[styles.icon, { backgroundColor: m.done ? colors.primary : colors.chipFill }]}>
+              <Ionicons name={(m.done ? "checkmark" : m.icon) as any} size={20} color={colors.ink} />
             </View>
             <View style={{ flex: 1, gap: 6 }}>
               <View style={styles.labelRow}>
@@ -45,11 +44,11 @@ export default function MissionsCard({ rides, entranceDelay = 0 }: { rides: Ride
                   {m.unit ? ` ${m.unit}` : ""}
                 </Text>
               </View>
-              <DuoProgressBar value={m.current / m.target} accent={m.accent} delay={entranceDelay + 150 + i * 90} />
+              <DuoProgressBar value={m.current / m.target} accent="green" delay={entranceDelay + 150 + i * 90} />
             </View>
             {m.done && (
               <Animated.View entering={ZoomIn.delay(entranceDelay + 300 + i * 90).springify().damping(16)} style={styles.chest}>
-                <Ionicons name="trophy" size={18} color={accents.gold.lip} />
+                <Ionicons name="trophy" size={18} color={colors.ink} />
               </Animated.View>
             )}
           </View>
@@ -64,7 +63,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 16, fontWeight: "700" },
   counter: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
-  icon: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", borderWidth: 2 },
+  icon: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
   labelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 },
   mTitle: { fontSize: 14, fontWeight: "700", flex: 1 },
   chest: { width: 28, alignItems: "center" },

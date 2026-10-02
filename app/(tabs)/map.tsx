@@ -6,6 +6,7 @@ import * as Location from "expo-location";
 import Animated, { FadeIn, FadeInDown, FadeOutDown, ZoomIn, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import RideMap from "@/components/map/RideMap";
 import RideOptionsMenu from "@/components/map/RideOptionsMenu";
+import MapSheet from "@/components/map/MapSheet";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassSurface from "@/components/ui/GlassSurface";
 import GlassButton from "@/components/ui/GlassButton";
@@ -28,6 +29,7 @@ import { distanceThisWeek } from "@/utils/rideStats";
 import { goalLabel, goalProgress } from "@/utils/rideGoals";
 import { pointsToday } from "@/utils/streak";
 import { computeStreakDays } from "@/utils/gamification";
+import { useLayout } from "@/hooks/useLayout";
 
 type LatLng = { lat: number; lng: number };
 
@@ -55,7 +57,10 @@ export default function MapScreen() {
     clearJustUnlocked,
     recoverInProgressRide,
   } = useRideStore();
+  const { desktop, bottomInset } = useLayout();
   const [menuOpen, setMenuOpen] = useState(false);
+  // Panel detent: unfolded by default; the rider can fold it to see more map.
+  const [sheetOpen, setSheetOpen] = useState(true);
   const [idleCenter, setIdleCenter] = useState<LatLng | null>(null);
   const [recenterKey, setRecenterKey] = useState(0);
   // Points when the ride started → detect a level-up on completion without
@@ -123,9 +128,21 @@ export default function MapScreen() {
 
 
 
-      <Animated.View style={[styles.bottom, cardStyle]} pointerEvents={menuOpen ? "none" : "box-none"}>
+      <Animated.View style={[styles.bottom, desktop ? styles.bottomDesktop : { bottom: bottomInset - 8 }, cardStyle]} pointerEvents={menuOpen ? "none" : "box-none"}>
         {status === "IDLE" && (
-          <GlassCard intensity={55}>
+          <MapSheet
+            expanded={sheetOpen}
+            onExpandedChange={setSheetOpen}
+            compact={
+              <View style={styles.compactRow}>
+                <ProgressRing progress={weekProgress} size={40} thickness={5}>
+                  <Text style={{ fontSize: 10, fontWeight: "700", color: colors.ink }}>{Math.round(Math.min(999, weekProgress * 100))}%</Text>
+                </ProgressRing>
+                <Text style={[styles.title, { color: colors.ink, flex: 1 }]}>Listo para pedalear</Text>
+                <GlassIconButton icon="play" accessibilityLabel="Iniciar recorrido" active onPress={() => begin(null)} size={44} />
+              </View>
+            }
+          >
             <View style={styles.idleRow}>
               <ProgressRing progress={weekProgress} size={72} thickness={8}>
                 <AnimatedNumber
@@ -146,7 +163,7 @@ export default function MapScreen() {
             <View style={styles.controlsRow}>
               <GlassButton label="Iniciar recorrido" icon="play" variant="primary" onPress={() => begin(null)} disabled={!userId} style={{ flex: 1 }} />
             </View>
-          </GlassCard>
+          </MapSheet>
         )}
 
         {status === "PREPARING" && (
@@ -165,7 +182,24 @@ export default function MapScreen() {
 
         {riding && ride && (
           <Animated.View entering={FadeInDown.springify().damping(18)} exiting={FadeOutDown}>
-            <GlassCard intensity={55}>
+            <MapSheet
+              expanded={sheetOpen}
+              onExpandedChange={setSheetOpen}
+              compact={
+                <View style={styles.compactRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.title, { color: colors.ink }]}>{formatDistance(ride.distanceMeters, units)}</Text>
+                    <Text style={{ color: colors.inkSoft, fontSize: 12 }}>{formatDuration(ride.durationSeconds)}</Text>
+                  </View>
+                  {status === "ACTIVE" ? (
+                    <GlassIconButton icon="pause" accessibilityLabel="Pausar" onPress={pauseRide} size={44} />
+                  ) : (
+                    <GlassIconButton icon="play" accessibilityLabel="Reanudar" onPress={resumeRide} size={44} />
+                  )}
+                  <GlassIconButton icon="flag" accessibilityLabel="Finalizar" active onPress={finishRide} size={44} />
+                </View>
+              }
+            >
               {goal && (
                 <View style={styles.goalRow}>
                   <ProgressRing progress={rideGoalProgress} size={54} thickness={6}>
@@ -204,7 +238,7 @@ export default function MapScreen() {
               <Text style={[styles.discard, { color: colors.danger }]} onPress={discardRide} accessibilityRole="button">
                 Descartar recorrido
               </Text>
-            </GlassCard>
+            </MapSheet>
           </Animated.View>
         )}
       </Animated.View>
@@ -293,10 +327,13 @@ const styles = StyleSheet.create({
   topRow: { flexDirection: "row", justifyContent: "center", gap: 8, paddingTop: 10 },
   pointsPill: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 9 },
   rail: { position: "absolute", right: 14, top: 120, gap: 12, alignItems: "center" },
-  bottom: { position: "absolute", left: 14, right: 14, bottom: 104 },
+  bottom: { position: "absolute", left: 14, right: 14 },
+  // Desktop: a floating panel at the leading edge so the map stays the protagonist.
+  bottomDesktop: { right: undefined, left: 24, bottom: 24, width: 400 },
   title: { fontSize: 17, fontWeight: "700" },
   subtitle: { fontSize: 13, marginTop: 6, lineHeight: 18 },
   idleRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+  compactRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   goalRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
   statsRow: { flexDirection: "row", justifyContent: "space-between" },
   secondaryStatsRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 14, paddingTop: 12, borderTopWidth: 1 },

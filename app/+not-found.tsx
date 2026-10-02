@@ -22,7 +22,7 @@ export default function NotFoundScreen() {
               label="Volver al inicio"
               icon="home-outline"
               variant="primary"
-              onPress={() => router.replace("/(tabs)/map")}
+              onPress={() => router.replace("/(tabs)/home")}
               style={{ marginTop: 20 }}
             />
           </GlassCard>

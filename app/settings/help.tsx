@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, LinearTransition } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
+import LargeTitleScreen from "@/components/ui/LargeTitleScreen";
 import BackButton from "@/components/ui/BackButton";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassButton from "@/components/ui/GlassButton";
@@ -27,17 +26,7 @@ export default function HelpScreen() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <View style={styles.screen}>
-      <BackgroundBlobs />
-      <SafeAreaView style={styles.safe} edges={["top"]}>
-        <View style={styles.headerRow}>
-          <BackButton />
-          <Text style={[styles.header, { color: colors.ink }]} accessibilityRole="header">
-            Centro de ayuda
-          </Text>
-          <View style={{ width: 44 }} />
-        </View>
-        <ScrollView contentContainerStyle={styles.scroll}>
+    <LargeTitleScreen title={"Centro de ayuda"} leading={<BackButton size={36} />} tabBar={false}>
           <GlassCard>
             {FAQ.map(([q, a], i) => {
               const expanded = open === i;
@@ -71,17 +60,10 @@ export default function HelpScreen() {
               style={{ marginTop: 16 }}
             />
           ) : null}
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+    </LargeTitleScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  safe: { flex: 1 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 4 },
-  header: { fontSize: 17, fontWeight: "700" },
-  scroll: { padding: 20, paddingBottom: 60 },
   q: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 14 },
 });

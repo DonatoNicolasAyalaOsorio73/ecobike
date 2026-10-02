@@ -61,6 +61,36 @@ adding one array entry, not touching ride-completion logic. Levels are a
 threshold table for the same reason (`LEVEL_THRESHOLDS` in
 `utils/gamification.ts`).
 
+**One screen scaffold, one layout hook.** Every top-level screen (and the
+scroll-based settings/legal screens) renders through
+`src/components/ui/LargeTitleScreen.tsx`: iOS 26 large title that hands off
+to a compact title on a glass nav bar as you scroll, pull-to-stretch, leading
+and trailing nav slots, tab-bar clearance and a centered 720 px column. All
+scroll-linked styles are Reanimated worklets (UI thread, no re-renders).
+Platform/size decisions live in `src/hooks/useLayout.ts`, not in screens.
+The behavior itself is the `useLargeTitle` hook in the same file, so the
+virtualized screens (Actividad's SectionList, Mis códigos' FlatList) and the
+keyboard-avoiding form (Editar perfil) share it without giving up
+virtualization or their sticky footers.
+
+**Map panel with two detents.** `src/components/map/MapSheet.tsx`: drag to
+fold the ride panel to one line or unfold it (finger-tracking, rubber-band,
+momentum projection from `theme/motion.ts`); the grabber is also a button, so
+the gesture is a shortcut and never the only way.
+
+**Navigation: five tabs + avatar.** Inicio, Mapa, Progreso, Premios, Amigos.
+Perfil is reached from the avatar in the nav bar (iOS 26 App Store/Music
+pattern) and stays a tab route, so deep links and `backBehavior="history"`
+keep working. Desktop web (>= 1024 px) swaps `LiquidTabBar` for
+`DesktopSidebar` via `tabBarPosition: "left"` (same routes and tabPress
+semantics); the former iPhone-frame mock-up on desktop was removed so the web
+is a first-class layout, not a phone imitation. Tabs cross-fade (`animation:
+"fade"`); stack screens keep the native push.
+
+**Type ramp and press feedback as tokens.** `src/theme/typography.ts` (SF
+sizes and tracking) and `src/components/ui/PressableScale.tsx` (UI-thread
+spring sink, haptic, hover lift) so cards and tiles respond like buttons.
+
 ## Ride tracking state machine
 
 `src/stores/rideStore.ts` implements exactly the states the spec calls for:

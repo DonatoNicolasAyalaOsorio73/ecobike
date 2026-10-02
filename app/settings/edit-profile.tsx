@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useNavigation } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -8,6 +7,7 @@ import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import BackButton from "@/components/ui/BackButton";
+import { columnStyle, useLargeTitle } from "@/components/ui/LargeTitleScreen";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassInput from "@/components/ui/GlassInput";
 import GlassButton from "@/components/ui/GlassButton";
@@ -65,6 +65,7 @@ type UsernameState = "idle" | "checking" | "ok" | "taken" | "invalid";
 
 export default function EditProfileScreen() {
   const { colors } = useTheme();
+  const lt = useLargeTitle({ title: "Editar perfil", leading: <BackButton size={36} />, tabBar: false });
   const navigation = useNavigation();
   const firebaseUser = useAuthStore((s) => s.firebaseUser);
   const profile = useAuthStore((s) => s.profile);
@@ -234,17 +235,15 @@ export default function EditProfileScreen() {
   return (
     <View style={styles.screen}>
       <BackgroundBlobs />
-      <SafeAreaView style={styles.safe} edges={["top"]}>
-        <View style={styles.headerRow}>
-          <BackButton />
-          <Text style={[styles.header, { color: colors.ink }]} accessibilityRole="header">
-            Editar perfil
-          </Text>
-          <View style={{ width: 44 }} />
-        </View>
-
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <Animated.ScrollView
+            onScroll={lt.onScroll}
+            scrollEventThrottle={16}
+            contentContainerStyle={[lt.contentContainerStyle, styles.scroll, columnStyle]}
+            showsVerticalScrollIndicator={lt.showsVerticalScrollIndicator}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={{ marginHorizontal: -20 }}>{lt.header}</View>
             {/* Completion */}
             <GlassCard>
               <View style={styles.completionHead}>
@@ -262,7 +261,7 @@ export default function EditProfileScreen() {
             {/* Photo */}
             <Animated.View entering={FadeInDown.delay(60).springify()} style={styles.photoBlock}>
               <Pressable onPress={pickPhoto} accessibilityRole="button" accessibilityLabel="Cambiar foto de perfil" style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.95 : 1 }] })}>
-                <View style={[styles.avatar, { borderColor: accents.green.base, backgroundColor: accents.green.soft }]}>
+                <View style={[styles.avatar, { borderColor: "transparent", backgroundColor: accents.green.soft }]}>
                   {photo ? <Image source={{ uri: photo }} style={styles.avatarImg} /> : <Ionicons name="person" size={48} color={accents.green.lip} />}
                   {photoBusy && (
                     <View style={[StyleSheet.absoluteFill, styles.avatarBusy]}>
@@ -344,8 +343,7 @@ export default function EditProfileScreen() {
               <ChoiceChips choices={GOALS} value={v.ridingGoal} onChange={set("ridingGoal")} accent="orange" accessibilityLabel="Objetivo" />
             </GlassCard>
 
-            <View style={{ height: 120 }} />
-          </ScrollView>
+          </Animated.ScrollView>
 
           <View style={[styles.footer, { borderTopColor: colors.divider }]}>
             {confirmLeave ? (
@@ -375,7 +373,7 @@ export default function EditProfileScreen() {
             )}
           </View>
         </KeyboardAvoidingView>
-      </SafeAreaView>
+        {lt.navBar}
     </View>
   );
 }
@@ -391,10 +389,7 @@ function Section({ title, delay }: { title: string; delay: number }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  safe: { flex: 1 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 4 },
-  header: { fontSize: 17, fontWeight: "700" },
-  scroll: { paddingHorizontal: 20, paddingTop: 12 },
+  scroll: { paddingHorizontal: 20 },
   completionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
   photoBlock: { alignItems: "center", marginTop: 20 },
   avatar: { width: 112, height: 112, borderRadius: 56, borderWidth: 4, alignItems: "center", justifyContent: "center", overflow: "hidden" },

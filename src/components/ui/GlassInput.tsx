@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from "react-native-reanimated";
+import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSequence, withTiming } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import GlassSurface from "./GlassSurface";
 import { useTheme } from "@/theme/useTheme";
@@ -53,10 +53,11 @@ export default function GlassInput({
   }, [errorText, shake]);
   const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shake.value }] }));
 
-  // iOS-style filled field: tinted fill at rest, white + green ring on focus.
+  // iOS-style filled field: neutral fill at rest, white + soft ink ring on
+  // focus (no accent color: the field is secondary to the primary action).
   // Constant border width so focusing never shifts the text by a pixel.
-  const border = errorText ? colors.danger : focused ? colors.primaryDark : "transparent";
-  const fill = focused ? "#FFFFFF" : "rgba(40,110,55,0.07)";
+  const border = errorText ? colors.danger : focused ? "rgba(20,23,26,0.35)" : "rgba(20,23,26,0.06)";
+  const fill = focused ? "#FFFFFF" : "rgba(20,23,26,0.045)";
 
   return (
     <View style={containerStyle}>
@@ -64,7 +65,7 @@ export default function GlassInput({
       <Animated.View style={shakeStyle}>
         <GlassSurface radius={radii.pill} intensity={40} specular={false} borderColor={border} backgroundColor={fill} style={[styles.wrap, { borderWidth: 1.5 }]}>
           <View style={styles.inner}>
-            {icon ? <Ionicons name={icon} size={18} color={errorText ? colors.danger : colors.primaryDark} /> : null}
+            {icon ? <Ionicons name={icon} size={18} color={errorText ? colors.danger : focused ? colors.ink : colors.inkFaint} /> : null}
 
             <TextInput
               placeholderTextColor={colors.placeholder}
@@ -93,9 +94,9 @@ export default function GlassInput({
         </GlassSurface>
       </Animated.View>
       {errorText ? (
-        <Text style={[styles.error, { color: colors.danger }]} accessibilityLiveRegion="polite">
+        <Animated.Text entering={FadeInDown.duration(220)} style={[styles.error, { color: colors.danger }]} accessibilityLiveRegion="polite">
           {errorText}
-        </Text>
+        </Animated.Text>
       ) : hint ? (
         <Text style={[styles.hint, { color: colors.inkFaint }]}>{hint}</Text>
       ) : null}

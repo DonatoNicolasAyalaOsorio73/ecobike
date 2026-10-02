@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Image, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInUp, ZoomIn } from "react-native-reanimated";
 import { formatDistanceToNowStrict } from "date-fns";
 import { es } from "date-fns/locale";
-import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
+import LargeTitleScreen from "@/components/ui/LargeTitleScreen";
+import ProfileButton from "@/components/ui/ProfileButton";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassInput from "@/components/ui/GlassInput";
 import GlassButton from "@/components/ui/GlassButton";
@@ -45,7 +45,7 @@ function Avatar({ label, photoURL, size = 44 }: { label: string; photoURL?: stri
   const box = { width: size, height: size, borderRadius: size / 2 };
   if (photoURL) return <Image source={{ uri: photoURL }} style={box} accessibilityIgnoresInvertColors />;
   return (
-    <View style={[styles.avatar, box, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
+    <View style={[styles.avatar, box, { backgroundColor: colors.chipFill, borderColor: colors.chipBorder }]}>
       <Text style={{ color: colors.primaryDark, fontWeight: "700", fontSize: size * 0.4 }}>{label.slice(0, 1).toUpperCase()}</Text>
     </View>
   );
@@ -195,36 +195,27 @@ export default function FriendsScreen() {
 
   if (!isFirebaseConfigured) {
     return (
-      <View style={styles.screen}>
-        <BackgroundBlobs />
-        <SafeAreaView style={styles.safe} edges={["top"]}>
-          <Text style={[styles.header, { color: colors.ink }]}>Amigos</Text>
-          <View style={{ padding: 20 }}>
-            <GlassCard>
-              <Text style={{ color: colors.inkSoft, textAlign: "center" }}>La función de amigos necesita conexión con el servidor.</Text>
-            </GlassCard>
-          </View>
-        </SafeAreaView>
-      </View>
+      <LargeTitleScreen title="Amigos" trailing={<ProfileButton />}>
+        <GlassCard>
+          <Text style={{ color: colors.inkSoft, textAlign: "center" }}>La función de amigos necesita conexión con el servidor.</Text>
+        </GlassCard>
+      </LargeTitleScreen>
     );
   }
 
   return (
-    <View style={styles.screen}>
-      <BackgroundBlobs />
-      <SafeAreaView style={styles.safe} edges={["top"]}>
-        <View style={styles.headerRow}>
-          <Text style={[styles.header, { color: colors.ink }]} accessibilityRole="header">
-            Amigos
-          </Text>
-          {requests.length > 0 && (
-            <Animated.View entering={ZoomIn.springify()} style={[styles.badge, { backgroundColor: colors.danger }]}>
-              <Text style={styles.badgeText}>{requests.length} solicitud{requests.length > 1 ? "es" : ""}</Text>
-            </Animated.View>
-          )}
-        </View>
-
-        <View style={{ paddingHorizontal: 20 }}>
+    <LargeTitleScreen
+      title="Amigos"
+      trailing={<ProfileButton />}
+      refreshControl={uid ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} /> : undefined}
+      titleAccessory={
+        requests.length > 0 ? (
+          <Animated.View entering={ZoomIn.springify()} style={[styles.badge, { backgroundColor: colors.danger }]}>
+            <Text style={styles.badgeText}>{requests.length} solicitud{requests.length > 1 ? "es" : ""}</Text>
+          </Animated.View>
+        ) : null
+      }
+    >
           <SegmentedControl
             options={[
               { label: unreadTotal ? `Mensajes (${unreadTotal})` : "Mensajes", value: "messages" },
@@ -235,14 +226,6 @@ export default function FriendsScreen() {
             onChange={setTab}
             style={{ marginBottom: 14 }}
           />
-        </View>
-
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          refreshControl={uid ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} /> : undefined}
-        >
           {isGuest && (
             <GlassCard style={{ marginBottom: 12 }}>
               <Text style={{ color: colors.inkSoft, fontSize: 13, textAlign: "center" }}>
@@ -425,7 +408,7 @@ export default function FriendsScreen() {
                           accessibilityLabel={`Escribir a ${f.displayName}`}
                           hitSlop={8}
                           onPress={() => router.push(`/chat/${f.uid}`)}
-                          style={[styles.pill, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder, marginRight: 8 }]}
+                          style={[styles.pill, { backgroundColor: colors.chipFill, borderColor: colors.chipBorder, marginRight: 8 }]}
                         >
                           <Ionicons name="chatbubble-ellipses-outline" size={15} color={colors.primaryDark} />
                         </Pressable>
@@ -520,21 +503,13 @@ export default function FriendsScreen() {
             </>
           )}
 
-          <View style={{ height: 120 }} />
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+    </LargeTitleScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  safe: { flex: 1 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 8, marginBottom: 12 },
-  header: { fontSize: 28, fontWeight: "700", letterSpacing: -0.5 },
   badge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   badgeText: { color: "#fff", fontSize: 11.5, fontWeight: "700" },
-  scroll: { paddingHorizontal: 20 },
   sectionLabel: { fontSize: 11.5, fontWeight: "700", letterSpacing: 0.5, marginBottom: 8, marginTop: 18 },
   resultRow: { flexDirection: "row", alignItems: "center", marginTop: 12, gap: 10 },
   row: { flexDirection: "row", alignItems: "center" },

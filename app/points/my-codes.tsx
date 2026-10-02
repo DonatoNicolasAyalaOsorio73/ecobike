@@ -1,13 +1,14 @@
 import React, { useCallback, useState } from "react";
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import QRCode from "react-native-qrcode-svg";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import BackButton from "@/components/ui/BackButton";
+import { columnStyle, useLargeTitle } from "@/components/ui/LargeTitleScreen";
+import Animated from "react-native-reanimated";
 import GlassCard from "@/components/ui/GlassCard";
 import { useTheme } from "@/theme/useTheme";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
@@ -22,26 +23,25 @@ export default function MyCodesScreen() {
   const { isRealAccount } = useAvailablePoints(userId);
   const { redemptions, refresh, loading } = useRewards(userId, isRealAccount);
   const [openId, setOpenId] = useState<string | null>(null);
+  const lt = useLargeTitle({ title: "Mis códigos", leading: <BackButton size={36} />, tabBar: false });
   // Status changes when a store validates the code, so re-read on focus.
   useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
 
   return (
     <View style={styles.screen}>
       <BackgroundBlobs />
-      <SafeAreaView style={styles.safe} edges={["top"]}>
-        <View style={styles.headerRow}>
-          <BackButton />
-          <Text style={[styles.header, { color: colors.ink }]}>Mis códigos</Text>
-          <View style={{ width: 44 }} />
-        </View>
-
-        <FlatList
+        <Animated.FlatList
           data={redemptions}
           keyExtractor={(r) => r.id}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60, paddingTop: 8 }}
+          onScroll={lt.onScroll}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={lt.showsVerticalScrollIndicator}
+          contentContainerStyle={[lt.contentContainerStyle, { paddingHorizontal: 20 }, columnStyle]}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={colors.primary} />}
           ListHeaderComponent={
-            redemptions.length > 0 ? (
+            <>
+              <View style={{ marginHorizontal: -20 }}>{lt.header}</View>
+              {redemptions.length > 0 ? (
               <>
                 <View style={styles.summary}>
                   <SummaryPill accent="green" icon="ticket" value={redemptions.filter((r) => r.status !== "used").length} label="Activos" />
@@ -52,11 +52,12 @@ export default function MyCodesScreen() {
                   Toca un código para mostrar su QR en la tienda.
                 </Text>
               </>
-            ) : null
+              ) : null}
+            </>
           }
           ListEmptyComponent={
             <GlassCard style={{ alignItems: "center" }}>
-              <View style={[styles.emptyIcon, { backgroundColor: accents.gold.soft, borderColor: accents.gold.base }]}>
+              <View style={[styles.emptyIcon, { backgroundColor: accents.gold.soft, borderColor: "transparent" }]}>
                 <Ionicons name="gift" size={34} color={accents.gold.lip} />
               </View>
               <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 17, marginTop: 12 }}>Aún no tienes códigos</Text>
@@ -78,7 +79,7 @@ export default function MyCodesScreen() {
             >
             <GlassCard style={{ marginBottom: 12, opacity: used ? 0.55 : 1 }} entranceDelay={Math.min(index, 8) * 40}>
               <View style={styles.row}>
-                <View style={[styles.iconWrap, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
+                <View style={[styles.iconWrap, { backgroundColor: colors.chipFill, borderColor: colors.chipBorder }]}>
                   <Ionicons name="pricetag-outline" size={18} color={colors.primaryDark} />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -93,7 +94,7 @@ export default function MyCodesScreen() {
                   </Text>
                 </View>
               </View>
-              <View style={[styles.status, { backgroundColor: used ? "#EEF1EC" : accents.green.soft }]}>
+              <View style={[styles.status, { backgroundColor: used ? "#EEF1EC" : accents.green.base }]}>
                 <Ionicons name={used ? "checkmark-done" : "ticket"} size={12} color={used ? colors.inkSoft : accents.green.lip} />
                 <Text style={{ color: used ? colors.inkSoft : accents.green.lip, fontSize: 11, fontWeight: "700" }}>{used ? "USADO" : "ACTIVO"}</Text>
               </View>
@@ -112,7 +113,7 @@ export default function MyCodesScreen() {
             );
           }}
         />
-      </SafeAreaView>
+        {lt.navBar}
     </View>
   );
 }
@@ -138,9 +139,6 @@ const styles = StyleSheet.create({
   status: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, marginTop: 10 },
   emptyIcon: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", borderWidth: 3 },
   screen: { flex: 1 },
-  safe: { flex: 1 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 4, marginBottom: 8 },
-  header: { fontSize: 17, fontWeight: "700" },
   row: { flexDirection: "row", alignItems: "center", gap: 12 },
   iconWrap: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", borderWidth: 1 },
   title: { fontSize: 14.5, fontWeight: "700" },

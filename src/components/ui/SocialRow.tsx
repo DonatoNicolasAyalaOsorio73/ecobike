@@ -1,13 +1,14 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import PressableScale from "./PressableScale";
 import { AntDesign } from "@expo/vector-icons";
 import GlassSurface from "./GlassSurface";
 import { useTheme } from "@/theme/useTheme";
 
-function SocialCircle({ children, onPress }: { children: React.ReactNode; onPress: () => void }) {
+function SocialCircle({ children, onPress, label }: { children: React.ReactNode; onPress: () => void; label: string }) {
   const { colors } = useTheme();
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.circleWrap, pressed && { opacity: 0.8 }]}>
+    <PressableScale depth={0.08} onPress={onPress} accessibilityLabel={label} style={styles.circleWrap}>
       <GlassSurface
         radius={28}
         intensity={45}
@@ -18,7 +19,7 @@ function SocialCircle({ children, onPress }: { children: React.ReactNode; onPres
       >
         {children}
       </GlassSurface>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -44,12 +45,12 @@ export default function SocialRow({ onGoogle, onApple }: Props) {
 
       <View style={styles.row}>
         {onGoogle && (
-          <SocialCircle onPress={onGoogle}>
+          <SocialCircle onPress={onGoogle} label="Continuar con Google">
             <AntDesign name="google" size={20} color="#EA4335" />
           </SocialCircle>
         )}
         {onApple && (
-          <SocialCircle onPress={onApple}>
+          <SocialCircle onPress={onApple} label="Continuar con Apple">
             <AntDesign name="apple" size={22} color={colors.ink} />
           </SocialCircle>
         )}

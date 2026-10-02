@@ -5,29 +5,13 @@ import * as Haptics from "expo-haptics";
 import LiquidToggle from "./LiquidToggle";
 import SegmentedControl from "./SegmentedControl";
 import { useTheme } from "@/theme/useTheme";
-import { accents, type AccentName } from "@/theme/colors";
 
-// iOS Settings-style colored squircles: the color follows the icon's meaning.
-const ICON_COLOR: [RegExp, AccentName][] = [
-  [/notif|chatbubble|mail/, "lime"],
-  [/flag|flame|trophy|ribbon|star/, "orange"],
-  [/speedometer|navigate|location|map|compass/, "blue"],
-  [/finger|key|lock|shield|phone-portrait/, "purple"],
-  [/body|heart|pause|sunny/, "teal"],
-  [/search|people|person|link/, "blue"],
-  [/download|refresh|cloud/, "green"],
-  [/help|document|calendar/, "gold"],
-  [/storefront|log-out/, "teal"],
-];
-function iconAccent(icon: string): AccentName {
-  return ICON_COLOR.find(([re]) => re.test(icon))?.[1] ?? "green";
-}
-
+// Neutral squircles: the label carries the meaning; red only for destructive rows.
 function IconBadge({ icon, danger }: { icon: keyof typeof Ionicons.glyphMap; danger?: boolean }) {
-  const a = accents[danger ? "red" : iconAccent(String(icon))];
+  const { colors } = useTheme();
   return (
-    <View style={[styles.badge, { backgroundColor: a.base }]}>
-      <Ionicons name={icon} size={16} color={danger ? "#FFFFFF" : a.lip} />
+    <View style={[styles.badge, { backgroundColor: danger ? colors.danger : colors.chipFill }]}>
+      <Ionicons name={icon} size={16} color={danger ? "#FFFFFF" : colors.ink} />
     </View>
   );
 }

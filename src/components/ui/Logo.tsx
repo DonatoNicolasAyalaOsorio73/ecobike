@@ -12,8 +12,8 @@ const LOGO = require("../../../assets/logo.png");
  * behind it so it reads as the hero of the screen, not a stray image.
  * Enters with a critically damped scale/fade; the halo then breathes slowly.
  */
-export default function Logo({ size = "large", animateIn = true }: { size?: "large" | "small"; /** false on splash/lock screens: the JS thread is busy there, so an entrance could stall invisible. */ animateIn?: boolean }) {
-  const dimension = size === "large" ? 220 : 168;
+export default function Logo({ size = "large", animateIn = true }: { /** Named size or exact width in pt. */ size?: "large" | "small" | number; /** false on splash/lock screens: the JS thread is busy there, so an entrance could stall invisible. */ animateIn?: boolean }) {
+  const dimension = typeof size === "number" ? size : size === "large" ? 220 : 168;
   const enter = useSharedValue(animateIn ? 0 : 1);
   const glow = useSharedValue(0);
 

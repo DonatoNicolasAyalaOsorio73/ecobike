@@ -6,13 +6,13 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-na
 import GlassSurface from "./GlassSurface";
 import { useTheme } from "@/theme/useTheme";
 
-export default function BackButton({ onPress }: { onPress?: () => void }) {
+export default function BackButton({ onPress, size = 44 }: { onPress?: () => void; size?: number }) {
   const { colors } = useTheme();
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Animated.View style={[styles.wrap, animatedStyle]}>
+    <Animated.View style={[styles.wrap, { width: size, height: size, borderRadius: size / 2 }, animatedStyle]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Volver"
@@ -24,7 +24,7 @@ export default function BackButton({ onPress }: { onPress?: () => void }) {
         style={StyleSheet.absoluteFill}
       >
         <GlassSurface
-          radius={22}
+          radius={size / 2}
           intensity={45}
           specular={false}
           backgroundColor={colors.glassFillStrong}

@@ -1,15 +1,14 @@
 import React, { useState } from "react";
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
-import BackButton from "@/components/ui/BackButton";
+import Animated, { ZoomIn } from "react-native-reanimated";
+import AuthScaffold, { AuthLink, Rise } from "@/components/auth/AuthScaffold";
 import GlassInput from "@/components/ui/GlassInput";
 import { validateEmail } from "@/utils/profileForm";
 import GlassButton from "@/components/ui/GlassButton";
-import GlassCard from "@/components/ui/GlassCard";
 import { useTheme } from "@/theme/useTheme";
+import { type } from "@/theme/typography";
 import { sendPasswordReset } from "@/services/auth.service";
 import { isFirebaseConfigured } from "@/services/firebase";
 
@@ -44,70 +43,54 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <View style={styles.screen}>
-      <BackgroundBlobs variant="auth" />
-      <SafeAreaView style={styles.safe}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-          <BackButton />
+    <AuthScaffold back logo={150}>
+      <Rise index={0} style={{ alignItems: "center" }}>
+        {/* State icon swaps with a spring when the link is sent. */}
+        <Animated.View key={sent ? "sent" : "ask"} entering={ZoomIn.springify().damping(16)} style={[styles.iconCircle, { backgroundColor: "rgba(20,23,26,0.05)" }]}>
+          <Ionicons name={sent ? "checkmark" : "key-outline"} size={26} color={colors.ink} />
+        </Animated.View>
+        <Text style={[type.title1, styles.center, { color: colors.ink }]} accessibilityRole="header">
+          {sent ? "Revisa tu correo" : "Recupera tu acceso"}
+        </Text>
+        <Text style={[type.subhead, styles.subtitle, { color: colors.inkSoft }]}>
+          {sent
+            ? "Si existe una cuenta con ese correo, te enviamos un enlace para restablecer tu contraseña."
+            : "Te enviaremos un enlace para restablecer tu contraseña."}
+        </Text>
+      </Rise>
 
-          <View style={styles.center}>
-            <GlassCard style={{ alignItems: "center", padding: 24 }}>
-              <View style={[styles.iconCircle, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
-                <Ionicons name={sent ? "checkmark-circle" : "lock-closed"} size={26} color={colors.primaryDark} />
-              </View>
-
-              <Text style={[styles.title, { color: colors.ink }]}>
-                {sent ? "Revisa tu correo" : "Recuperar contraseña"}
-              </Text>
-              <Text style={[styles.subtitle, { color: colors.inkSoft }]}>
-                {sent
-                  ? "Si existe una cuenta con ese correo, te enviamos un enlace para restablecer tu contraseña."
-                  : "Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña."}
-              </Text>
-
-              {!sent && (
-                <GlassInput
-                  icon="mail-outline"
-                  placeholder="Correo electrónico"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  containerStyle={{ marginTop: 6, width: "100%" }}
-                  errorText={error}
-                />
-              )}
-
-              {!sent ? (
-                <GlassButton
-                  label="Enviar enlace"
-                  icon="paper-plane-outline"
-                  variant="primary"
-                  onPress={onSubmit}
-                  loading={loading}
-                  style={{ marginTop: 6, width: "100%" }}
-                />
-              ) : null}
-              <GlassButton
-                label="Volver al inicio de sesión"
-                icon="log-in-outline"
-                variant="secondary"
-                onPress={() => router.replace("/(auth)/login")}
-                style={{ marginTop: 12, width: "100%" }}
-              />
-            </GlassCard>
-          </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </View>
+      <Rise index={1}>
+        {!sent && (
+          <>
+            <GlassInput
+              icon="mail-outline"
+              placeholder="Correo electrónico"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              onSubmitEditing={onSubmit}
+              returnKeyType="send"
+              errorText={error}
+            />
+            <GlassButton label="Enviar enlace" onPress={onSubmit} loading={loading} style={{ marginTop: 8 }} />
+          </>
+        )}
+        <View style={{ marginTop: sent ? 4 : 22 }}>
+          {sent ? (
+            <GlassButton label="Volver a iniciar sesión" variant="secondary" onPress={() => router.replace("/(auth)/login")} />
+          ) : (
+            <AuthLink onPress={() => router.replace("/(auth)/login")}>Volver a iniciar sesión</AuthLink>
+          )}
+        </View>
+      </Rise>
+    </AuthScaffold>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  safe: { flex: 1, paddingHorizontal: 24, paddingTop: 4 },
-  center: { flex: 1, justifyContent: "center" },
-  iconCircle: { width: 68, height: 68, borderRadius: 34, alignItems: "center", justifyContent: "center", borderWidth: 1, marginBottom: 16 },
-  title: { fontSize: 22, fontWeight: "700", textAlign: "center" },
-  subtitle: { marginTop: 8, fontSize: 14, textAlign: "center", lineHeight: 20, marginBottom: 18, paddingHorizontal: 4 },
+  iconCircle: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center", marginTop: 8, marginBottom: 18 },
+  center: { textAlign: "center" },
+  subtitle: { textAlign: "center", marginTop: 8, marginBottom: 26, lineHeight: 20, paddingHorizontal: 8 },
 });

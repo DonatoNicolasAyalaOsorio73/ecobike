@@ -36,7 +36,7 @@ if (Platform.OS === "web" && typeof document !== "undefined" && !document.getEle
 // expo-router doesn't re-export react-navigation's BottomTabBarProps from its
 // public entry point, so this is a minimal structural type covering only
 // what a custom `tabBar` render prop actually needs.
-interface TabBarProps {
+export interface TabBarProps {
   state: { routes: { key: string; name: string }[]; index: number };
   descriptors: Record<string, { options: { title?: string } }>;
   navigation: {
@@ -45,7 +45,8 @@ interface TabBarProps {
   };
 }
 
-const ICONS: Record<string, [keyof typeof Ionicons.glyphMap, keyof typeof Ionicons.glyphMap]> = {
+export const ICONS: Record<string, [keyof typeof Ionicons.glyphMap, keyof typeof Ionicons.glyphMap]> = {
+  home: ["home-outline", "home"],
   map: ["map-outline", "map"],
   points: ["ribbon-outline", "ribbon"],
   friends: ["people-outline", "people"],
@@ -86,18 +87,25 @@ function Tab({ index, progress, name, label, focused, ink, soft }: { index: numb
 export default function LiquidTabBar({ state, descriptors, navigation }: TabBarProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const tabCount = state.routes.length;
-  const progress = useSharedValue(state.index);
+  // Profile lives behind the avatar on phones (iOS 26 pattern), not in the bar.
+  const routes = state.routes.filter((r) => r.name !== "profile");
+  const focusedKey = state.routes[state.index]?.key;
+  const activeIndex = routes.findIndex((r) => r.key === focusedKey);
+  const tabCount = routes.length;
+  const progress = useSharedValue(Math.max(0, activeIndex));
   const press = useSharedValue(0);
+  const lensVisible = useSharedValue(activeIndex >= 0 ? 1 : 0);
 
   React.useEffect(() => {
-    progress.value = withSpring(state.index, LENS_SPRING);
-  }, [state.index, progress]);
+    if (activeIndex >= 0) progress.value = withSpring(activeIndex, LENS_SPRING);
+    lensVisible.value = withSpring(activeIndex >= 0 ? 1 : 0, SPRING.default);
+  }, [activeIndex, progress, lensVisible]);
 
   // 0 when resting on a tab, up to 0.5 halfway between two tabs.
   const travel = useDerivedValue(() => Math.abs(progress.value - Math.round(progress.value)));
 
   const lensStyle = useAnimatedStyle(() => ({
+    opacity: lensVisible.value,
     transform: [
       { translateX: `${progress.value * 100}%` },
       { scaleX: 1 + travel.value * 0.5 + press.value * 0.06 },
@@ -124,9 +132,9 @@ export default function LiquidTabBar({ state, descriptors, navigation }: TabBarP
               <Animated.View style={[styles.glow, GLOW_WEB, glowStyle]} />
               <View style={[styles.lens, LENS_WEB]} />
             </Animated.View>
-            {state.routes.map((route, index) => {
+            {routes.map((route, index) => {
               const { options } = descriptors[route.key];
-              const isFocused = state.index === index;
+              const isFocused = activeIndex === index;
               const label = (options.title ?? route.name) as string;
 
               const onPress = () => {
@@ -144,6 +152,7 @@ export default function LiquidTabBar({ state, descriptors, navigation }: TabBarP
                   style={({ hovered }: any) => [styles.item, { opacity: hovered && !isFocused ? 0.75 : 1 }]}
                   accessibilityRole="tab"
                   accessibilityState={{ selected: isFocused }}
+                  aria-selected={isFocused}
                   accessibilityLabel={label}
                 >
                   <Tab index={index} progress={progress} name={route.name} label={label} focused={isFocused} ink={colors.ink} soft={colors.inkSoft} />

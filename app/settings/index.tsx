@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import Constants from "expo-constants";
 import * as Application from "expo-application";
-import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
+import LargeTitleScreen from "@/components/ui/LargeTitleScreen";
 import GlassCard from "@/components/ui/GlassCard";
 import BackButton from "@/components/ui/BackButton";
 import { SettingsChoiceRow, SettingsNavRow, SettingsStepperRow, SettingsSwitchRow } from "@/components/ui/SettingsRow";
@@ -73,18 +72,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={styles.screen}>
-      <BackgroundBlobs />
-      <SafeAreaView style={styles.safe} edges={["top"]}>
-        <View style={styles.headerRow}>
-          <BackButton />
-          <Text style={[styles.header, { color: colors.ink }]} accessibilityRole="header">
-            Ajustes
-          </Text>
-          <View style={{ width: 44 }} />
-        </View>
-
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+    <LargeTitleScreen title={"Ajustes"} leading={<BackButton size={36} />} tabBar={false}>
           <SectionLabel text="Unidades" />
           <GlassCard>
             <SettingsChoiceRow
@@ -345,9 +333,7 @@ export default function SettingsScreen() {
           </Text>
 
           <View style={{ height: 60 }} />
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+    </LargeTitleScreen>
   );
 }
 
@@ -362,11 +348,6 @@ function Divider() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  safe: { flex: 1 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 4 },
-  header: { fontSize: 17, fontWeight: "700" },
-  scroll: { paddingHorizontal: 20, paddingTop: 12 },
   sectionLabel: { fontSize: 11.5, fontWeight: "700", letterSpacing: 0.5, marginBottom: 8, marginTop: 18 },
   footer: { fontSize: 11.5, textAlign: "center", marginTop: 20 },
 });

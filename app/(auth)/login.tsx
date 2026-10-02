@@ -1,14 +1,10 @@
 import React, { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
-import BackButton from "@/components/ui/BackButton";
+import AuthScaffold, { AuthLink, Rise } from "@/components/auth/AuthScaffold";
 import GlassInput from "@/components/ui/GlassInput";
 import { validateEmail } from "@/utils/profileForm";
 import GlassButton from "@/components/ui/GlassButton";
-import GlassCard from "@/components/ui/GlassCard";
-import Logo from "@/components/ui/Logo";
 import { useTheme } from "@/theme/useTheme";
 import { signInWithEmail } from "@/services/auth.service";
 import { isFirebaseConfigured } from "@/services/firebase";
@@ -20,6 +16,8 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Which field the message belongs to: a bad email is shown under the email.
+  const [errorOnEmail, setErrorOnEmail] = useState(false);
   const continueAsGuest = useAuthStore((s) => s.continueAsGuest);
 
   const onSubmit = async () => {
@@ -28,6 +26,7 @@ export default function LoginScreen() {
       return;
     }
     const emailError = validateEmail(email);
+    setErrorOnEmail(!!emailError);
     if (emailError || !password) {
       setError(emailError ?? "Ingresa tu contraseña.");
       return;
@@ -45,70 +44,52 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.screen}>
-      <BackgroundBlobs variant="auth" />
-      <SafeAreaView style={styles.safe}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-            <BackButton />
+    <AuthScaffold back logo={210} title="Hola de nuevo" subtitle="Inicia sesión para seguir pedaleando">
+      <Rise index={1}>
+        <GlassInput
+          icon="mail-outline"
+          placeholder="Correo electrónico"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+          textContentType="emailAddress"
+          errorText={errorOnEmail ? error : null}
+        />
+      </Rise>
+      <Rise index={2}>
+        <GlassInput
+          icon="lock-closed-outline"
+          placeholder="Contraseña"
+          value={password}
+          onChangeText={setPassword}
+          secure
+          autoComplete="current-password"
+          textContentType="password"
+          onSubmitEditing={onSubmit}
+          returnKeyType="go"
+          errorText={errorOnEmail ? null : error}
+        />
+        <View style={styles.forgot}>
+          <AuthLink align="right" onPress={() => router.push("/(auth)/forgot-password")}>
+            ¿Olvidaste tu contraseña?
+          </AuthLink>
+        </View>
+      </Rise>
 
-            <View style={styles.logoWrap}>
-              <Logo size="small" />
-            </View>
-
-            <Text style={[styles.title, { color: colors.ink }]}>Bienvenido de nuevo</Text>
-            <Text style={[styles.subtitle, { color: colors.inkSoft }]}>Inicia sesión para seguir pedaleando</Text>
-
-            <GlassCard>
-              <GlassInput
-                icon="mail-outline"
-                placeholder="Correo electrónico"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              <GlassInput
-                icon="lock-closed-outline"
-                placeholder="Contraseña"
-                value={password}
-                onChangeText={setPassword}
-                secure
-                errorText={error}
-              />
-
-              <Text
-                style={[styles.forgot, { color: colors.primaryDark }]}
-                onPress={() => router.push("/(auth)/forgot-password")}
-              >
-                ¿Olvidaste tu contraseña?
-              </Text>
-
-              <GlassButton
-                label="Iniciar sesión"
-                icon="log-in-outline"
-                variant="primary"
-                onPress={onSubmit}
-                loading={loading}
-              />
-
-              <Text style={[styles.registerLine, { color: colors.inkSoft }]}>
-                ¿No tienes cuenta?{" "}
-                <Text style={[styles.registerLink, { color: colors.primaryDark }]} onPress={() => router.push("/(auth)/register")}>
-                  Regístrate
-                </Text>
-              </Text>
-            </GlassCard>
-
-            {!isFirebaseConfigured && (
-              <Text style={[styles.guestLink, { color: colors.inkSoft }]} onPress={continueAsGuest}>
-                O continúa explorando sin cuenta →
-              </Text>
-            )}
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </View>
+      <Rise index={3}>
+        <GlassButton label="Iniciar sesión" onPress={onSubmit} loading={loading} />
+        <Text style={[styles.footer, { color: colors.inkSoft }]}>
+          ¿No tienes cuenta? <AuthLink onPress={() => router.replace("/(auth)/register")}>Regístrate</AuthLink>
+        </Text>
+        {!isFirebaseConfigured && (
+          <View style={{ marginTop: 18 }}>
+            <AuthLink role="button" onPress={continueAsGuest}>Explorar sin cuenta</AuthLink>
+          </View>
+        )}
+      </Rise>
+    </AuthScaffold>
   );
 }
 
@@ -130,14 +111,6 @@ function mapAuthError(code?: string): string {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  safe: { flex: 1, paddingHorizontal: 24 },
-  scroll: { paddingBottom: 32, paddingTop: 8 },
-  logoWrap: { alignItems: "center", marginTop: 8 },
-  title: { marginTop: 18, fontSize: 24, fontWeight: "700", textAlign: "center" },
-  subtitle: { marginTop: 4, fontSize: 14, textAlign: "center", marginBottom: 18 },
-  forgot: { textAlign: "right", fontWeight: "600", fontSize: 13, marginBottom: 16, marginTop: -2 },
-  registerLine: { textAlign: "center", marginTop: 14, fontSize: 13.5 },
-  registerLink: { fontWeight: "700" },
-  guestLink: { textAlign: "center", marginTop: 18, fontSize: 13, fontWeight: "700", textDecorationLine: "underline" },
+  forgot: { marginTop: -2, marginBottom: 24, paddingRight: 6 },
+  footer: { textAlign: "center", marginTop: 22, fontSize: 13 },
 });

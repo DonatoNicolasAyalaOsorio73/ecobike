@@ -83,14 +83,14 @@ export default function RideDetailScreen() {
               {ride.endedAt ? ` – ${format(new Date(ride.endedAt), "HH:mm")}` : ""}
             </Text>
           </View>
-          <Animated.View entering={ZoomIn.delay(150).springify().damping(16)} style={[styles.ptsBadge, { backgroundColor: accents.gold.soft, borderColor: accents.gold.base }]}>
+          <Animated.View entering={ZoomIn.delay(150).springify().damping(16)} style={[styles.ptsBadge, { backgroundColor: accents.gold.soft, borderColor: "transparent" }]}>
             <Ionicons name="ribbon" size={16} color={accents.gold.lip} />
             <Text style={{ color: accents.gold.lip, fontWeight: "700", fontSize: 16 }}>+{ride.pointsEarned}</Text>
           </Animated.View>
         </Animated.View>
 
         <View style={styles.grid}>
-          <StatTile icon="speedometer-outline" label="Distancia" value={formatDistance(ride.distanceMeters, units)} accent />
+          <StatTile icon="speedometer-outline" label="Distancia" value={formatDistance(ride.distanceMeters, units)} />
           <StatTile icon="time-outline" label="Duración" value={formatDuration(ride.durationSeconds)} />
           <StatTile icon="flash-outline" label="Vel. promedio" value={formatSpeed(ride.avgSpeedKmh, units)} />
           <StatTile icon="trending-up-outline" label="Vel. máxima" value={formatSpeed(ride.maxSpeedKmh, units)} />
@@ -100,7 +100,7 @@ export default function RideDetailScreen() {
 
         <GlassCard containerStyle={{ marginTop: 16 }} entranceDelay={80}>
           <View style={styles.co2Row}>
-            <View style={[styles.co2Icon, { backgroundColor: accents.teal.soft, borderColor: accents.teal.base }]}>
+            <View style={[styles.co2Icon, { backgroundColor: accents.teal.soft, borderColor: "transparent" }]}>
               <Ionicons name="leaf" size={20} color={accents.teal.lip} />
             </View>
             <Text style={{ color: colors.ink, flex: 1, fontWeight: "700" }}>
