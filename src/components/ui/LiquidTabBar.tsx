@@ -9,8 +9,8 @@ import { useTheme } from "@/theme/useTheme";
 import { spring, SPRING } from "@/theme/motion";
 import { elevation } from "@/theme/colors";
 
-const BAR_RADIUS = 32;
-const INSET = 4; // lens sits inside the capsule with concentric corners
+const BAR_RADIUS = 27;
+const INSET = 3; // lens sits inside the capsule with concentric corners
 
 // SwiftUI's `.bouncy` (response 0.5s, bounce 0.3 → damping ratio 0.7): the
 // spring iOS 26 uses for Liquid Glass selection moves.
@@ -18,11 +18,18 @@ const LENS_SPRING = spring(0.7, 0.5);
 
 // Keyboard-only focus ring. RN-web's `focused` is also true after a mouse
 // click, which left a permanent colored outline on the tapped tab.
+// Clear glass where a real backdrop blur exists; a denser fill where it
+// doesn't (Android, browsers without backdrop-filter) so labels stay legible.
+const HAS_BLUR =
+  Platform.OS === "ios" ||
+  (Platform.OS === "web" && typeof CSS !== "undefined" && (CSS.supports("backdrop-filter", "blur(1px)") || CSS.supports("-webkit-backdrop-filter", "blur(1px)")));
+const BAR_FILL = HAS_BLUR ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.86)";
+
 if (Platform.OS === "web" && typeof document !== "undefined" && !document.getElementById("tabbar-focus")) {
   const css = document.createElement("style");
   css.id = "tabbar-focus";
   css.textContent =
-    "[data-tabbar] [role=tab]{outline:none}[data-tabbar] [role=tab]:focus-visible{outline:2px solid rgba(28,36,16,.35);outline-offset:-4px;border-radius:24px}";
+    "[data-tabbar] [role=tab]{outline:none;-webkit-tap-highlight-color:transparent}[data-tabbar] [role=tab]:focus-visible{outline:2px solid rgba(28,36,16,.35);outline-offset:-4px;border-radius:24px}";
   document.head.appendChild(css);
 }
 
@@ -55,7 +62,7 @@ function Tab({ index, progress, name, label, focused, ink, soft }: { index: numb
   const [outline, filled] = ICONS[name] ?? ["ellipse-outline", "ellipse"];
   return (
     <>
-      <Ionicons name={focused ? filled : outline} size={22} color={focused ? ink : soft} />
+      <Ionicons name={focused ? filled : outline} size={20} color={focused ? ink : soft} />
       <Animated.Text style={[styles.label, { fontWeight: focused ? "600" : "500" }, color]} numberOfLines={1}>
         {label}
       </Animated.Text>
@@ -103,8 +110,8 @@ export default function LiquidTabBar({ state, descriptors, navigation }: TabBarP
       entering={FadeInDown.duration(420).springify().damping(18)}
       style={[styles.wrap, { bottom: Math.max(insets.bottom - 6, 12) }]}
     >
-      <View style={[styles.shadow, elevation("mid")]}>
-        <GlassSurface intensity={100} radius={BAR_RADIUS} backgroundColor="rgba(255,255,255,0.4)" borderColor="rgba(255,255,255,0.75)">
+      <View style={[styles.shadow, elevation("low")]}>
+        <GlassSurface intensity={100} radius={BAR_RADIUS} specular={false} backgroundColor={BAR_FILL} borderColor="rgba(255,255,255,0.5)">
           <View style={styles.row} role="tablist" {...({ dataSet: { tabbar: "" } } as object)}>
             <Animated.View pointerEvents="none" style={[styles.lensSlot, { width: `${100 / tabCount}%` }, lensStyle]}>
               <View style={[styles.lens, LENS_WEB]} />
@@ -146,15 +153,15 @@ export default function LiquidTabBar({ state, descriptors, navigation }: TabBarP
 // renders the inset highlight; native gets the translucent fill).
 const LENS_WEB =
   Platform.OS === "web"
-    ? ({ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(255,255,255,0.4), 0 2px 8px rgba(24,60,30,0.10)" } as object)
+    ? ({ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 4px rgba(0,0,0,0.06)" } as object)
     : elevation("low");
 
 const styles = StyleSheet.create({
-  wrap: { position: "absolute", left: 16, right: 16, pointerEvents: "box-none" },
+  wrap: { position: "absolute", left: 22, right: 22, pointerEvents: "box-none" },
   shadow: { borderRadius: BAR_RADIUS },
-  row: { flexDirection: "row", margin: INSET, height: 56 },
+  row: { flexDirection: "row", margin: INSET, height: 46 },
   lensSlot: { position: "absolute", top: 0, bottom: 0, left: 0 },
-  lens: { flex: 1, borderRadius: BAR_RADIUS - INSET, backgroundColor: "rgba(255,255,255,0.72)" },
-  item: { flex: 1, alignItems: "center", justifyContent: "center", gap: 3, paddingHorizontal: 2 },
-  label: { fontSize: 10.5, letterSpacing: -0.15 },
+  lens: { flex: 1, marginHorizontal: 3, borderRadius: BAR_RADIUS - INSET, backgroundColor: "rgba(255,255,255,0.6)" },
+  item: { flex: 1, alignItems: "center", justifyContent: "center", gap: 1, paddingHorizontal: 2 },
+  label: { fontSize: 10, letterSpacing: -0.1 },
 });
