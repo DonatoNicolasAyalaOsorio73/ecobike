@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { RefreshControl, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
+import { RefreshControl, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import LargeTitleScreen from "@/components/ui/LargeTitleScreen";
@@ -8,7 +8,7 @@ import GlassCard from "@/components/ui/GlassCard";
 import GlassButton from "@/components/ui/GlassButton";
 import GlassIconButton from "@/components/ui/GlassIconButton";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
-import RewardCarousel from "@/components/rewards/RewardCarousel";
+import RewardList from "@/components/rewards/RewardList";
 import RedeemSheet from "@/components/rewards/RedeemSheet";
 import MissionsCard from "@/components/MissionsCard";
 import { useRiderStats } from "@/hooks/useRiderStats";
@@ -25,7 +25,6 @@ export default function PointsScreen() {
   const userId = useCurrentUserId();
   const { points: availablePoints, isRealAccount } = useAvailablePoints(userId);
   const { rewards, usingRealCatalog, catalogError, loading, redeem, refresh } = useRewards(userId, isRealAccount);
-  const [width, setWidth] = useState(360);
   const [selected, setSelected] = useState<Reward | null>(null);
   const { level, nextLevelAt } = levelForPoints(availablePoints);
   const { rides } = useRiderStats(userId);
@@ -36,8 +35,6 @@ export default function PointsScreen() {
     }, [refresh])
   );
 
-  const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
-  const affordable = rewards.filter((r) => r.pointsCost <= availablePoints).length;
 
   return (
     <>
@@ -52,7 +49,7 @@ export default function PointsScreen() {
           </>
         }
       >
-        <View onLayout={onLayout}>
+        <View>
 
           <View style={styles.pad}>
             <View style={styles.hero}>
@@ -71,11 +68,6 @@ export default function PointsScreen() {
                   {nextLevelAt ? `${(nextLevelAt - availablePoints).toLocaleString("es-CO")} pts para el nivel ${level + 1}` : "Nivel máximo"}
                 </Text>
               </View>
-              {rewards.length > 0 && (
-                <Text style={{ color: colors.primaryDark, fontSize: 13, fontWeight: "700", marginTop: 10 }}>
-                  {affordable > 0 ? `Puedes canjear ${affordable} de ${rewards.length} recompensas` : "Sigue pedaleando para tu primer canje"}
-                </Text>
-              )}
             </View>
           </View>
 
@@ -102,8 +94,10 @@ export default function PointsScreen() {
 
           {rewards.length > 0 && (
             <>
-              <Text style={[styles.section, { color: colors.ink }]}>Destacadas</Text>
-              <RewardCarousel rewards={rewards} availablePoints={availablePoints} width={width} onPress={setSelected} />
+              <Text style={[styles.section, { color: colors.ink }]}>Tiendas</Text>
+              <View style={styles.pad}>
+                <RewardList rewards={rewards} availablePoints={availablePoints} onPress={setSelected} />
+              </View>
             </>
           )}
 

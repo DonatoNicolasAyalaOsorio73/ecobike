@@ -13,3 +13,19 @@ export function mapStoreDoc(id: string, data: Record<string, any>): Reward {
     imageUrl: typeof data.logo === "string" && data.logo.startsWith("https://") ? data.logo : undefined,
   };
 }
+
+/** Accent- and case-insensitive text ("cafe" matches "Café"). */
+const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+/**
+ * What the store list shows: optional "only what I can redeem" filter,
+ * search over store name and description, redeemable first, then cheapest.
+ */
+export function visibleRewards(rewards: Reward[], points: number, query: string, onlyAffordable: boolean): Reward[] {
+  const q = norm(query.trim());
+  const can = (r: Reward) => r.pointsCost <= points;
+  return rewards
+    .filter((r) => !onlyAffordable || can(r))
+    .filter((r) => !q || norm(`${r.title} ${r.subtitle}`).includes(q))
+    .sort((a, b) => Number(can(b)) - Number(can(a)) || a.pointsCost - b.pointsCost);
+}
