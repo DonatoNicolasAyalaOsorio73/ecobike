@@ -113,33 +113,10 @@ export default function PointsScreen() {
             <MissionsCard rides={rides} />
           </View>
 
-          <Text style={[styles.section, { color: colors.ink }]}>Cómo ganar puntos</Text>
-          <View style={styles.pad}>
-            <GlassCard>
-              <HowRow icon="speedometer-outline" title="10 puntos por km" text="Cada kilómetro que pedaleas suma." />
-              <HowRow icon="checkmark-done-outline" title="+20 por recorrido" text="Por cada recorrido completado de más de 200 m." />
-              <HowRow icon="shield-checkmark-outline" title="Puntos verificados" text="Se calculan en nuestro servidor y se sincronizan en todos tus dispositivos." last />
-            </GlassCard>
-          </View>
         </ScrollView>
       </SafeAreaView>
 
       <RedeemSheet reward={selected} availablePoints={availablePoints} onClose={() => setSelected(null)} redeem={(r) => redeem(r, availablePoints)} />
-    </View>
-  );
-}
-
-function HowRow({ icon, title, text, last }: { icon: any; title: string; text: string; last?: boolean }) {
-  const { colors } = useTheme();
-  return (
-    <View style={[styles.howRow, !last && { borderBottomWidth: 1, borderBottomColor: colors.divider }]}>
-      <View style={[styles.howIcon, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>
-        <Ionicons name={icon} size={17} color={colors.primaryDark} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: colors.ink, fontWeight: "700" }}>{title}</Text>
-        <Text style={{ color: colors.inkSoft, fontSize: 12.5, marginTop: 2 }}>{text}</Text>
-      </View>
     </View>
   );
 }
@@ -154,7 +131,6 @@ const styles = StyleSheet.create({
   balanceRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 6 },
   levelPill: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },
   notice: { fontSize: 12, textAlign: "center", fontWeight: "600", marginTop: 12, paddingHorizontal: 20 },
-  section: { fontSize: 18, fontWeight: "700", paddingHorizontal: 20, marginTop: 24, marginBottom: 12 },
-  howRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 11 },
+  section: { fontSize: 20, fontWeight: "700", paddingHorizontal: 20, marginTop: 32, marginBottom: 12, letterSpacing: -0.3 },
   howIcon: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", borderWidth: 1 },
 });

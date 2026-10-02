@@ -32,5 +32,5 @@ export default function GlassCard({ children, style, containerStyle, intensity =
 }
 
 const styles = StyleSheet.create({
-  inner: { padding: 18 },
+  inner: { padding: 20 },
 });

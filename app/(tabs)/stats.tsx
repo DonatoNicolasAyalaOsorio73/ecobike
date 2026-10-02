@@ -7,15 +7,12 @@ import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import GlassCard from "@/components/ui/GlassCard";
 import StatTile from "@/components/ui/StatTile";
 import SegmentedControl from "@/components/ui/SegmentedControl";
-import ProgressRing from "@/components/ui/ProgressRing";
 import ActivityHeatmap from "@/components/ui/ActivityHeatmap";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import AreaChart from "@/components/charts/AreaChart";
 import BarChart from "@/components/charts/BarChart";
-import DonutChart from "@/components/charts/DonutChart";
 import DeltaBadge from "@/components/charts/DeltaBadge";
 import StreakCard from "@/components/StreakCard";
-import MissionsCard from "@/components/MissionsCard";
 import { useTheme } from "@/theme/useTheme";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useRiderStats } from "@/hooks/useRiderStats";
@@ -27,8 +24,6 @@ import { avgSpeedKmh } from "@/utils/geo";
 import { ACHIEVEMENTS } from "@/types/achievement";
 import {
   activityHeatmap,
-  distanceBuckets,
-  distanceThisWeek,
   environmentalImpact,
   hourDistribution,
   periodComparison,
@@ -54,9 +49,8 @@ export default function StatsScreen() {
   const userId = useCurrentUserId();
   const isGuest = useAuthStore((s) => s.isGuest);
   const units = useSettingsStore((s) => s.units);
-  const weeklyGoalKm = useSettingsStore((s) => s.weeklyGoalKm);
   const { points: availablePoints } = useAvailablePoints(userId);
-  const { rides, stats, unlockedCodes, level, nextLevelAt, refresh } = useRiderStats(userId, availablePoints);
+  const { rides, stats, unlockedCodes, refresh } = useRiderStats(userId, availablePoints);
   const [period, setPeriod] = useState<StatsPeriod>("week");
   const [habit, setHabit] = useState<"day" | "hour">("day");
 
@@ -67,7 +61,6 @@ export default function StatsScreen() {
   const trend = useMemo(() => trendSeries(rides, period), [rides, period]);
   const weekdays = useMemo(() => weekdayDistribution(periodRides), [periodRides]);
   const hours = useMemo(() => hourDistribution(periodRides), [periodRides]);
-  const buckets = useMemo(() => distanceBuckets(periodRides), [periodRides]);
   const records = useMemo(() => personalRecords(rides), [rides]);
   const heatmap = useMemo(() => activityHeatmap(rides, 84), [rides]);
 
@@ -76,9 +69,6 @@ export default function StatsScreen() {
   const elevation = periodRides.reduce((s, r) => s + r.elevationGainMeters, 0);
   const calories = periodRides.reduce((s, r) => s + r.caloriesKcal, 0);
   const activeDays = new Set(periodRides.map((r) => new Date(r.startedAt).toDateString())).size;
-  const weekKm = distanceThisWeek(rides) / 1000;
-  const goalProgress = weeklyGoalKm > 0 ? weekKm / weeklyGoalKm : 0;
-  const progressToNext = nextLevelAt ? Math.min(1, availablePoints / nextLevelAt) : 1;
   const unit = units === "metric" ? "km" : "mi";
   const toUnit = (km: number) => (units === "metric" ? km : km * 0.621371);
 
@@ -124,8 +114,6 @@ export default function StatsScreen() {
 
           <Section title="Tu racha" />
           <StreakCard rides={rides} entranceDelay={30} />
-          <View style={{ height: 14 }} />
-          <MissionsCard rides={rides} entranceDelay={60} />
 
           <Section title="Tendencia" />
           <GlassCard entranceDelay={40}>
@@ -142,33 +130,7 @@ export default function StatsScreen() {
             <StatTile icon="triangle-outline" label="Desnivel +" value={`${Math.round(elevation)} m`} />
             <StatTile icon="flame-outline" label="Calorías" value={`${Math.round(calories).toLocaleString("es-CO")} kcal`} />
             <StatTile icon="calendar-outline" label="Días activos" value={String(activeDays)} />
-            <StatTile icon="bonfire-outline" label="Racha actual" value={`${stats.currentStreakDays} ${stats.currentStreakDays === 1 ? "día" : "días"}`} accent />
-            <StatTile icon="speedometer-outline" label="Por recorrido" value={cur.rides ? formatDistance(cur.distanceMeters / cur.rides, units) : "—"} />
           </View>
-
-          <Section title="Meta semanal" />
-          <GlassCard entranceDelay={60}>
-            <View style={styles.goalRow}>
-              <ProgressRing progress={goalProgress} size={96} thickness={10}>
-                <AnimatedNumber
-                  value={Math.round(Math.min(999, goalProgress * 100))}
-                  style={[styles.goalPercent, { color: colors.ink }]}
-                  format={(v) => `${v}%`}
-                />
-              </ProgressRing>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 15 }}>
-                  {goalProgress >= 1 ? "Meta cumplida" : `Faltan ${Math.max(0, weeklyGoalKm - weekKm).toFixed(1)} km`}
-                </Text>
-                <Text style={{ color: colors.inkSoft, fontSize: 13, marginTop: 4 }}>
-                  {weekKm.toFixed(1)} de {weeklyGoalKm} km esta semana
-                </Text>
-                <Text style={[styles.link, { color: colors.primaryDark }]} onPress={() => router.push("/settings")}>
-                  Cambiar meta
-                </Text>
-              </View>
-            </View>
-          </GlassCard>
 
           <Section title="Impacto ambiental" subtitle={`Comparado con hacer ${PERIOD_NAME[period]} esos trayectos en carro`} />
           <GlassCard entranceDelay={80}>
@@ -202,20 +164,6 @@ export default function StatsScreen() {
             )}
           </GlassCard>
 
-          <Section title="Tipos de recorrido" />
-          <GlassCard entranceDelay={120}>
-            <DonutChart
-              size={112}
-              thickness={16}
-              centerLabel="recorridos"
-              slices={[
-                { label: "Cortos · < 5 km", value: buckets.short, color: "#E4FBC0" },
-                { label: "Medios · 5–15", value: buckets.medium, color: "#C3F57A" },
-                { label: "Largos · > 15 km", value: buckets.long, color: "#9EE23C" },
-              ]}
-            />
-          </GlassCard>
-
           <Section title="Actividad (12 semanas)" />
           <GlassCard entranceDelay={140}>
             <ActivityHeatmap cells={heatmap} />
@@ -228,17 +176,6 @@ export default function StatsScreen() {
             <RecordRow icon="flash-outline" label="Mejor velocidad promedio" value={records.fastestAvgSpeedKmh ? formatSpeed(records.fastestAvgSpeedKmh, units) : "—"} />
             <RecordRow icon="sunny-outline" label="Mejor día" value={records.bestDayMeters ? formatDistance(records.bestDayMeters, units) : "—"} />
             <RecordRow icon="ribbon-outline" label="Más puntos en un recorrido" value={records.mostPointsInRide ? `${records.mostPointsInRide} pts` : "—"} last />
-          </GlassCard>
-
-          <Section title={`Nivel ${level}`} />
-          <GlassCard entranceDelay={180}>
-            <View style={styles.levelRow}>
-              <Text style={{ color: colors.inkSoft, fontSize: 12.5 }}>
-                {availablePoints.toLocaleString("es-CO")} {nextLevelAt ? `/ ${nextLevelAt.toLocaleString("es-CO")} pts` : "pts (nivel máximo)"}
-              </Text>
-              <Text style={{ color: colors.primaryDark, fontSize: 12.5, fontWeight: "700" }}>{Math.round(progressToNext * 100)}%</Text>
-            </View>
-            <ProgressBar value={progressToNext} />
           </GlassCard>
 
           <Section title={`Logros · ${unlockedCodes.size}/${ACHIEVEMENTS.length}`} />
@@ -352,17 +289,14 @@ const styles = StyleSheet.create({
   heroRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 2 },
   heroValue: { fontSize: 38, fontWeight: "700", letterSpacing: -1 },
   kpiRow: { flexDirection: "row", gap: 12, marginTop: 14, paddingTop: 14, borderTopWidth: 1 },
-  section: { marginTop: 22, marginBottom: 10 },
-  sectionTitle: { fontSize: 18, fontWeight: "700" },
+  section: { marginTop: 32, marginBottom: 12 },
+  sectionTitle: { fontSize: 20, fontWeight: "700", letterSpacing: -0.3 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 16 },
-  goalRow: { flexDirection: "row", alignItems: "center", gap: 16 },
-  goalPercent: { fontSize: 19, fontWeight: "700" },
   link: { fontSize: 12.5, fontWeight: "700", marginTop: 8 },
   impactRow: { flexDirection: "row", justifyContent: "space-between" },
   impact: { flex: 1, alignItems: "center" },
   impactIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", borderWidth: 1 },
   recordRow: { flexDirection: "row", alignItems: "center", paddingVertical: 11 },
-  levelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
   track: { borderRadius: 4, overflow: "hidden" },
   fill: { height: "100%", borderRadius: 4 },
   achievementsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
