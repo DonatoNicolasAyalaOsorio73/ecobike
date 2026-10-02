@@ -15,7 +15,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="map" options={{ title: "Mapa" }} />
       <Tabs.Screen name="points" options={{ title: "Puntos" }} />
       <Tabs.Screen name="friends" options={{ title: "Amigos" }} />
-      <Tabs.Screen name="stats" options={{ title: "Estadísticas" }} />
+      <Tabs.Screen name="stats" options={{ title: "Progreso" }} />
       <Tabs.Screen name="profile" options={{ title: "Perfil" }} />
     </Tabs>
   );

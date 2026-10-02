@@ -79,7 +79,7 @@ export default function StatsScreen() {
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <View style={styles.headerRow}>
             <Text style={[styles.header, { color: colors.ink }]} accessibilityRole="header">
-              Estadísticas
+              Progreso
             </Text>
             {isGuest && (
               <View style={[styles.demoPill, { backgroundColor: colors.glassGreenFill, borderColor: colors.glassGreenBorder }]}>

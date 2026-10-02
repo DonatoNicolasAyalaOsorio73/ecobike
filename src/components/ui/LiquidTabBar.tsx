@@ -2,30 +2,28 @@ import React from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import Animated, { FadeInDown, interpolateColor, useAnimatedStyle, useDerivedValue, useSharedValue, withSpring } from "react-native-reanimated";
 import GlassSurface from "./GlassSurface";
 import { useTheme } from "@/theme/useTheme";
-import { SPRING } from "@/theme/motion";
+import { spring, SPRING } from "@/theme/motion";
 import { elevation } from "@/theme/colors";
 
-const BAR_RADIUS = 30;
-const INSET = 5; // gap between capsule edge and the active pill (concentric corners)
+const BAR_RADIUS = 32;
+const INSET = 4; // lens sits inside the capsule with concentric corners
 
-/** Icon that lifts slightly when its tab becomes active — critically damped,
- * no wiggle: the moving pill already carries the "something changed" signal. */
-function TabIcon({ name, focused, color }: { name: keyof typeof Ionicons.glyphMap; focused: boolean; color: string }) {
-  const lift = useSharedValue(focused ? 1 : 0);
-  React.useEffect(() => {
-    lift.value = withSpring(focused ? 1 : 0, SPRING.momentum);
-  }, [focused, lift]);
-  const style = useAnimatedStyle(() => ({ transform: [{ translateY: -1.5 * lift.value }, { scale: 1 + 0.1 * lift.value }] }));
-  return (
-    <Animated.View style={style}>
-      <Ionicons name={name} size={21} color={color} />
-    </Animated.View>
-  );
+// SwiftUI's `.bouncy` (response 0.5s, bounce 0.3 → damping ratio 0.7): the
+// spring iOS 26 uses for Liquid Glass selection moves.
+const LENS_SPRING = spring(0.7, 0.5);
+
+// Keyboard-only focus ring. RN-web's `focused` is also true after a mouse
+// click, which left a permanent colored outline on the tapped tab.
+if (Platform.OS === "web" && typeof document !== "undefined" && !document.getElementById("tabbar-focus")) {
+  const css = document.createElement("style");
+  css.id = "tabbar-focus";
+  css.textContent =
+    "[data-tabbar] [role=tab]{outline:none}[data-tabbar] [role=tab]:focus-visible{outline:2px solid rgba(28,36,16,.35);outline-offset:-4px;border-radius:24px}";
+  document.head.appendChild(css);
 }
 
 // expo-router doesn't re-export react-navigation's BottomTabBarProps from its
@@ -40,43 +38,65 @@ interface TabBarProps {
   };
 }
 
-const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  map: "map-outline",
-  points: "ribbon-outline",
-  friends: "people-outline",
-  stats: "stats-chart-outline",
-  profile: "person-outline",
-};
-const ICONS_ACTIVE: Record<string, keyof typeof Ionicons.glyphMap> = {
-  map: "map",
-  points: "ribbon",
-  friends: "people",
-  stats: "stats-chart",
-  profile: "person",
+const ICONS: Record<string, [keyof typeof Ionicons.glyphMap, keyof typeof Ionicons.glyphMap]> = {
+  map: ["map-outline", "map"],
+  points: ["ribbon-outline", "ribbon"],
+  friends: ["people-outline", "people"],
+  stats: ["stats-chart-outline", "stats-chart"],
+  profile: ["person-outline", "person"],
 };
 
-/** Floating Liquid Glass capsule (iOS 26 tab bar).
+function Tab({ index, progress, name, label, focused, ink, soft }: { index: number; progress: { value: number }; name: string; label: string; focused: boolean; ink: string; soft: string }) {
+  // Color follows the lens position continuously instead of flipping at the end.
+  const color = useAnimatedStyle(() => {
+    const near = Math.max(0, 1 - Math.abs(progress.value - index));
+    return { color: interpolateColor(near, [0, 1], [soft, ink]) };
+  });
+  const [outline, filled] = ICONS[name] ?? ["ellipse-outline", "ellipse"];
+  return (
+    <>
+      <Ionicons name={focused ? filled : outline} size={22} color={focused ? ink : soft} />
+      <Animated.Text style={[styles.label, { fontWeight: focused ? "600" : "500" }, color]} numberOfLines={1}>
+        {label}
+      </Animated.Text>
+    </>
+  );
+}
+
+/** iOS 26 Liquid Glass tab bar.
  *
- * Clipping fix: the shadow lives on an outer wrapper with no overflow, the
- * glass (which must clip its blur and sheen) lives inside it, and the active
- * pill sits INSET px inside the capsule with radius BAR_RADIUS - INSET, so
- * it can never touch — and get cut by — the capsule's rounded ends.
+ * - Capsule: Liquid Glass "regular" variant: translucent enough to show
+ *   color through, opaque enough that labels stay legible where blur is
+ *   unavailable (Android, older browsers); strong blur + saturation and a
+ *   specular rim; shadow on an unclipped wrapper so it is never cut.
+ * - Selection is a neutral glass "lens", not a colored pill. It slides with
+ *   the `.bouncy` spring and stretches like liquid while travelling
+ *   (scaleX grows with the distance to the nearest tab, scaleY gives a bit).
+ * - Pressing any tab swells the lens slightly (the iOS 26 magnify feel).
  *
- * Tabs are flex:1 inside the inset row, so the pill's geometry is pure
- * percentages of that row (onLayout never fired in production web builds). */
+ * Tabs are flex:1 inside the inset row, so geometry is pure percentages of
+ * that row (onLayout never fired in production web builds). */
 export default function LiquidTabBar({ state, descriptors, navigation }: TabBarProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const tabCount = state.routes.length;
   const progress = useSharedValue(state.index);
-
-  const indicatorStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: `${progress.value * 100}%` }],
-  }));
+  const press = useSharedValue(0);
 
   React.useEffect(() => {
-    progress.value = withSpring(state.index, SPRING.momentum);
+    progress.value = withSpring(state.index, LENS_SPRING);
   }, [state.index, progress]);
+
+  // 0 when resting on a tab, up to 0.5 halfway between two tabs.
+  const travel = useDerivedValue(() => Math.abs(progress.value - Math.round(progress.value)));
+
+  const lensStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: `${progress.value * 100}%` },
+      { scaleX: 1 + travel.value * 0.5 + press.value * 0.06 },
+      { scaleY: 1 - travel.value * 0.14 + press.value * 0.06 },
+    ],
+  }));
 
   return (
     <Animated.View
@@ -84,21 +104,15 @@ export default function LiquidTabBar({ state, descriptors, navigation }: TabBarP
       style={[styles.wrap, { bottom: Math.max(insets.bottom - 6, 12) }]}
     >
       <View style={[styles.shadow, elevation("mid")]}>
-        <GlassSurface intensity={85} radius={BAR_RADIUS} backgroundColor="rgba(255,255,255,0.42)" borderColor="rgba(255,255,255,0.8)">
-          <View style={styles.row} role="tablist">
-            <Animated.View pointerEvents="none" style={[styles.indicatorSlot, { width: `${100 / tabCount}%` }, indicatorStyle]}>
-              <LinearGradient
-                colors={["rgba(173,241,75,0.62)", "rgba(173,241,75,0.38)"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                style={styles.indicator}
-              />
+        <GlassSurface intensity={100} radius={BAR_RADIUS} backgroundColor="rgba(255,255,255,0.4)" borderColor="rgba(255,255,255,0.75)">
+          <View style={styles.row} role="tablist" {...({ dataSet: { tabbar: "" } } as object)}>
+            <Animated.View pointerEvents="none" style={[styles.lensSlot, { width: `${100 / tabCount}%` }, lensStyle]}>
+              <View style={[styles.lens, LENS_WEB]} />
             </Animated.View>
             {state.routes.map((route, index) => {
               const { options } = descriptors[route.key];
               const isFocused = state.index === index;
               const label = (options.title ?? route.name) as string;
-              const tint = isFocused ? colors.primaryDark : colors.inkSoft;
 
               const onPress = () => {
                 if (Platform.OS !== "web") Haptics.selectionAsync();
@@ -110,19 +124,14 @@ export default function LiquidTabBar({ state, descriptors, navigation }: TabBarP
                 <Pressable
                   key={route.key}
                   onPress={onPress}
-                  style={({ pressed, hovered, focused }: any) => [
-                    styles.item,
-                    { opacity: pressed ? 0.6 : hovered && !isFocused ? 0.85 : 1 },
-                    focused && Platform.OS === "web" && styles.focusRing,
-                  ]}
+                  onPressIn={() => (press.value = withSpring(1, SPRING.press))}
+                  onPressOut={() => (press.value = withSpring(0, SPRING.default))}
+                  style={({ hovered }: any) => [styles.item, { opacity: hovered && !isFocused ? 0.75 : 1 }]}
                   accessibilityRole="tab"
                   accessibilityState={{ selected: isFocused }}
                   accessibilityLabel={label}
                 >
-                  <TabIcon name={(isFocused ? ICONS_ACTIVE[route.name] : ICONS[route.name]) ?? "ellipse-outline"} focused={isFocused} color={tint} />
-                  <Text style={[styles.label, { color: tint, fontWeight: isFocused ? "700" : "500" }]} numberOfLines={1}>
-                    {label}
-                  </Text>
+                  <Tab index={index} progress={progress} name={route.name} label={label} focused={isFocused} ink={colors.ink} soft={colors.inkSoft} />
                 </Pressable>
               );
             })}
@@ -133,13 +142,19 @@ export default function LiquidTabBar({ state, descriptors, navigation }: TabBarP
   );
 }
 
+// Lens: brighter glass with a top highlight and a soft contact shadow (web
+// renders the inset highlight; native gets the translucent fill).
+const LENS_WEB =
+  Platform.OS === "web"
+    ? ({ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(255,255,255,0.4), 0 2px 8px rgba(24,60,30,0.10)" } as object)
+    : elevation("low");
+
 const styles = StyleSheet.create({
-  wrap: { position: "absolute", left: 18, right: 18, pointerEvents: "box-none" },
+  wrap: { position: "absolute", left: 16, right: 16, pointerEvents: "box-none" },
   shadow: { borderRadius: BAR_RADIUS },
-  row: { flexDirection: "row", margin: INSET, height: 50 },
-  indicatorSlot: { position: "absolute", top: 0, bottom: 0, left: 0, paddingHorizontal: 2 },
-  indicator: { flex: 1, borderRadius: BAR_RADIUS - INSET, borderWidth: 1, borderColor: "rgba(255,255,255,0.7)" },
-  item: { flex: 1, alignItems: "center", justifyContent: "center", gap: 2, borderRadius: BAR_RADIUS - INSET },
-  focusRing: { outlineWidth: 2, outlineColor: "#ADF14B", outlineStyle: "solid", outlineOffset: -2 } as any,
-  label: { fontSize: 10, letterSpacing: -0.1 },
+  row: { flexDirection: "row", margin: INSET, height: 56 },
+  lensSlot: { position: "absolute", top: 0, bottom: 0, left: 0 },
+  lens: { flex: 1, borderRadius: BAR_RADIUS - INSET, backgroundColor: "rgba(255,255,255,0.72)" },
+  item: { flex: 1, alignItems: "center", justifyContent: "center", gap: 3, paddingHorizontal: 2 },
+  label: { fontSize: 10.5, letterSpacing: -0.15 },
 });

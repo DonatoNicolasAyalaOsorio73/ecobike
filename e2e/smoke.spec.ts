@@ -43,7 +43,7 @@ test("guest tour: map, stats, rewards, friends, profile, settings", async ({ pag
   await expect(page.getByText("Listo para pedalear")).toBeVisible();
 
   // Stats with example data
-  await tab(page, "Estadísticas").click();
+  await tab(page, "Progreso").click();
   await expect(page.getByText("DATOS DE EJEMPLO")).toBeVisible();
   await expect(page.getByText("Tu racha").first()).toBeVisible();
   await expect(page.getByText("Impacto ambiental")).toBeVisible();
