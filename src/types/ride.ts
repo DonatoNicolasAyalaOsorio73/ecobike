@@ -28,6 +28,14 @@ export interface Ride {
   caloriesKcal: number;
   points: TrackPoint[];
   pointsEarned: number;
+  /**
+   * Passed bike verification (server's word once synced; the local score
+   * before that). A real ride can be verified with 0 points when a daily cap hit.
+   * Undefined on rides stored before this field existed.
+   */
+  verified?: boolean;
+  /** Why the ride earned less than its distance (not a bike ride, daily cap...). */
+  pointsReason?: string | null;
   synced: boolean;
   error: string | null;
 }

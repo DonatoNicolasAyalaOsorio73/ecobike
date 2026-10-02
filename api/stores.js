@@ -49,9 +49,15 @@ module.exports = handler(["GET", "POST", "PUT", "DELETE"], async (req) => {
     const ref = col.doc(input.id);
     const snap = await ref.get();
     if (!snap.exists) throw httpError(404, "La tienda no existe.");
-    const partners = await db.collection("usuarios").where("storeId", "==", input.id).limit(1).get();
+    const [partners, liveCodes] = await Promise.all([
+      db.collection("usuarios").where("storeId", "==", input.id).limit(1).get(),
+      // Customers holding unused codes must still be able to use them (index in firestore.indexes.json).
+      db.collectionGroup("codigos_canjeados").where("rewardId", "==", input.id).where("status", "==", "active").limit(1).get(),
+    ]);
     if (!partners.empty) throw httpError(409, "Esta tienda tiene partners asignados. Quítales el rol o desactívala.");
-    await ref.delete(); // redeemed codes keep their own copy of the store name
+    if (!liveCodes.empty) throw httpError(409, "Hay clientes con códigos sin usar de esta tienda. Desactívala en lugar de eliminarla.");
+    await ref.delete(); // used codes keep their own copy of the store name
+    await admin().storage().bucket().deleteFiles({ prefix: `stores/${input.id}/` }).catch(() => {}); // its logos
     await logAdmin(me.uid, "store.delete", "store", input.id, { name: snap.data().name ?? null });
     return { deleted: true };
   }

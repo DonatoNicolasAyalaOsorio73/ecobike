@@ -16,7 +16,7 @@ const ROLES = ["user", "partner", "admin"];
  */
 function parseUserUpdate(input) {
   if (!isDocId(input.id)) throw httpError(400, "Falta el id del usuario.");
-  const out = {};
+  const out = { id: input.id };
   if (input.role !== undefined) {
     if (!ROLES.includes(input.role)) throw httpError(400, "Rol inválido.");
     out.role = input.role;
@@ -26,17 +26,16 @@ function parseUserUpdate(input) {
     }
   }
   if (input.points !== undefined) {
-    const n = Number(input.points);
+    // Only a real number or digit string: Number(null) / Number("") would silently mean 0.
+    const n = typeof input.points === "number" || (typeof input.points === "string" && /^\d+$/.test(input.points.trim())) ? Number(input.points) : NaN;
     if (!Number.isInteger(n) || n < 0 || n > 10_000_000) throw httpError(400, "Los puntos deben ser un entero entre 0 y 10.000.000.");
     const reason = typeof input.reason === "string" ? input.reason.trim() : "";
     if (reason.length < 5) throw httpError(400, "Escribe el motivo del ajuste de puntos (mínimo 5 caracteres).");
     out.points = n;
     out.reason = reason.slice(0, 300);
     // The balance the admin was looking at: if a ride synced meanwhile, refuse instead of overwriting it.
-    if (input.expectedPoints !== undefined) {
-      if (!Number.isInteger(input.expectedPoints)) throw httpError(400, "Saldo de referencia inválido.");
-      out.expectedPoints = input.expectedPoints;
-    }
+    if (!Number.isInteger(input.expectedPoints)) throw httpError(400, "Falta el saldo de referencia (recarga el usuario).");
+    out.expectedPoints = input.expectedPoints;
   }
   if (input.disabled !== undefined) {
     if (typeof input.disabled !== "boolean") throw httpError(400, "Estado de cuenta inválido.");
@@ -48,8 +47,13 @@ function parseUserUpdate(input) {
       out[k] = input[k].trim();
     }
   }
-  if (Object.keys(out).filter((k) => !["storeId", "reason", "expectedPoints"].includes(k)).length === 0) throw httpError(400, "No hay cambios para guardar.");
+  if (Object.keys(out).filter((k) => !["id", "storeId", "reason", "expectedPoints"].includes(k)).length === 0) throw httpError(400, "No hay cambios para guardar.");
   return out;
+}
+
+/** An admin can't demote or suspend themself from the panel (pure, tested). */
+function assertNotSelfLockout(u, meUid) {
+  if (u.id === meUid && ((u.role && u.role !== "admin") || u.disabled === true)) throw httpError(400, "No puedes quitarte el rol de admin ni suspender tu propia cuenta.");
 }
 
 function summary(uid, d = {}, pub = {}) {
@@ -75,7 +79,8 @@ async function list(db, q, after) {
       const u = await admin().auth().getUserByEmail(text);
       const [d, p] = await Promise.all([db.collection("usuarios").doc(u.uid).get(), db.collection("usuarios_public").doc(u.uid).get()]);
       return { users: [summary(u.uid, d.data(), p.data())], next: null };
-    } catch {
+    } catch (e) {
+      if (e?.code !== "auth/user-not-found") throw e;
       return { users: [], next: null };
     }
   }
@@ -121,7 +126,7 @@ async function detail(db, uid) {
     ref.get(),
     db.collection("usuarios_public").doc(uid).get(),
     ref.collection("rides").count().get(),
-    ref.collection("rides").where("pointsEarned", ">", 0).count().get(),
+    ref.collection("rides").where("verified", "==", true).count().get(),
     ref.collection("codigos_canjeados").count().get(),
     // Needs the admin_logs index; without it the detail still loads, just without history.
     db.collection("admin_logs").where("targetId", "==", uid).orderBy("at", "desc").limit(10).get().catch(() => ({ docs: [] })),
@@ -165,13 +170,14 @@ module.exports = handler(["GET", "PUT", "DELETE"], async (req) => {
     if (reason.length < 5) throw httpError(400, "Escribe el motivo de la eliminación (mínimo 5 caracteres).");
     const before = (await db.collection("usuarios").doc(input.id).get()).data();
     if (!before) throw httpError(404, "Usuario no encontrado.");
+    // Logged first so a deletion that fails halfway still leaves a trace. No personal data in the log.
+    await logAdmin(me.uid, "user.delete", "user", input.id, { reason });
     await deleteUserData(input.id);
-    await logAdmin(me.uid, "user.delete", "user", input.id, { reason, username: before.username ?? null, email: before.email ?? null });
     return { deleted: true };
   }
 
   const u = parseUserUpdate(input);
-  if (u.id === me.uid && ((u.role && u.role !== "admin") || u.disabled === true)) throw httpError(400, "No puedes quitarte el rol de admin ni suspender tu propia cuenta.");
+  assertNotSelfLockout(u, me.uid);
   if (u.role === "partner" && !(await db.collection("tiendas").doc(u.storeId).get()).exists) throw httpError(404, "La tienda no existe.");
   const ref = db.collection("usuarios").doc(u.id);
   const pubRef = db.collection("usuarios_public").doc(u.id);
@@ -212,20 +218,27 @@ module.exports = handler(["GET", "PUT", "DELETE"], async (req) => {
 
   // Firebase Auth side (not transactional): an old `admin` custom claim would
   // otherwise keep a demoted user admin; suspension signs them out everywhere.
-  if (u.role) {
-    const claims = (await admin().auth().getUser(u.id).catch(() => null))?.customClaims ?? {};
-    if ("admin" in claims && claims.admin !== (u.role === "admin")) {
-      await admin().auth().setCustomUserClaims(u.id, { ...claims, admin: u.role === "admin" });
-      // Tokens already issued still carry the old claim: revoke so it can't be used for the next hour.
-      if (u.role !== "admin") await admin().auth().revokeRefreshTokens(u.id);
+  // The audit entry is written whatever happens here.
+  try {
+    if (u.role) {
+      const claims = (await admin().auth().getUser(u.id).catch(() => null))?.customClaims ?? {};
+      if ("admin" in claims && claims.admin !== (u.role === "admin")) {
+        await admin().auth().setCustomUserClaims(u.id, { ...claims, admin: u.role === "admin" });
+        // Tokens already issued still carry the old claim: revoke so it can't be used for the next hour.
+        if (u.role !== "admin") await admin().auth().revokeRefreshTokens(u.id);
+      }
     }
-  }
-  if (u.disabled !== undefined) {
-    await admin().auth().updateUser(u.id, { disabled: u.disabled });
-    if (u.disabled) await admin().auth().revokeRefreshTokens(u.id);
+    if (u.disabled !== undefined) {
+      await admin().auth().updateUser(u.id, { disabled: u.disabled });
+      if (u.disabled) await admin().auth().revokeRefreshTokens(u.id);
+    }
+  } catch (e) {
+    await logAdmin(me.uid, "user.update", "user", u.id, { ...changed, authError: String(e?.code ?? e?.message ?? e) });
+    throw httpError(502, "Se guardó en la base de datos, pero falló la actualización de la cuenta (Auth). Inténtalo de nuevo.");
   }
   await logAdmin(me.uid, "user.update", "user", u.id, changed);
   return detail(db, u.id);
 });
 
 module.exports.parseUserUpdate = parseUserUpdate;
+module.exports.assertNotSelfLockout = assertNotSelfLockout;

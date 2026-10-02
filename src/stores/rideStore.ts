@@ -6,7 +6,8 @@ import * as Haptics from "expo-haptics";
 import { goalProgress, type RideGoal } from "@/utils/rideGoals";
 import { createEmptyRide, type Ride, type RideStatus, type TrackPoint } from "@/types/ride";
 import { avgSpeedKmh, estimateCalories, incrementalDistanceMeters, totalElevationGainMeters } from "@/utils/geo";
-import { pointsForRide, computeRiderStats, evaluateAchievements } from "@/utils/gamification";
+import { scoreLocalRide, computeRiderStats, evaluateAchievements, validAchievements } from "@/utils/gamification";
+import { capRidePoints } from "@/utils/rideScore";
 import type { AchievementDef } from "@/types/achievement";
 import * as db from "@/services/db";
 import { queueRideForSync } from "@/services/rides.service";
@@ -103,6 +104,9 @@ function onLocations(locs: Location.LocationObject[]) {
       speed: loc.coords.speed,
     };
     const prev = state.ride.points[state.ride.points.length - 1];
+    // A cached fix from before the start, or a repeated/out-of-order one from
+    // batched delivery, adds nothing and would only confuse verification.
+    if (point.timestamp < state.ride.startedAt - 5_000 || (prev && point.timestamp <= prev.timestamp)) continue;
     let added = 0;
     if (prev && !segmentBreak) {
       added = incrementalDistanceMeters(prev, point);
@@ -263,13 +267,23 @@ export const useRideStore = create<RideState>((set, get) => ({
       endedAt: Date.now(),
       caloriesKcal: estimateCalories(ride.distanceMeters, settings().weightKg),
     };
-    finished.pointsEarned = pointsForRide(finished);
+    // Same verdict and daily caps the server will apply (rideScore.ts), so the
+    // finish screen never promises points the sync then takes away.
+    const score = scoreLocalRide(finished);
+    const dayAgo = Date.now() - 24 * 3600_000;
+    const today = db.listRides(ride.userId).filter((r) => r.id !== ride.id && r.startedAt >= dayAgo);
+    const capped = capRidePoints(score.points, score.reason, today.reduce((sum, r) => sum + r.pointsEarned, 0), today.length);
+    finished.pointsEarned = capped.points;
+    finished.verified = score.points > 0;
+    finished.pointsReason = capped.reason;
 
     db.saveRide(finished);
 
     const stats = computeRiderStats(db.listRides(ride.userId));
 
-    const alreadyUnlocked = new Set(db.listUnlockedAchievements(ride.userId).map((a) => a.code));
+    // Stored unlocks the verified history no longer supports don't count as
+    // "already unlocked": earning them for real still celebrates.
+    const alreadyUnlocked = validAchievements(new Set(db.listUnlockedAchievements(ride.userId).map((a) => a.code)), stats);
     const newlyUnlocked = evaluateAchievements(stats, alreadyUnlocked);
     newlyUnlocked.forEach((a) => db.unlockAchievement(ride.userId, a.code));
 

@@ -90,6 +90,14 @@ export default function RideDetailScreen() {
           </Animated.View>
         </Animated.View>
 
+        {ride.pointsReason ? (
+          // Why this ride earned less (not a bike ride, daily cap...): never a silent 0.
+          <Animated.View entering={enter(60)} style={[styles.reason, { backgroundColor: colors.chipFill }]}>
+            <Ionicons name="information-circle-outline" size={16} color={colors.inkSoft} />
+            <Text style={{ color: colors.inkSoft, flex: 1, fontSize: 13.5 }}>{ride.pointsReason}</Text>
+          </Animated.View>
+        ) : null}
+
         <View style={styles.grid}>
           <StatTile icon="speedometer-outline" label="Distancia" value={formatDistance(ride.distanceMeters, units)} />
           <StatTile icon="time-outline" label="Duración" value={formatDuration(ride.durationSeconds)} />
@@ -180,6 +188,7 @@ export default function RideDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  reason: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 14, marginBottom: 12 },
   safe: { flex: 1 },
   floatingBack: { position: "absolute", left: 16, top: 0 },
   content: { padding: 20, paddingTop: 20 },

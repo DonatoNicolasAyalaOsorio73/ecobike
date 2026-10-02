@@ -69,7 +69,8 @@ export function navigate(points: { lat: number; lng: number }[], cum: number[], 
 /** "En 200 m" / "En 1,2 km", rounded the way navigation apps speak. */
 export function distanceLabel(m: number): string {
   if (m < 30) return "Ahora";
-  if (m < 1000) return `En ${Math.round(m / 10) * 10} m`;
+  const rounded = Math.round(m / 10) * 10;
+  if (rounded < 1000) return `En ${rounded} m`; // 995 m reads "1,0 km", never "1000 m"
   return `En ${(m / 1000).toFixed(1).replace(".", ",")} km`;
 }
 

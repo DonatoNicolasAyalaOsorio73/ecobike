@@ -50,3 +50,8 @@ test("maneuverIcon maps turn directions", () => {
   assert.equal(maneuverIcon(4), "flag");
   assert.equal(maneuverIcon(8), "arrow-up");
 });
+
+test("distanceLabel never shows 1000 m", () => {
+  assert.equal(distanceLabel(996), "En 1,0 km");
+  assert.equal(distanceLabel(994), "En 990 m");
+});

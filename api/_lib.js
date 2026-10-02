@@ -108,7 +108,7 @@ async function deleteUserData(uid) {
   const chats = await db.collection("chats").where("participants", "array-contains", uid).get();
   await Promise.all(chats.docs.map((c) => db.recursiveDelete(c.ref)));
   await db.recursiveDelete(db.collection("usuarios").doc(uid));
-  await db.collection("usuarios_public").doc(uid).delete().catch(() => {});
+  await db.collection("usuarios_public").doc(uid).delete(); // deleting a missing doc is a no-op; real errors must surface
   await a.storage().bucket().deleteFiles({ prefix: `avatars/${uid}/` }).catch(() => {});
   await a.auth().deleteUser(uid).catch((e) => {
     if (e?.code !== "auth/user-not-found") throw e;
@@ -198,13 +198,16 @@ function analyzeTrack(track) {
   let movingSeconds = 0;
   let bikeSeconds = 0;
   let teleportMeters = 0;
+  // Duplicate or out-of-order fixes (batched background delivery) are skipped
+  // against the last good fix instead of voiding the whole ride.
+  let a = track[0];
   for (let i = 1; i < track.length; i++) {
-    const a = track[i - 1];
     const b = track[i];
     const dt = (b[2] - a[2]) / 1000;
-    if (!(dt > 0)) return null;
+    if (!(dt > 0)) continue;
     const d = haversine(a, b);
     const kmh = (d / dt) * 3.6;
+    a = b;
     if (kmh > TELEPORT_KMH) {
       teleportMeters += d;
       continue;
@@ -237,9 +240,45 @@ function sanitizeTrack(track, startedAt, endedAt) {
   for (const p of track) {
     if (!Array.isArray(p) || p.length !== 3 || !p.every((x) => typeof x === "number" && Number.isFinite(x))) return null;
     if (Math.abs(p[0]) > 90 || Math.abs(p[1]) > 180) return null;
-    if (p[2] < startedAt - 120_000 || p[2] > endedAt + 120_000) return null;
   }
-  return track;
+  // Fixes outside the ride window (a stale cached first fix) are dropped, not
+  // fatal: they can't add distance, and rejecting the whole track for one of
+  // them zeroed legitimate rides. Same rule in src/utils/rideScore.ts.
+  const inWindow = track.filter((p) => p[2] >= startedAt - 120_000 && p[2] <= endedAt + 120_000);
+  return inWindow.length >= 2 ? inWindow : null;
+}
+
+/**
+ * Daily economy caps applied to a verified ride's points (pure, tested):
+ * at most MAX_RIDES_PER_DAY rides and DAILY_POINTS_CAP points per rolling 24 h.
+ * The validator's own reason (not a bike ride, too short...) wins over cap reasons.
+ */
+function capRidePoints(ridePoints, rideReason, earnedToday, ridesToday) {
+  const rideCapHit = ridesToday >= MAX_RIDES_PER_DAY;
+  const points = rideCapHit ? 0 : Math.max(0, Math.min(ridePoints, DAILY_POINTS_CAP - earnedToday));
+  const reason = rideReason ?? (rideCapHit ? "Límite diario de recorridos alcanzado." : points < ridePoints ? `Límite diario de ${DAILY_POINTS_CAP} puntos alcanzado.` : null);
+  return { points, reason };
+}
+
+/**
+ * Redemption limits (pure, tested): MIN_VERIFIED_RIDES real rides before the
+ * first redemption, one redemption per rolling 24 h, and the same reward at
+ * most once every SAME_STORE_COOLDOWN_DAYS. Returns an error to throw, or null.
+ */
+const MIN_VERIFIED_RIDES = 3;
+const MAX_REDEMPTIONS_PER_DAY = 1;
+const SAME_STORE_COOLDOWN_DAYS = 7;
+function redeemLimitError(verifiedRides, recentCodes, rewardId, now = Date.now()) {
+  if (verifiedRides < MIN_VERIFIED_RIDES) {
+    return httpError(403, `Completa ${MIN_VERIFIED_RIDES} recorridos en bicicleta verificados antes de tu primer canje (llevas ${verifiedRides}).`);
+  }
+  const lastDay = recentCodes.filter((c) => (c.createdAt?.toMillis?.() ?? c.createdAt ?? 0) >= now - 86400_000).length;
+  if (lastDay >= MAX_REDEMPTIONS_PER_DAY) return httpError(429, "Ya hiciste un canje hoy. Podrás canjear de nuevo en 24 horas.");
+  const cutoff = now - SAME_STORE_COOLDOWN_DAYS * 86400_000;
+  if (recentCodes.some((c) => c.rewardId === rewardId && (c.createdAt?.toMillis?.() ?? c.createdAt ?? 0) >= cutoff)) {
+    return httpError(429, `Ya canjeaste esta recompensa esta semana. Puedes repetirla cada ${SAME_STORE_COOLDOWN_DAYS} días.`);
+  }
+  return null;
 }
 
 function validateRide(r, now = Date.now()) {
@@ -332,4 +371,4 @@ function redemptionCode() {
   return require("crypto").randomBytes(6).toString("hex").toUpperCase();
 }
 
-module.exports = { requireAdmin, logAdmin, deleteUserData, analyzeTrack, scoreRide, DAILY_POINTS_CAP, isDocId, clampNum, MAX_RIDE_DURATION_S, weekKey, chatIdFor, cleanMessage, MAX_MESSAGE_LENGTH, sendPush, admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };
+module.exports = { sanitizeTrack, capRidePoints, redeemLimitError, MIN_VERIFIED_RIDES, SAME_STORE_COOLDOWN_DAYS, requireAdmin, logAdmin, deleteUserData, analyzeTrack, scoreRide, DAILY_POINTS_CAP, isDocId, clampNum, MAX_RIDE_DURATION_S, weekKey, chatIdFor, cleanMessage, MAX_MESSAGE_LENGTH, sendPush, admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };

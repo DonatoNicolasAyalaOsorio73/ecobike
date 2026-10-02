@@ -82,7 +82,9 @@ const LOGO_TYPES = ["image/jpeg", "image/png", "image/webp"];
  */
 export async function uploadStoreLogo(storeKey: string, localUri: string, mimeType?: string | null): Promise<string> {
   const blob = await (await fetch(localUri)).blob();
-  const contentType = mimeType && LOGO_TYPES.includes(mimeType) ? mimeType : blob.type && LOGO_TYPES.includes(blob.type) ? blob.type : "image/jpeg";
+  const contentType = [mimeType, blob.type].find((t) => t && LOGO_TYPES.includes(t));
+  // Never relabel other formats (HEIC...) as JPEG: they'd upload and then not display.
+  if (!contentType) throw new Error("Formato no compatible. Usa PNG, JPG o WebP.");
   if (blob.size > 2 * 1024 * 1024) throw new Error("El logo debe pesar menos de 2 MB.");
   const ext = contentType.split("/")[1].replace("jpeg", "jpg");
   const fileRef = ref(getFirebaseStorage(), `stores/${storeKey}/logo-${Date.now()}.${ext}`);

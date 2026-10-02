@@ -4,7 +4,7 @@
 //                           Idempotent: re-sending the same ride id never awards twice.
 // DELETE /api/rides {id}  — delete one of my rides and take back its points
 //                           (never below 0), so deleting can't be used to farm.
-const { admin, httpError, requireUser, body, handler, validateRide, weekKey, isDocId, clampNum, MAX_RIDES_PER_DAY, MAX_RIDE_DURATION_S, DAILY_POINTS_CAP } = require("./_lib");
+const { admin, httpError, requireUser, body, handler, validateRide, weekKey, isDocId, clampNum, MAX_RIDE_DURATION_S, MAX_RIDES_PER_DAY, capRidePoints } = require("./_lib");
 
 /** Weekly league points after adding `delta` for a ride in `rideWeek` (resets when the week changes). */
 function nextWeekly(pub, rideWeek, delta) {
@@ -44,7 +44,8 @@ module.exports = handler(["POST", "DELETE"], async (req) => {
     const [existing, userSnap, pubSnap, recent, around] = await Promise.all([tx.get(rideRef), tx.get(userRef), tx.get(pubRef), tx.get(recentQ), tx.get(overlapQ)]);
     if (!userSnap.exists) throw httpError(404, "Perfil de usuario no encontrado.");
     if (existing.exists) {
-      return { pointsEarned: existing.data().pointsEarned ?? 0, balance: userSnap.data().puntosAcumulados ?? 0, duplicate: true };
+      const e = existing.data();
+      return { pointsEarned: e.pointsEarned ?? 0, verified: e.verified === true, reason: e.pointsReason ?? null, balance: userSnap.data().puntosAcumulados ?? 0, duplicate: true };
     }
     if (around.docs.some((d) => (d.data().endedAt ?? 0) > v.startedAt)) {
       throw httpError(409, "Este recorrido se superpone con otro ya registrado.");
@@ -52,9 +53,10 @@ module.exports = handler(["POST", "DELETE"], async (req) => {
     // Caps: rides per day and points per day (earning stays slow on purpose,
     // so rewards take real riding and can't be emptied in one burst).
     const earnedToday = recent.docs.reduce((s, d) => s + (d.data().pointsEarned ?? 0), 0);
-    const rideCapHit = recent.size >= MAX_RIDES_PER_DAY;
-    const points = rideCapHit ? 0 : Math.max(0, Math.min(v.points, DAILY_POINTS_CAP - earnedToday));
-    const reason = v.reason ?? (rideCapHit ? "Límite diario de recorridos alcanzado." : points < v.points ? `Límite diario de ${DAILY_POINTS_CAP} puntos alcanzado.` : null);
+    const { points, reason } = capRidePoints(v.points, v.reason, earnedToday, recent.size);
+    // "verified" = it passed bike detection, even if a cap left it at 0 points:
+    // it still counts as a real ride (streaks, missions, the 3-ride redemption gate).
+    const verified = v.points > 0;
     tx.set(rideRef, {
       userId: user.uid,
       startedAt: v.startedAt,
@@ -66,7 +68,7 @@ module.exports = handler(["POST", "DELETE"], async (req) => {
       elevationGainMeters: clampNum(ride.elevationGainMeters, 10_000),
       caloriesKcal: clampNum(ride.caloriesKcal, 20_000),
       pointsEarned: points,
-      verified: v.points > 0,
+      verified,
       pointsReason: reason,
       createdAt: FieldValue.serverTimestamp(),
     });
@@ -74,7 +76,7 @@ module.exports = handler(["POST", "DELETE"], async (req) => {
     tx.update(userRef, { puntosAcumulados: FieldValue.increment(points), updatedAt: FieldValue.serverTimestamp() });
     const weekly = nextWeekly(pubSnap.data(), weekKey(v.startedAt), points);
     tx.set(pubRef, { puntosAcumulados: balance, ...(weekly ?? {}) }, { merge: true });
-    return { pointsEarned: points, reason, balance, duplicate: false };
+    return { pointsEarned: points, verified, reason, balance, duplicate: false };
   });
 });
 

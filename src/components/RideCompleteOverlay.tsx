@@ -15,8 +15,7 @@ import { formatDuration } from "@/utils/format";
 import { goalLabel, type RideGoal } from "@/utils/rideGoals";
 import type { Ride } from "@/types/ride";
 import type { AchievementDef } from "@/types/achievement";
-import { levelForPoints, rideTrack } from "@/utils/gamification";
-import { analyzeTrack, scoreRide } from "@/utils/rideScore";
+import { levelForPoints, scoreLocalRide } from "@/utils/gamification";
 import { shareText } from "@/services/share";
 import { rideShareText } from "@/utils/shareText";
 
@@ -83,7 +82,7 @@ export default function RideCompleteOverlay({ ride, streak, pointsToday, goal, g
             <Animated.View entering={FadeInDown.delay(620)} style={styles.noPoints}>
               <Ionicons name="information-circle-outline" size={18} color="#5B6660" />
               <Text style={styles.noPointsText}>
-                Sin puntos esta vez: {scoreRide(ride.distanceMeters, ride.durationSeconds, analyzeTrack(rideTrack(ride))).reason ?? "no cumple las reglas de verificación."} Los puntos se ganan pedaleando de verdad.
+                Sin puntos esta vez: {ride.pointsReason ?? scoreLocalRide(ride).reason ?? "no cumple las reglas de verificación."} Los puntos se ganan pedaleando de verdad.
               </Text>
             </Animated.View>
           )}

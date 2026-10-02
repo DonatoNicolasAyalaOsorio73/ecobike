@@ -54,8 +54,9 @@ export async function searchPlaces(query: string, near: { lat: number; lng: numb
   // Ask for more candidates than we show, then rank by real distance to the rider.
   const params = new URLSearchParams({ q, limit: "15" });
   if (near) {
-    params.set("lat", String(near.lat));
-    params.set("lon", String(near.lng));
+    // ~100 m is plenty to bias results; the search service never gets the exact position.
+    params.set("lat", near.lat.toFixed(3));
+    params.set("lon", near.lng.toFixed(3));
   }
   const res = await fetch(`${PHOTON}?${params}`, { signal });
   if (!res.ok) throw new Error("No pudimos buscar lugares ahora.");
@@ -99,7 +100,17 @@ export async function planBikeRoute(from: { lat: number; lng: number }, to: { la
     alternates: 2,
     directions_options: { units: "kilometers", language: "es-ES" },
   };
-  const res = await fetch(`${VALHALLA}?json=${encodeURIComponent(JSON.stringify(request))}`);
+  // A free community server can hang: give up after 20 s instead of spinning forever.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20_000);
+  let res: Response;
+  try {
+    res = await fetch(`${VALHALLA}?json=${encodeURIComponent(JSON.stringify(request))}`, { signal: controller.signal });
+  } catch {
+    throw new Error("El servidor de rutas no responde. Inténtalo de nuevo.");
+  } finally {
+    clearTimeout(timer);
+  }
   const json = await res.json().catch(() => ({}));
   if (!res.ok || !json.trip) throw new Error(json.error ? "No encontramos una ruta en bicicleta hasta ese lugar." : "No pudimos calcular la ruta ahora.");
   return [json, ...(json.alternates ?? [])].map((r: any) => toRoute(r.trip));

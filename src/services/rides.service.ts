@@ -19,7 +19,7 @@ export async function queueRideForSync(ride: Ride) {
   // Clients can no longer write either (firestore.rules). Idempotent by id,
   // so retries never double-award.
   try {
-    const res = await api<{ pointsEarned?: number }>("rides", "POST", {
+    const res = await api<{ pointsEarned?: number; verified?: boolean; reason?: string | null }>("rides", "POST", {
       id: ride.id,
       startedAt: ride.startedAt,
       endedAt: ride.endedAt,
@@ -33,15 +33,18 @@ export async function queueRideForSync(ride: Ride) {
       // analyses it and discards it (the polyline is never stored remotely).
       track: rideTrack(ride),
     });
-    // The server is the authority on points (caps, verification): keep the
-    // local history in agreement with what was actually awarded.
-    if (typeof res?.pointsEarned === "number" && res.pointsEarned !== ride.pointsEarned) {
-      saveRide({ ...ride, pointsEarned: res.pointsEarned });
+    // The server is the authority on points, verification and the reason:
+    // keep the local history in agreement with what was actually awarded.
+    if (typeof res?.pointsEarned === "number") {
+      saveRide({ ...ride, pointsEarned: res.pointsEarned, verified: res.verified ?? res.pointsEarned > 0, pointsReason: res.reason ?? null });
     }
   } catch (e: any) {
-    // 4xx = the server rejected this ride for good (implausible data);
-    // stop retrying it. Network/5xx errors stay unsynced and retry later.
+    // 4xx = the server rejected this ride for good (implausible data); stop
+    // retrying it, and it earns nothing locally either (no achievements,
+    // missions or streak from a ride the server refused). Network/5xx errors
+    // stay unsynced and retry later.
     if (!(e?.status >= 400 && e?.status < 500 && e?.status !== 401)) throw e;
+    saveRide({ ...ride, pointsEarned: 0, verified: false, pointsReason: e?.message ?? "El servidor rechazó este recorrido." });
   }
   markSynced(ride.id);
 }
@@ -80,9 +83,18 @@ export async function pullRemoteRides(userId: string): Promise<number> {
   const snap = await getDocs(collection(getDb(), "usuarios", userId, "rides"));
   let added = 0;
   for (const d of snap.docs) {
-    if (getRide(d.id)) continue;
     const r = d.data();
     const num = (v: unknown) => (typeof v === "number" ? v : 0);
+    // Server docs without the flag predate bike verification: never count them as verified.
+    const verified = r.verified === true;
+    const local = getRide(d.id);
+    if (local) {
+      // The server's word on points/verification wins over what this device computed.
+      if (local.synced && (local.pointsEarned !== num(r.pointsEarned) || local.verified !== verified)) {
+        saveRide({ ...local, pointsEarned: num(r.pointsEarned), verified, pointsReason: r.pointsReason ?? null });
+      }
+      continue;
+    }
     if (!num(r.startedAt)) continue; // legacy docs with another shape
     saveRide({
       id: d.id,
@@ -97,6 +109,8 @@ export async function pullRemoteRides(userId: string): Promise<number> {
       caloriesKcal: num(r.caloriesKcal),
       points: [],
       pointsEarned: num(r.pointsEarned),
+      verified,
+      pointsReason: r.pointsReason ?? null,
       synced: true,
       error: null,
     });

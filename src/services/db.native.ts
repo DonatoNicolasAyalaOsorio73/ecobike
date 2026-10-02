@@ -48,6 +48,11 @@ export function initDb() {
     );
     CREATE INDEX IF NOT EXISTS idx_redemptions_user ON redemptions(userId, redeemedAt DESC);
   `);
+  // v2: bike-verification verdict per ride. Added columns, so older installs
+  // migrate in place; NULL = stored before verification existed.
+  const cols = db.getAllSync<{ name: string }>(`PRAGMA table_info(rides)`).map((c) => c.name);
+  if (!cols.includes("verified")) db.execSync(`ALTER TABLE rides ADD COLUMN verified INTEGER`);
+  if (!cols.includes("pointsReason")) db.execSync(`ALTER TABLE rides ADD COLUMN pointsReason TEXT`);
 }
 
 function rowToRide(row: any): Ride {
@@ -64,6 +69,8 @@ function rowToRide(row: any): Ride {
     caloriesKcal: row.caloriesKcal,
     points: JSON.parse(row.pointsJson) as TrackPoint[],
     pointsEarned: row.pointsEarned,
+    verified: row.verified == null ? undefined : Boolean(row.verified),
+    pointsReason: row.pointsReason ?? null,
     synced: Boolean(row.synced),
     error: row.error,
   };
@@ -72,8 +79,8 @@ function rowToRide(row: any): Ride {
 export function saveRide(ride: Ride) {
   db.runSync(
     `INSERT OR REPLACE INTO rides
-      (id, userId, startedAt, endedAt, distanceMeters, durationSeconds, avgSpeedKmh, maxSpeedKmh, elevationGainMeters, caloriesKcal, pointsEarned, pointsJson, synced, error)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (id, userId, startedAt, endedAt, distanceMeters, durationSeconds, avgSpeedKmh, maxSpeedKmh, elevationGainMeters, caloriesKcal, pointsEarned, pointsJson, synced, error, verified, pointsReason)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       ride.id,
       ride.userId,
@@ -89,6 +96,8 @@ export function saveRide(ride: Ride) {
       JSON.stringify(ride.points),
       ride.synced ? 1 : 0,
       ride.error,
+      ride.verified == null ? null : ride.verified ? 1 : 0,
+      ride.pointsReason ?? null,
     ]
   );
 }

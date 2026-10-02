@@ -1,6 +1,6 @@
 import { ACHIEVEMENTS, type RiderStats } from "@/types/achievement";
 import type { Ride } from "@/types/ride";
-import { analyzeTrack, downsample, scoreRide, type TrackSample } from "@/utils/rideScore";
+import { analyzeTrack, downsample, sanitizeTrack, scoreRide, type TrackSample } from "@/utils/rideScore";
 import { verifiedRides } from "@/utils/verified";
 import { longestStreak } from "@/utils/streak";
 
@@ -9,9 +9,14 @@ export function rideTrack(ride: Ride): TrackSample[] {
   return downsample(ride.points).map((p) => [Math.round(p.lat * 1e6) / 1e6, Math.round(p.lng * 1e6) / 1e6, p.timestamp] as TrackSample);
 }
 
-/** Points the server will award (same rules, see rideScore.ts); 0 if it isn't a verifiable bike ride. */
+/** The server's verdict on a ride before caps (same rules, see rideScore.ts): points and, when 0, why. */
+export function scoreLocalRide(ride: Ride) {
+  return scoreRide(ride.distanceMeters, ride.durationSeconds, analyzeTrack(sanitizeTrack(rideTrack(ride), ride.startedAt, ride.endedAt ?? Date.now())));
+}
+
+/** Points the server will award before daily caps; 0 if it isn't a verifiable bike ride. */
 export function pointsForRide(ride: Ride): number {
-  return scoreRide(ride.distanceMeters, ride.durationSeconds, analyzeTrack(rideTrack(ride))).points;
+  return scoreLocalRide(ride).points;
 }
 
 // Level thresholds are cumulative points; extend this table to add levels

@@ -8,8 +8,13 @@ test("pointsForRide: scores the ride's own GPS track (5 pts/km + bonus)", () => 
   const t0 = 1_800_000_000_000;
   const stepM = (20 / 3.6) * 5;
   const points = Array.from({ length: Math.round(10_000 / stepM) + 1 }, (_, i) => ({ lat: 4.6 + (i * stepM) / 111194.93, lng: -74.08, altitude: null, timestamp: t0 + i * 5000, speed: null }));
-  const ride = { ...createEmptyRide("u1", "r1"), distanceMeters: 10_000, durationSeconds: 1800, points };
+  const ride = { ...createEmptyRide("u1", "r1"), startedAt: t0, endedAt: t0 + 1800_000, distanceMeters: 10_000, durationSeconds: 1800, points };
   assert.equal(pointsForRide(ride), 10 * 5 + 5);
+  // Same rule as the server: fixes outside the ride window (a stale cached fix) are dropped, not fatal.
+  const stale = { lat: 4.7, lng: -74.2, altitude: null, timestamp: t0 - 3600_000, speed: null };
+  assert.equal(pointsForRide({ ...ride, points: [stale, ...points] }), 10 * 5 + 5);
+  // A ride whose whole track is outside its window has nothing verifiable.
+  assert.equal(pointsForRide({ ...ride, startedAt: t0 + 86_400_000, endedAt: t0 + 86_400_000 + 1800_000 }), 0);
 });
 
 test("pointsForRide: a ride without a GPS track earns nothing", () => {
