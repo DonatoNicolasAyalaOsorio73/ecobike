@@ -8,6 +8,7 @@ import GlassSurface from "./GlassSurface";
 import { useTheme } from "@/theme/useTheme";
 import { spring, SPRING } from "@/theme/motion";
 import { elevation } from "@/theme/colors";
+import { LIQUID_FILL } from "@/theme/glass";
 
 const BAR_RADIUS = 27;
 const INSET = 3; // lens sits inside the capsule with concentric corners
@@ -18,12 +19,8 @@ const LENS_SPRING = spring(0.7, 0.5);
 
 // Keyboard-only focus ring. RN-web's `focused` is also true after a mouse
 // click, which left a permanent colored outline on the tapped tab.
-// Clear glass where a real backdrop blur exists; a denser fill where it
-// doesn't (Android, browsers without backdrop-filter) so labels stay legible.
-const HAS_BLUR =
-  Platform.OS === "ios" ||
-  (Platform.OS === "web" && typeof CSS !== "undefined" && (CSS.supports("backdrop-filter", "blur(1px)") || CSS.supports("-webkit-backdrop-filter", "blur(1px)")));
-const BAR_FILL = HAS_BLUR ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.86)";
+// Shared Liquid Glass material (theme/glass.ts).
+const BAR_FILL = LIQUID_FILL;
 
 if (Platform.OS === "web" && typeof document !== "undefined" && !document.getElementById("tabbar-focus")) {
   const css = document.createElement("style");

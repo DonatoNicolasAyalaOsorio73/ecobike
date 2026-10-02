@@ -13,6 +13,8 @@ import GlassButton from "@/components/ui/GlassButton";
 import ProgressRing from "@/components/ui/ProgressRing";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import Flame from "@/components/ui/Flame";
+import PointsBadge from "@/components/ui/PointsBadge";
+import { pointsToday } from "@/utils/streak";
 import BarChart from "@/components/charts/BarChart";
 import DeltaBadge from "@/components/charts/DeltaBadge";
 import MissionsCard from "@/components/MissionsCard";
@@ -127,10 +129,7 @@ export default function HomeScreen() {
               {streak} {streak === 1 ? "día" : "días"} de racha
             </Text>
           </View>
-          <View style={styles.metaItem}>
-            <Ionicons name="ribbon" size={14} color={colors.primaryDark} />
-            <AnimatedNumber value={points} style={[type.subhead, { color: colors.ink, fontWeight: "600" }]} format={(v) => `${v.toLocaleString("es-CO")} pts`} />
-          </View>
+          <PointsBadge points={points} today={pointsToday(rides)} />
         </View>
         <GlassButton label="Iniciar recorrido" icon="play" onPress={() => router.navigate("/(tabs)/map")} disabled={!userId} style={{ marginTop: 22 }} />
       </Animated.View>
@@ -233,7 +232,7 @@ function Meter({ value }: { value: number }) {
 const styles = StyleSheet.create({
   hero: { paddingTop: 8 },
   heroRow: { flexDirection: "row", alignItems: "center", gap: 20 },
-  meta: { flexDirection: "row", flexWrap: "wrap", gap: 20, marginTop: 20 },
+  meta: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 20, marginTop: 20 },
   metaItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   section: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", marginTop: 36, marginBottom: 12 },
   rewardRow: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16 },

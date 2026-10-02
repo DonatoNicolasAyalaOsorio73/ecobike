@@ -6,6 +6,8 @@ import * as Location from "expo-location";
 import Animated, { FadeIn, FadeInDown, FadeOutDown, ZoomIn, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import RideMap from "@/components/map/RideMap";
 import RideLauncher from "@/components/map/RideLauncher";
+import PointsBadge from "@/components/ui/PointsBadge";
+import { LIQUID_BORDER, LIQUID_FILL_STRONG, LIQUID_RIM } from "@/theme/glass";
 import MapSheet from "@/components/map/MapSheet";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassSurface from "@/components/ui/GlassSurface";
@@ -17,7 +19,7 @@ import PulseDot from "@/components/ui/PulseDot";
 import RideCompleteOverlay from "@/components/RideCompleteOverlay";
 import Flame from "@/components/ui/Flame";
 import { useTheme } from "@/theme/useTheme";
-import { SPRING } from "@/theme/motion";
+import { SPRING, enter } from "@/theme/motion";
 import { accents } from "@/theme/colors";
 import { useRideStore } from "@/stores/rideStore";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
@@ -224,20 +226,16 @@ export default function MapScreen() {
 
       <SafeAreaView style={styles.safe} edges={["top"]} pointerEvents="box-none">
         <View style={styles.topRow} pointerEvents="box-none">
-          <Animated.View entering={FadeIn.duration(400)}>
-            <GlassSurface radius={999} intensity={55} backgroundColor={colors.glassFillStrong} style={styles.pointsPill}>
-              <Ionicons name="ribbon-outline" size={14} color={colors.primaryDark} />
-              <AnimatedNumber
-                value={availablePoints}
-                style={{ color: colors.ink, fontWeight: "700", fontSize: 13, marginLeft: 6 }}
-                format={(v) => `${v.toLocaleString("es-CO")} pts`}
-              />
-            </GlassSurface>
+          <Animated.View entering={enter(80)}>
+            <PointsBadge points={availablePoints} today={pointsToday(rides)} />
           </Animated.View>
-          <Animated.View entering={FadeIn.duration(400).delay(80)}>
-            <GlassSurface radius={999} intensity={55} backgroundColor={colors.glassFillStrong} style={styles.pointsPill}>
-              <Flame size={16} lit={streak > 0} />
-              <Text style={{ color: streak > 0 ? accents.orange.lip : colors.inkSoft, fontWeight: "700", fontSize: 13, marginLeft: 4 }}>{streak}</Text>
+          <Animated.View entering={enter(160)}>
+            <GlassSurface radius={999} intensity={80} specular backgroundColor={LIQUID_FILL_STRONG} borderColor={LIQUID_BORDER} style={[styles.streakPill, LIQUID_RIM]}>
+              <Flame size={20} lit={streak > 0} />
+              <View>
+                <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 17, letterSpacing: -0.4 }}>{streak}</Text>
+                <Text style={{ color: colors.inkSoft, fontWeight: "600", fontSize: 10.5, marginTop: -2 }}>{streak === 1 ? "día" : "días"}</Text>
+              </View>
             </GlassSurface>
           </Animated.View>
           {riding && (
@@ -287,8 +285,9 @@ function Stat({ label, value, big, accent }: { label: string; value: string; big
 const styles = StyleSheet.create({
   screen: { flex: 1, overflow: "hidden" },
   safe: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
-  topRow: { flexDirection: "row", justifyContent: "center", gap: 8, paddingTop: 10 },
+  topRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 10, paddingTop: 10 },
   pointsPill: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 9 },
+  streakPill: { flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: 12, paddingRight: 16, paddingVertical: 6, minHeight: 46 },
   rail: { position: "absolute", right: 14, top: 120, gap: 12, alignItems: "center" },
   bottom: { position: "absolute", left: 14, right: 14 },
   // Desktop: a floating panel at the leading edge so the map stays the protagonist.

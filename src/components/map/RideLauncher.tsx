@@ -2,18 +2,31 @@ import React, { useEffect } from "react";
 import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import Animated, { FadeIn, FadeOut, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import Animated, { Easing, FadeIn, FadeOut, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import GlassSurface from "@/components/ui/GlassSurface";
 import ProgressRing from "@/components/ui/ProgressRing";
 import PressableScale from "@/components/ui/PressableScale";
 import { useTheme } from "@/theme/useTheme";
 import { elevation } from "@/theme/colors";
-import { SPRING, enter } from "@/theme/motion";
+import { SPRING, enter, spring } from "@/theme/motion";
+import { LIQUID_FILL_PROMINENT, LIQUID_RIM } from "@/theme/glass";
 import { type } from "@/theme/typography";
 import { RIDE_GOAL_OPTIONS, type RideGoal } from "@/utils/rideGoals";
 
 const LOGO = require("../../../assets/logo.png");
-const BUTTON = 76;
+const BUTTON = 84;
+// Same "bouncy" release the tab-bar lens uses (SwiftUI .bouncy).
+const LENS_SPRING = spring(0.7, 0.5);
+
+/** A soft ring that radiates out of the button every few seconds to draw the eye. */
+function Beacon() {
+  const t = useSharedValue(0);
+  useEffect(() => {
+    t.value = withDelay(1200, withRepeat(withSequence(withTiming(1, { duration: 1600, easing: Easing.out(Easing.cubic) }), withTiming(0, { duration: 0 }), withTiming(0, { duration: 2600 })), -1));
+  }, [t]);
+  const style = useAnimatedStyle(() => ({ opacity: 0.45 * (1 - t.value), transform: [{ scale: 1 + 0.55 * t.value }] }));
+  return <Animated.View pointerEvents="none" style={[styles.beacon, style]} />;
+}
 
 interface Props {
   open: boolean;
@@ -35,6 +48,16 @@ interface Props {
 export default function RideLauncher({ open, onOpenChange, onSelect, weekProgress, disabled, bottom }: Props) {
   const { colors } = useTheme();
   const turn = useSharedValue(0);
+  const press = useSharedValue(0);
+  const entry = useSharedValue(0);
+  const still = useReducedMotion();
+  // Pops in with a soft overshoot when the map opens.
+  useEffect(() => {
+    entry.value = still ? 1 : withDelay(250, withSpring(1, SPRING.bouncy));
+  }, [entry, still]);
+  const entryStyle = useAnimatedStyle(() => ({ opacity: Math.min(1, entry.value * 1.5), transform: [{ scale: 0.6 + 0.4 * entry.value }] }));
+  // iOS 26 glass controls magnify under the finger (not sink) and squash a little, like liquid.
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scaleX: 1 + 0.12 * press.value }, { scaleY: 1 + 0.06 * press.value }] }));
   useEffect(() => {
     turn.value = withSpring(open ? 1 : 0, SPRING.default);
   }, [open, turn]);
@@ -85,28 +108,34 @@ export default function RideLauncher({ open, onOpenChange, onSelect, weekProgres
       )}
 
       <View pointerEvents="box-none" style={[styles.anchor, { bottom }]}>
-        <PressableScale
-          depth={0.08}
-          disabled={disabled}
-          accessibilityLabel={open ? "Cerrar opciones de recorrido" : "Opciones de recorrido"}
-          accessibilityHint={open ? undefined : `Meta semanal al ${Math.round(Math.min(999, weekProgress * 100))}%`}
-          onPress={() => {
-            haptic();
-            onOpenChange(!open);
-          }}
-          style={[styles.buttonWrap, elevation("mid"), disabled && { opacity: 0.5 }]}
-        >
-          <ProgressRing progress={open ? 0 : Math.min(1, weekProgress)} size={BUTTON + 10} thickness={4}>
-            <View style={styles.button}>
-              <Animated.View style={[StyleSheet.absoluteFill, styles.center, logoStyle]}>
-                <Image source={LOGO} style={styles.logo} resizeMode="contain" accessibilityIgnoresInvertColors />
-              </Animated.View>
-              <Animated.View style={[StyleSheet.absoluteFill, styles.center, closeStyle]}>
-                <Ionicons name="close" size={30} color={colors.ink} />
-              </Animated.View>
-            </View>
-          </ProgressRing>
-        </PressableScale>
+        {/* Beacon: a soft ring radiates from the button every few seconds (the button itself stays still). */}
+        {!open && !still && <Beacon />}
+        <Animated.View style={[styles.buttonWrap, elevation("mid"), entryStyle, pressStyle, disabled && { opacity: 0.5 }]}>
+          <Pressable
+            disabled={disabled}
+            accessibilityRole="button"
+            accessibilityLabel={open ? "Cerrar opciones de recorrido" : "Opciones de recorrido"}
+            accessibilityHint={open ? undefined : `Meta semanal al ${Math.round(Math.min(999, weekProgress * 100))}%`}
+            onPressIn={() => (press.value = withSpring(1, SPRING.press))}
+            onPressOut={() => (press.value = withSpring(0, LENS_SPRING))}
+            onPress={() => {
+              haptic();
+              onOpenChange(!open);
+            }}
+          >
+            <ProgressRing progress={open ? 0 : Math.min(1, weekProgress)} size={BUTTON + 12} thickness={5} trackColor="rgba(255,255,255,0.92)">
+              {/* Liquid Glass lens (prominent variant: frosted so the logo always reads over the map). */}
+              <GlassSurface radius={BUTTON / 2} intensity={100} specular backgroundColor={LIQUID_FILL_PROMINENT} borderColor="rgba(255,255,255,0.95)" style={[styles.button, LIQUID_RIM]}>
+                <Animated.View style={[StyleSheet.absoluteFill, styles.center, logoStyle]}>
+                  <Image source={LOGO} style={styles.logo} resizeMode="contain" accessibilityIgnoresInvertColors />
+                </Animated.View>
+                <Animated.View style={[StyleSheet.absoluteFill, styles.center, closeStyle]}>
+                  <Ionicons name="close" size={30} color={colors.ink} />
+                </Animated.View>
+              </GlassSurface>
+            </ProgressRing>
+          </Pressable>
+        </Animated.View>
       </View>
     </>
   );
@@ -114,8 +143,9 @@ export default function RideLauncher({ open, onOpenChange, onSelect, weekProgres
 
 const styles = StyleSheet.create({
   anchor: { position: "absolute", left: 0, right: 0, alignItems: "center" },
-  buttonWrap: { borderRadius: (BUTTON + 10) / 2 },
-  button: { width: BUTTON, height: BUTTON, borderRadius: BUTTON / 2, backgroundColor: "#FFFFFF", overflow: "hidden" },
+  buttonWrap: { borderRadius: (BUTTON + 12) / 2 },
+  button: { width: BUTTON, height: BUTTON },
+  beacon: { position: "absolute", bottom: 0, width: BUTTON + 12, height: BUTTON + 12, borderRadius: (BUTTON + 12) / 2, borderWidth: 2, borderColor: "rgba(173,241,75,0.9)" },
   center: { alignItems: "center", justifyContent: "center" },
   // logo.png carries ~15% transparent padding, so it's drawn larger than the circle's inner area.
   logo: { width: BUTTON * 0.95, height: BUTTON * 0.95 },

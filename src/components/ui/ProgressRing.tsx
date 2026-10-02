@@ -10,13 +10,15 @@ interface Props {
   size?: number;
   thickness?: number;
   children?: React.ReactNode;
+  /** Unfilled track color (default: hairline divider). */
+  trackColor?: string;
 }
 
 /**
  * Apple Fitness-style goal ring. The arc sweeps to its new value instead of
  * jumping, which is what makes progress feel earned rather than reported.
  */
-export default function ProgressRing({ progress, size = 120, thickness = 12, children }: Props) {
+export default function ProgressRing({ progress, size = 120, thickness = 12, children, trackColor }: Props) {
   const { colors } = useTheme();
   const animated = useTweenedValue(Math.min(1, Math.max(0, progress)), 0.8);
 
@@ -32,7 +34,7 @@ export default function ProgressRing({ progress, size = 120, thickness = 12, chi
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={colors.divider}
+          stroke={trackColor ?? colors.divider}
           strokeWidth={thickness}
           fill="none"
         />
