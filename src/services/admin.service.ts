@@ -68,7 +68,7 @@ export const deleteStore = (id: string) => api("stores", "DELETE", { id });
 export const searchUsers = (q = "", after?: string) =>
   api<{ users: AdminUserSummary[]; next: string | null }>(`users?q=${encodeURIComponent(q)}${after ? `&after=${encodeURIComponent(after)}` : ""}`, "GET");
 export const getUser = (id: string) => api<{ user: AdminUserDetail; logs: AdminLog[] }>(`users?id=${encodeURIComponent(id)}`, "GET");
-export const updateUser = (patch: { id: string; role?: Role; storeId?: string; points?: number; reason?: string; disabled?: boolean; nombre?: string; apellido?: string }) =>
+export const updateUser = (patch: { id: string; role?: Role; storeId?: string; points?: number; reason?: string; expectedPoints?: number; disabled?: boolean; nombre?: string; apellido?: string }) =>
   api<{ user: AdminUserDetail; logs: AdminLog[] }>("users", "PUT", patch);
 export const deleteUser = (id: string, reason: string) => api("users", "DELETE", { id, reason });
 

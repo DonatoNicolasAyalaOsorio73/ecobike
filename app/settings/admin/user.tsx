@@ -169,7 +169,7 @@ export default function UserAdmin() {
         {pointsChanged && (
           <Animated.View entering={FadeIn}>
             <GlassInput placeholder="Motivo del ajuste (queda registrado)" value={reason} onChangeText={setReason} maxLength={300} />
-            <GlassButton label="Ajustar puntos" onPress={() => run("points", { id: user.uid, points: Number(points), reason }, "Puntos ajustados.")} loading={busy === "points"} disabled={!points || reason.trim().length < 5} />
+            <GlassButton label="Ajustar puntos" onPress={() => run("points", { id: user.uid, points: Number(points), reason, expectedPoints: user.points }, "Puntos ajustados.")} loading={busy === "points"} disabled={!points || reason.trim().length < 5} />
           </Animated.View>
         )}
       </GlassCard>

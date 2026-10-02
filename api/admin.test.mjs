@@ -15,6 +15,10 @@ test("users: points need an integer in range and a written reason", () => {
   err(() => parseUserUpdate({ id: ID, points: -1, reason: "motivo largo" }), 400, /entero/);
   err(() => parseUserUpdate({ id: ID, points: 1.5, reason: "motivo largo" }), 400, /entero/);
   err(() => parseUserUpdate({ id: ID, points: 10_000_001, reason: "motivo largo" }), 400, /entero/);
+  // The balance the admin saw travels along so a concurrent ride isn't overwritten.
+  assert.equal(parseUserUpdate({ id: ID, points: 5, reason: "motivo largo", expectedPoints: 820 }).expectedPoints, 820);
+  err(() => parseUserUpdate({ id: ID, points: 5, reason: "motivo largo", expectedPoints: "820" }), 400, /referencia/);
+  err(() => parseUserUpdate({ id: ID, expectedPoints: 820 }), 400, /cambios/);
 });
 
 test("users: roles come from a fixed list and partners need a store", () => {

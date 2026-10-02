@@ -31,6 +31,11 @@ function parseUserUpdate(input) {
     if (reason.length < 5) throw httpError(400, "Escribe el motivo del ajuste de puntos (mínimo 5 caracteres).");
     out.points = n;
     out.reason = reason.slice(0, 300);
+    // The balance the admin was looking at: if a ride synced meanwhile, refuse instead of overwriting it.
+    if (input.expectedPoints !== undefined) {
+      if (!Number.isInteger(input.expectedPoints)) throw httpError(400, "Saldo de referencia inválido.");
+      out.expectedPoints = input.expectedPoints;
+    }
   }
   if (input.disabled !== undefined) {
     if (typeof input.disabled !== "boolean") throw httpError(400, "Estado de cuenta inválido.");
@@ -42,7 +47,7 @@ function parseUserUpdate(input) {
       out[k] = input[k].trim();
     }
   }
-  if (Object.keys(out).filter((k) => k !== "storeId" && k !== "reason").length === 0) throw httpError(400, "No hay cambios para guardar.");
+  if (Object.keys(out).filter((k) => !["storeId", "reason", "expectedPoints"].includes(k)).length === 0) throw httpError(400, "No hay cambios para guardar.");
   return out;
 }
 
@@ -94,7 +99,8 @@ async function detail(db, uid) {
     ref.collection("rides").count().get(),
     ref.collection("rides").where("pointsEarned", ">", 0).count().get(),
     ref.collection("codigos_canjeados").count().get(),
-    db.collection("admin_logs").where("targetId", "==", uid).orderBy("at", "desc").limit(10).get(),
+    // Needs the admin_logs index; without it the detail still loads, just without history.
+    db.collection("admin_logs").where("targetId", "==", uid).orderBy("at", "desc").limit(10).get().catch(() => ({ docs: [] })),
   ]);
   if (!d.exists) throw httpError(404, "Usuario no encontrado.");
   const auth = await admin().auth().getUser(uid).catch(() => null);
@@ -140,40 +146,59 @@ module.exports = handler(["GET", "PUT", "DELETE"], async (req) => {
   }
 
   const u = parseUserUpdate(input);
+  if (u.id === me.uid && ((u.role && u.role !== "admin") || u.disabled === true)) throw httpError(400, "No puedes quitarte el rol de admin ni suspender tu propia cuenta.");
+  if (u.role === "partner" && !(await db.collection("tiendas").doc(u.storeId).get()).exists) throw httpError(404, "La tienda no existe.");
   const ref = db.collection("usuarios").doc(u.id);
   const pubRef = db.collection("usuarios_public").doc(u.id);
-  const before = (await ref.get()).data();
-  if (!before) throw httpError(404, "Usuario no encontrado.");
-  if (u.id === me.uid && ((u.role && u.role !== "admin") || u.disabled === true)) throw httpError(400, "No puedes quitarte el rol de admin ni suspender tu propia cuenta.");
 
-  const update = { updatedAt: FieldValue.serverTimestamp() };
-  const pub = {};
-  const changed = {};
+  // Firestore changes in one transaction so a ride synced at the same time can't be lost.
+  const changed = await db.runTransaction(async (tx) => {
+    const before = (await tx.get(ref)).data();
+    if (!before) throw httpError(404, "Usuario no encontrado.");
+    const update = { updatedAt: FieldValue.serverTimestamp() };
+    const pub = {};
+    const changed = {};
+    if (u.role) {
+      Object.assign(update, { role: u.role, isAdmin: u.role === "admin", storeId: u.role === "partner" ? u.storeId : FieldValue.delete() });
+      changed.role = { from: before.role ?? "user", to: u.role, storeId: u.storeId ?? null };
+    }
+    if (u.points !== undefined) {
+      const current = before.puntosAcumulados ?? 0;
+      if (u.expectedPoints !== undefined && u.expectedPoints !== current) throw httpError(409, `El saldo cambió a ${current} pts mientras editabas. Revisa y vuelve a intentarlo.`);
+      update.puntosAcumulados = u.points;
+      pub.puntosAcumulados = u.points;
+      changed.points = { from: current, to: u.points, reason: u.reason };
+    }
+    if (u.disabled !== undefined) {
+      update.cuentaActiva = !u.disabled;
+      changed.disabled = { to: u.disabled };
+    }
+    for (const k of ["nombre", "apellido"]) {
+      if (u[k] !== undefined) {
+        update[k] = u[k];
+        pub[k] = u[k];
+        changed[k] = { from: before[k] ?? "", to: u[k] };
+      }
+    }
+    tx.update(ref, update);
+    if (Object.keys(pub).length) tx.set(pubRef, pub, { merge: true });
+    return changed;
+  });
+
+  // Firebase Auth side (not transactional): an old `admin` custom claim would
+  // otherwise keep a demoted user admin; suspension signs them out everywhere.
   if (u.role) {
-    Object.assign(update, { role: u.role, isAdmin: u.role === "admin", storeId: u.role === "partner" ? u.storeId : FieldValue.delete() });
-    if (u.role === "partner" && !(await db.collection("tiendas").doc(u.storeId).get()).exists) throw httpError(404, "La tienda no existe.");
-    changed.role = { from: before.role ?? "user", to: u.role, storeId: u.storeId ?? null };
-  }
-  if (u.points !== undefined) {
-    update.puntosAcumulados = u.points;
-    pub.puntosAcumulados = u.points;
-    changed.points = { from: before.puntosAcumulados ?? 0, to: u.points, reason: u.reason };
+    const claims = (await admin().auth().getUser(u.id).catch(() => null))?.customClaims ?? {};
+    if ("admin" in claims && claims.admin !== (u.role === "admin")) {
+      await admin().auth().setCustomUserClaims(u.id, { ...claims, admin: u.role === "admin" });
+      // Tokens already issued still carry the old claim: revoke so it can't be used for the next hour.
+      if (u.role !== "admin") await admin().auth().revokeRefreshTokens(u.id);
+    }
   }
   if (u.disabled !== undefined) {
     await admin().auth().updateUser(u.id, { disabled: u.disabled });
-    if (u.disabled) await admin().auth().revokeRefreshTokens(u.id); // sign out everywhere now
-    update.cuentaActiva = !u.disabled;
-    changed.disabled = { to: u.disabled };
+    if (u.disabled) await admin().auth().revokeRefreshTokens(u.id);
   }
-  for (const k of ["nombre", "apellido"]) {
-    if (u[k] !== undefined) {
-      update[k] = u[k];
-      pub[k] = u[k];
-      changed[k] = { from: before[k] ?? "", to: u[k] };
-    }
-  }
-  await ref.update(update);
-  if (Object.keys(pub).length) await pubRef.set(pub, { merge: true });
   await logAdmin(me.uid, "user.update", "user", u.id, changed);
   return detail(db, u.id);
 });
