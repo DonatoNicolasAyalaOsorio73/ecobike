@@ -24,6 +24,12 @@ export interface RideMapProps {
   recenterKey?: number;
   /** Frame the whole route instead of following `center` (ride detail). */
   fitRoute?: boolean;
+  /** Rider heading in degrees (0 = north). Web draws an arrow; native uses the system location marker, which already shows heading. */
+  heading?: number | null;
+  /** A planned route (Eco ruta) drawn under the ride trace. */
+  plannedRoute?: { lat: number; lng: number }[];
+  /** Frame the planned route (Eco ruta preview) instead of following `center`. */
+  fitPlanned?: boolean;
 }
 
 /**
@@ -31,19 +37,24 @@ export interface RideMapProps {
  * Google Maps have genuinely different feature sets) — this wrapper picks
  * the native one per platform and exposes only what the app uses.
  */
-export default function RideMap({ route, center, height = 260, fill, recenterKey = 0, fitRoute }: RideMapProps) {
+export default function RideMap({ route, center, height = 260, fill, recenterKey = 0, fitRoute, plannedRoute, fitPlanned }: RideMapProps) {
   const { isDark } = useTheme();
   const coordinates = route.map((p) => ({ latitude: p.lat, longitude: p.lng }));
   // A new object identity (keyed by recenterKey) makes the camera move again.
   const cameraPosition = React.useMemo(() => {
-    const fit = fitRoute ? routeCamera(route) : null;
+    const fit = fitRoute ? routeCamera(route) : fitPlanned && plannedRoute ? routeCamera(plannedRoute) : null;
     if (fit) return { coordinates: { latitude: fit.center.lat, longitude: fit.center.lng }, zoom: fit.zoom };
     // Street level: the rider wants to see the road around them, not the city.
     return center ? { coordinates: { latitude: center.lat, longitude: center.lng }, zoom: 17.5 } : undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [center?.lat, center?.lng, recenterKey, fitRoute, route.length]);
+  }, [center?.lat, center?.lng, recenterKey, fitRoute, route.length, fitPlanned, plannedRoute]);
   // Ink casing under the lime line (Apple Maps style) keeps the light route legible.
-  const polylines = coordinates.length > 1 ? [{ coordinates, color: "rgba(28,36,16,0.35)", width: 9 }, { coordinates, color: "#7BF510", width: 6 }] : [];
+  const planned = (plannedRoute ?? []).map((p) => ({ latitude: p.lat, longitude: p.lng }));
+  const polylines = [
+    // Planned Eco ruta: ink casing + white core (reads as "the way to go"), under the ride trace.
+    ...(planned.length > 1 ? [{ coordinates: planned, color: "rgba(28,36,16,0.55)", width: 8 }, { coordinates: planned, color: "#FFFFFF", width: 4 }] : []),
+    ...(coordinates.length > 1 ? [{ coordinates, color: "rgba(28,36,16,0.35)", width: 9 }, { coordinates, color: "#7BF510", width: 6 }] : []),
+  ];
   const wrap = fill ? StyleSheet.absoluteFill : [styles.card, { height }];
 
   return (

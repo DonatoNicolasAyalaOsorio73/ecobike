@@ -76,3 +76,14 @@ export function kmhToDisplay(kmh: number, units: "metric" | "imperial") {
   }
   return { value: kmh, unit: "km/h" };
 }
+
+/** Initial bearing from a to b in degrees (0 = north, clockwise). */
+export function bearingDegrees(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const φ1 = toRad(a.lat);
+  const φ2 = toRad(b.lat);
+  const Δλ = toRad(b.lng - a.lng);
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}

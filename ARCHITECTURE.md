@@ -87,6 +87,13 @@ semantics); the former iPhone-frame mock-up on desktop was removed so the web
 is a first-class layout, not a phone imitation. Tabs cross-fade (`animation:
 "fade"`); stack screens keep the native push.
 
+**Eco ruta uses free OSM services.** `src/services/routing.ts`: Photon
+(komoot) for place search and the FOSSGIS Valhalla server for bicycle
+routing (`avoid_bad_surfaces` for unpaved roads, `use_roads` for quieter
+streets, alternates). Both are keyless community servers with fair-use
+limits: move to self-hosted Valhalla/Photon or a paid plan before heavy use.
+The route geometry is decoded client-side (`utils/polyline.ts`, tested).
+
 **Motion over color.** Lime marks state only; shadows are neutral
 (`elevation()`). Depth and delight come from motion: one entrance curve for
 the whole app (`enter()` in `theme/motion.ts`, Material 3 emphasized

@@ -48,3 +48,12 @@ test("avgSpeedKmh: zero duration never divides by zero", () => {
 test("avgSpeedKmh: 10km in 30 minutes is 20km/h", () => {
   assert.equal(avgSpeedKmh(10_000, 1800), 20);
 });
+
+test("bearingDegrees: north, east, south, west", async () => {
+  const { bearingDegrees } = await import("../geo.ts");
+  const o = { lat: 4.6, lng: -74.08 };
+  assert.equal(Math.round(bearingDegrees(o, { lat: 4.61, lng: -74.08 })), 0);
+  assert.equal(Math.round(bearingDegrees(o, { lat: 4.6, lng: -74.07 })), 90);
+  assert.equal(Math.round(bearingDegrees(o, { lat: 4.59, lng: -74.08 })), 180);
+  assert.equal(Math.round(bearingDegrees(o, { lat: 4.6, lng: -74.09 })), 270);
+});

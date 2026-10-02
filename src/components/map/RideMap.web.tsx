@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
-import { MapContainer, TileLayer, Polyline, CircleMarker, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Polyline, Marker, useMap } from "react-leaflet";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { RideMapProps } from "./RideMap.native";
 import { useTheme } from "@/theme/useTheme";
@@ -8,6 +9,17 @@ import { routeCamera } from "@/utils/mapCamera";
 
 const BOGOTA = { lat: 4.711, lng: -74.0721 };
 // Integer zooms: Leaflet snaps fractional ones (17.5 → 18, where OSM floods the map with shop icons).
+/** Navigation arrow rotated to the heading (Leaflet divIcon: plain HTML, no image asset). */
+function arrowIcon(deg: number) {
+  const html =
+    `<div style="width:44px;height:44px;transform:rotate(${Math.round(deg)}deg);transition:transform .3s ease">` +
+    `<svg viewBox="0 0 44 44" width="44" height="44">` +
+    `<circle cx="22" cy="22" r="20" fill="rgba(28,36,16,0.12)"/>` +
+    `<path d="M22 8 L33 34 L22 28 L11 34 Z" fill="#1C2410" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round"/>` +
+    `</svg></div>`;
+  return L.divIcon({ html, className: "", iconSize: [44, 44], iconAnchor: [22, 22] });
+}
+
 const STREET_ZOOM = 17;
 const FOLLOW_ZOOM = 16;
 
@@ -26,12 +38,14 @@ function injectCss() {
   cssInjected = true;
 }
 
-function Recenter({ center, recenterKey, fitTo }: { center: { lat: number; lng: number } | null; recenterKey: number; fitTo: [[number, number], [number, number]] | null }) {
+function Recenter({ center, recenterKey, fitTo, roomForCard }: { center: { lat: number; lng: number } | null; recenterKey: number; fitTo: [[number, number], [number, number]] | null; roomForCard?: boolean }) {
   const map = useMap();
   const lastKey = React.useRef(recenterKey);
   useEffect(() => {
     if (fitTo) {
-      map.fitBounds(fitTo, { padding: [28, 28] });
+      // Full-screen preview: leave room for the top controls and the card at the bottom.
+      if (roomForCard) map.fitBounds(fitTo, { paddingTopLeft: [28, 90], paddingBottomRight: [28, 320] });
+      else map.fitBounds(fitTo, { padding: [28, 28] });
       return;
     }
     if (!center) return;
@@ -45,11 +59,12 @@ function Recenter({ center, recenterKey, fitTo }: { center: { lat: number; lng: 
 }
 
 /** OpenStreetMap via Leaflet: no API key, works in any browser. */
-export default function RideMap({ route, center, height = 260, fill, recenterKey = 0, fitRoute }: RideMapProps) {
+export default function RideMap({ route, center, height = 260, fill, recenterKey = 0, fitRoute, heading, plannedRoute, fitPlanned }: RideMapProps) {
   const { isDark } = useTheme();
   injectCss();
   const initialCenter = center ?? route[0] ?? BOGOTA;
   const positions = route.map((p) => [p.lat, p.lng] as [number, number]);
+  const plannedPositions = (plannedRoute ?? []).map((p) => [p.lat, p.lng] as [number, number]);
 
   return (
     // zIndex 0 gives the map its own stacking context, so Leaflet's panes
@@ -70,14 +85,14 @@ export default function RideMap({ route, center, height = 260, fill, recenterKey
           className="ecobike-clean"
         />
         {/* Lime route with an ink casing (Apple Maps style) so a light line stays legible on any tile. */}
+        {/* Planned Eco ruta: ink casing + white core, under the ride trace. */}
+        {plannedPositions.length > 1 && <Polyline positions={plannedPositions} pathOptions={{ color: "#1C2410", weight: 8, opacity: 0.55, lineCap: "round", lineJoin: "round" }} />}
+        {plannedPositions.length > 1 && <Polyline positions={plannedPositions} pathOptions={{ color: "#FFFFFF", weight: 4, lineCap: "round", lineJoin: "round" }} />}
         {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: "#1C2410", weight: 9, opacity: 0.35, lineCap: "round" }} />}
         {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: "#7BF510", weight: 6, lineCap: "round" }} />}
-        {/* You-are-here: soft accuracy halo + ink dot with a white ring (readable on any street color). */}
-        {center && <CircleMarker center={[center.lat, center.lng]} radius={22} pathOptions={{ stroke: false, fillColor: "#1C2410", fillOpacity: 0.1 }} />}
-        {center && (
-          <CircleMarker center={[center.lat, center.lng]} radius={8} pathOptions={{ color: "#fff", weight: 3, fillColor: "#1C2410", fillOpacity: 1 }} />
-        )}
-        <Recenter center={center} recenterKey={recenterKey} fitTo={fitRoute ? routeCamera(route)?.bounds ?? null : null} />
+        {/* You-are-here: a heading arrow (ink with a white outline over a soft halo) so you can tell which way you face. */}
+        {center && <Marker position={[center.lat, center.lng]} icon={arrowIcon(heading ?? 0)} interactive={false} keyboard={false} zIndexOffset={1000} />}
+        <Recenter center={center} recenterKey={recenterKey} fitTo={fitRoute ? routeCamera(route)?.bounds ?? null : fitPlanned && plannedRoute ? routeCamera(plannedRoute)?.bounds ?? null : null} roomForCard={!fitRoute && !!fitPlanned} />
       </MapContainer>
     </View>
   );

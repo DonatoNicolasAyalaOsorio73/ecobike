@@ -6,14 +6,24 @@ import Svg, { Circle } from "react-native-svg";
 import Animated, { Easing, FadeIn, FadeOut, useAnimatedProps, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import GlassSurface from "@/components/ui/GlassSurface";
 import { LinearGradient } from "expo-linear-gradient";
-import { GlintRing } from "@/components/ui/Glint";
 import PressableScale from "@/components/ui/PressableScale";
 import { useTheme } from "@/theme/useTheme";
 import { elevation } from "@/theme/colors";
-import { SPRING, enter, spring } from "@/theme/motion";
+import { EASE_EMPHASIZED_DECEL, SPRING, enter } from "@/theme/motion";
 import { LIQUID_FILL } from "@/theme/glass";
 import { type } from "@/theme/typography";
-import { RIDE_GOAL_OPTIONS, type RideGoal } from "@/utils/rideGoals";
+import type { RideGoal } from "@/utils/rideGoals";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import EcoRoutePanel from "./EcoRoutePanel";
+import TrainingPanel from "./TrainingPanel";
+import type { Place, RoutePrefs } from "@/services/routing";
+
+type View3 = "menu" | "eco" | "training";
+const MODES: { id: View3 | "free"; label: string; subtitle: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { id: "free", label: "Recorrido libre", subtitle: "Sin meta, pedalea a tu ritmo", icon: "bicycle" },
+  { id: "eco", label: "Eco ruta", subtitle: "Busca un lugar y te llevamos por la ruta más verde", icon: "leaf" },
+  { id: "training", label: "Entrenamiento", subtitle: "Tu propia meta en kilómetros o tiempo", icon: "stopwatch-outline" },
+];
 
 // Brand mark on its own #7BF510 field (square art; fits the circle with margin).
 const LOGO = require("../../../assets/logo-mark.png");
@@ -24,8 +34,6 @@ const TRACE_SIZE = BUTTON + 10;
 const TRACE_R = TRACE_SIZE / 2 - 2;
 const TRACE_C = 2 * Math.PI * TRACE_R;
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-// Same "bouncy" release the tab-bar lens uses (SwiftUI .bouncy).
-const LENS_SPRING = spring(0.7, 0.5);
 
 interface Props {
   open: boolean;
@@ -36,29 +44,39 @@ interface Props {
   disabled?: boolean;
   /** Distance from the bottom of the map (clears the tab bar). */
   bottom: number;
+  /** Rider position (origin for Eco ruta). */
+  near: { lat: number; lng: number } | null;
+  /** Eco ruta: a destination was picked; the map shows the route preview. */
+  onEcoPick: (place: Place, prefs: RoutePrefs) => void;
 }
 
 /**
  * The map's single entry point: a round EcoBike button. Tap it and the map
- * frosts over while the ride modes rise out of the button (closest first);
- * tap a mode to start, tap outside or the ✕ to close. The thin ring around
- * the button is this week's goal progress (lime = progress, functional).
+ * frosts over while the three ride modes rise out of the button: Libre
+ * (starts now), Eco ruta (search a place → greener bike route) and
+ * Entrenamiento (your own km/time goal). Tap outside or the ✕ to close.
  */
-export default function RideLauncher({ open, onOpenChange, onSelect, weekProgress, disabled, bottom }: Props) {
+export default function RideLauncher({ open, onOpenChange, onSelect, weekProgress, disabled, bottom, near, onEcoPick }: Props) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const [view, setView] = React.useState<View3>("menu");
+  const [prefs, setPrefs] = React.useState<RoutePrefs>({ avoidUnpaved: true, greener: true });
+  // Every time the menu opens it starts at the three modes.
+  useEffect(() => {
+    if (open) setView("menu");
+  }, [open]);
   const turn = useSharedValue(0);
   const press = useSharedValue(0);
   const entry = useSharedValue(0);
   const still = useReducedMotion();
   // Pops in with a soft overshoot when the map opens.
   useEffect(() => {
-    entry.value = still ? 1 : withDelay(250, withSpring(1, SPRING.bouncy));
+    entry.value = still ? 1 : withDelay(200, withTiming(1, { duration: 380, easing: EASE_EMPHASIZED_DECEL }));
   }, [entry, still]);
-  const entryStyle = useAnimatedStyle(() => ({ opacity: Math.min(1, entry.value * 1.5), transform: [{ scale: 0.6 + 0.4 * entry.value }] }));
+  // Minimal: a quiet fade-in with a hint of scale, a gentle press-in, and one line of light on tap.
+  const entryStyle = useAnimatedStyle(() => ({ opacity: entry.value, transform: [{ scale: 0.94 + 0.06 * entry.value }] }));
   // iOS 26 glass controls magnify under the finger (not sink) and squash a little, like liquid.
-  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scaleX: 1 + 0.12 * press.value }, { scaleY: 1 + 0.06 * press.value }] }));
-  const ripple = useSharedValue(1);
-  const rippleStyle = useAnimatedStyle(() => ({ opacity: 0.85 * (1 - ripple.value), transform: [{ scale: 1 + 0.6 * ripple.value }] }));
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 - 0.04 * press.value }] }));
   // Tap: a white line of light runs once around the circle until it closes, then fades.
   const trace = useSharedValue(0);
   const traceOpacity = useSharedValue(0);
@@ -80,43 +98,59 @@ export default function RideLauncher({ open, onOpenChange, onSelect, weekProgres
           <Pressable accessibilityRole="button" accessibilityLabel="Cerrar opciones" onPress={() => onOpenChange(false)} style={StyleSheet.absoluteFill}>
             <GlassSurface radius={0} intensity={60} specular={false} borderColor="transparent" backgroundColor="rgba(246,248,244,0.55)" style={StyleSheet.absoluteFill} />
           </Pressable>
-          <View pointerEvents="box-none" style={[styles.menu, { bottom: bottom + BUTTON + 22 }]}>
-            <Animated.Text entering={enter()} style={[type.title2, styles.menuTitle, { color: colors.ink }]}>
-              ¿Cómo quieres pedalear?
-            </Animated.Text>
-            {/* Rendered bottom-up so the option nearest the button arrives first. */}
-            {RIDE_GOAL_OPTIONS.map((o, i) => (
-              <Animated.View key={o.id} entering={enter((RIDE_GOAL_OPTIONS.length - 1 - i) * 35)}>
-                <PressableScale
-                  depth={0.04}
-                  accessibilityLabel={`${o.label}. ${o.subtitle}`}
-                  onPress={() => {
-                    haptic();
-                    onSelect(o.goal);
-                  }}
-                >
-                  <GlassSurface radius={18} intensity={50} backgroundColor="rgba(255,255,255,0.82)" style={styles.option}>
-                    <View style={[styles.optionIcon, { backgroundColor: o.goal ? colors.chipFill : colors.primary }]}>
-                      <Ionicons name={o.icon as any} size={18} color={colors.ink} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[type.callout, { color: colors.ink, fontWeight: "600" }]}>{o.label}</Text>
-                      <Text style={[type.caption, { color: colors.inkSoft, fontWeight: "400" }]} numberOfLines={1}>
-                        {o.subtitle}
-                      </Text>
-                    </View>
-                  </GlassSurface>
-                </PressableScale>
-              </Animated.View>
-            ))}
-          </View>
+
+          {view === "menu" && (
+            <View pointerEvents="box-none" style={[styles.menu, { bottom: bottom + BUTTON + 22 }]}>
+              <Animated.Text entering={enter()} style={[type.title2, styles.menuTitle, { color: colors.ink }]}>
+                ¿Cómo quieres pedalear?
+              </Animated.Text>
+              {/* Rendered bottom-up so the option nearest the button arrives first. */}
+              {MODES.map((m, i) => (
+                <Animated.View key={m.id} entering={enter((MODES.length - 1 - i) * 40)}>
+                  <PressableScale
+                    depth={0.04}
+                    accessibilityLabel={`${m.label}. ${m.subtitle}`}
+                    onPress={() => {
+                      haptic();
+                      if (m.id === "free") onSelect(null);
+                      else setView(m.id);
+                    }}
+                  >
+                    <GlassSurface radius={18} intensity={50} backgroundColor="rgba(255,255,255,0.82)" style={styles.option}>
+                      <View style={[styles.optionIcon, { backgroundColor: m.id === "free" ? colors.primary : colors.chipFill }]}>
+                        <Ionicons name={m.icon} size={18} color={colors.ink} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[type.callout, { color: colors.ink, fontWeight: "600" }]}>{m.label}</Text>
+                        <Text style={[type.caption, { color: colors.inkSoft, fontWeight: "400" }]} numberOfLines={2}>
+                          {m.subtitle}
+                        </Text>
+                      </View>
+                      {m.id !== "free" && <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />}
+                    </GlassSurface>
+                  </PressableScale>
+                </Animated.View>
+              ))}
+            </View>
+          )}
+
+          {/* Eco ruta sits at the top (search field above the keyboard, like Maps). */}
+          {view === "eco" && (
+            <View pointerEvents="box-none" style={[styles.panel, { top: insets.top + 12 }]}>
+              <EcoRoutePanel near={near} prefs={prefs} onPrefsChange={setPrefs} onBack={() => setView("menu")} onPick={(place) => onEcoPick(place, prefs)} />
+            </View>
+          )}
+
+          {view === "training" && (
+            <View pointerEvents="box-none" style={[styles.panel, { bottom: bottom + BUTTON + 22 }]}>
+              <TrainingPanel onBack={() => setView("menu")} onStart={(goal) => onSelect(goal)} />
+            </View>
+          )}
         </Animated.View>
       )}
 
       <View pointerEvents="box-none" style={[styles.anchor, { bottom }]}>
         {/* Beacon: a soft ring radiates from the button every few seconds (the button itself stays still). */}
-        {/* Release ripple: one green ring that spreads out of the button when you tap it (never on its own). */}
-        <Animated.View pointerEvents="none" style={[styles.ripple, rippleStyle]} />
         <Animated.View pointerEvents="none" style={[styles.trace, TRACE_GLOW, traceStyle]}>
           <Svg width={TRACE_SIZE} height={TRACE_SIZE} style={[{ transform: [{ rotate: "-90deg" }] }]}>
             <AnimatedCircle
@@ -146,10 +180,9 @@ export default function RideLauncher({ open, onOpenChange, onSelect, weekProgres
               }
             }}
             onPressOut={() => {
-              press.value = withSpring(0, LENS_SPRING);
+              press.value = withSpring(0, SPRING.default);
               // Let the line finish closing the circle, then fade it (quick taps still see the full loop).
               traceOpacity.value = withDelay(420, withTiming(0, { duration: 320 }));
-              if (!still) ripple.value = withSequence(withTiming(0, { duration: 0 }), withTiming(1, { duration: 650, easing: Easing.out(Easing.cubic) }));
             }}
             onPress={() => {
               haptic();
@@ -162,9 +195,7 @@ export default function RideLauncher({ open, onOpenChange, onSelect, weekProgres
                   <Image source={LOGO} style={styles.logo} resizeMode="contain" accessibilityIgnoresInvertColors />
                   {/* Specular reflection on top of the green: tinted glass, not a flat sticker. */}
                   <LinearGradient pointerEvents="none" colors={["rgba(255,255,255,0.55)", "rgba(255,255,255,0.08)", "rgba(255,255,255,0)"]} locations={[0, 0.45, 0.6]} start={{ x: 0.2, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
-                  {/* Light travelling around the glass edge. */}
-                  {!open && <GlintRing size={DISC} width={1.5} />}
-                </Animated.View>
+                                  </Animated.View>
                 <Animated.View style={[StyleSheet.absoluteFill, styles.center, closeStyle]}>
                   <Ionicons name="close" size={30} color={colors.ink} />
                 </Animated.View>
@@ -183,11 +214,11 @@ const DISC_VOLUME = Platform.OS === "web" ? ({ boxShadow: "inset 0 -3px 8px rgba
 const TRACE_GLOW = Platform.OS === "web" ? ({ filter: "drop-shadow(0 0 4px rgba(255,255,255,0.95)) drop-shadow(0 0 2px rgba(123,245,16,0.6))" } as object) : null;
 
 const styles = StyleSheet.create({
+  panel: { position: "absolute", left: 20, right: 20, maxWidth: 420, alignSelf: "center", marginHorizontal: "auto" } as any,
   anchor: { position: "absolute", left: 0, right: 0, alignItems: "center" },
   buttonWrap: { borderRadius: BUTTON / 2 },
   button: { width: BUTTON, height: BUTTON },
   trace: { position: "absolute", bottom: -(TRACE_SIZE - BUTTON) / 2, width: TRACE_SIZE, height: TRACE_SIZE, zIndex: 2 },
-  ripple: { position: "absolute", bottom: 0, width: BUTTON, height: BUTTON, borderRadius: BUTTON / 2, borderWidth: 2.5, borderColor: "rgba(123,245,16,0.95)" },
   center: { alignItems: "center", justifyContent: "center" },
   // Green disc inset in the glass lens; the square art is drawn a bit smaller so nothing touches the edge.
   disc: { width: DISC, height: DISC, borderRadius: DISC / 2, backgroundColor: "#7BF510", alignItems: "center", justifyContent: "center", overflow: "hidden" },

@@ -9,7 +9,7 @@ import AnimatedNumber from "./AnimatedNumber";
 import { useTheme } from "@/theme/useTheme";
 import { elevation } from "@/theme/colors";
 import { SPRING } from "@/theme/motion";
-import { LIQUID_FILL_STRONG, LIQUID_RIM } from "@/theme/glass";
+import { LIQUID_BORDER, LIQUID_FILL, LIQUID_RIM } from "@/theme/glass";
 import { ShineSweep } from "./Glint";
 import { DAILY_POINTS_CAP } from "@/utils/rideScore";
 
@@ -40,7 +40,7 @@ export default function PointsBadge({ points, today }: Props) {
     <Animated.View style={popStyle}>
       <PressableScale depth={0.05} onPress={() => router.navigate("/(tabs)/points")} accessibilityLabel={`${points} puntos${today !== undefined ? `, ${today} hoy de ${DAILY_POINTS_CAP}` : ""}. Abrir premios`} style={[{ borderRadius: 999 }, elevation("low")]}>
         {/* Translucent Liquid Glass with a bright rim and a light that sweeps across now and then. */}
-        <GlassSurface radius={999} intensity={100} specular backgroundColor={LIQUID_FILL_STRONG} borderColor="rgba(255,255,255,0.9)" style={[styles.capsule, LIQUID_RIM]}>
+        <GlassSurface radius={999} intensity={100} specular backgroundColor={LIQUID_FILL} borderColor={LIQUID_BORDER} style={[styles.capsule, LIQUID_RIM]}>
           <ShineSweep width={170} />
           <Animated.View style={[styles.icon, { backgroundColor: colors.primary }, iconStyle]}>
             <Ionicons name="ribbon" size={16} color={colors.onPrimary} />

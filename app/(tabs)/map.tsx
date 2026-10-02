@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import Animated, { FadeIn, FadeInDown, FadeOutDown, ZoomIn, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import RideMap from "@/components/map/RideMap";
 import RideLauncher from "@/components/map/RideLauncher";
+import EcoRoutePreview from "@/components/map/EcoRoutePreview";
+import { planBikeRoute, type BikeRoute, type Place, type RoutePrefs } from "@/services/routing";
 import PointsBadge from "@/components/ui/PointsBadge";
-import { LIQUID_FILL_STRONG, LIQUID_RIM } from "@/theme/glass";
+import { LIQUID_BORDER, LIQUID_FILL, LIQUID_RIM } from "@/theme/glass";
 import MapSheet from "@/components/map/MapSheet";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassSurface from "@/components/ui/GlassSurface";
@@ -33,6 +35,7 @@ import { goalLabel, goalProgress } from "@/utils/rideGoals";
 import { pointsToday } from "@/utils/streak";
 import { computeStreakDays } from "@/utils/gamification";
 import { useLayout } from "@/hooks/useLayout";
+import { bearingDegrees, haversineMeters } from "@/utils/geo";
 
 type LatLng = { lat: number; lng: number };
 
@@ -65,6 +68,7 @@ export default function MapScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   // Panel detent: unfolded by default; the rider can fold it to see more map.
   const [sheetOpen, setSheetOpen] = useState(true);
+  const compass = useCompassHeading();
   const [idleCenter, setIdleCenter] = useState<LatLng | null>(null);
   const [recenterKey, setRecenterKey] = useState(0);
   // Points when the ride started → detect a level-up on completion without
@@ -126,12 +130,49 @@ export default function MapScreen() {
     }
   }
 
+  // ─── Eco ruta: preview a planned bike route, then ride it ───
+  const [eco, setEco] = useState<{ place: Place; prefs: RoutePrefs; routes: BikeRoute[]; idx: number; loading: boolean; error: string | null } | null>(null);
+  const [activePlanned, setActivePlanned] = useState<{ lat: number; lng: number }[] | null>(null);
+  const pickEco = async (place: Place, prefs: RoutePrefs) => {
+    setMenuOpen(false);
+    if (!center) return;
+    setEco({ place, prefs, routes: [], idx: 0, loading: true, error: null });
+    try {
+      const routes = await planBikeRoute(center, place, prefs);
+      setEco((e) => (e && e.place === place ? { ...e, routes, loading: false } : e));
+    } catch (err: any) {
+      setEco((e) => (e && e.place === place ? { ...e, loading: false, error: err?.message ?? "No pudimos calcular la ruta." } : e));
+    }
+  };
+  const startEco = () => {
+    const r = eco?.routes[eco.idx];
+    if (!r) return;
+    setActivePlanned(r.points);
+    setEco(null);
+    begin({ kind: "distance", meters: Math.max(500, Math.round(r.km * 1000)) });
+  };
+  // The planned line stays on the map while riding it; it clears once the map is idle again.
+  useEffect(() => {
+    if (status === "IDLE" && !eco) setActivePlanned(null);
+  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const begin = (g: Parameters<typeof startRide>[1]) => {
     setMenuOpen(false);
     if (userId) startRide(userId, g);
   };
 
   const route = ride?.points.map((p) => ({ lat: p.lat, lng: p.lng })) ?? [];
+  // Arrow heading: direction of travel while riding (last two fixes ≥ 3 m apart), else the compass.
+  const travelHeading = React.useMemo(() => {
+    const pts = ride?.points ?? [];
+    for (let i = pts.length - 1; i > 0; i--) {
+      const a = pts[i - 1];
+      const b = pts[pts.length - 1];
+      if (haversineMeters(a, b) >= 3) return bearingDegrees(a, b);
+    }
+    return null;
+  }, [ride?.points.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const heading = travelHeading ?? compass;
   const center = currentLocation ?? idleCenter;
   const weekKm = distanceThisWeek(rides) / 1000;
   const weekProgress = weeklyGoalKm > 0 ? weekKm / weeklyGoalKm : 0;
@@ -148,11 +189,28 @@ export default function MapScreen() {
 
   return (
     <View style={styles.screen}>
-      <RideMap route={route} center={center} fill recenterKey={recenterKey} />
+      <RideMap
+        route={route}
+        center={center}
+        fill
+        recenterKey={recenterKey}
+        heading={heading}
+        plannedRoute={eco?.routes[eco.idx]?.points ?? activePlanned ?? undefined}
+        fitPlanned={!!eco?.routes.length}
+      />
 
 
 
       <Animated.View style={[styles.bottom, desktop ? styles.bottomDesktop : { bottom: bottomInset - 8 }, cardStyle]} pointerEvents={menuOpen ? "none" : "box-none"}>
+        {status === "IDLE" && eco && (
+          <EcoRoutePreview
+            eco={eco}
+            onSelect={(idx) => setEco((e) => (e ? { ...e, idx } : e))}
+            onCancel={() => setEco(null)}
+            onStart={startEco}
+          />
+        )}
+
         {status === "PREPARING" && (
           <GlassCard>
             <Text style={[styles.title, { color: colors.ink }]}>Obteniendo tu ubicación…</Text>
@@ -252,7 +310,7 @@ export default function MapScreen() {
             <PointsBadge points={availablePoints} today={pointsToday(rides)} />
           </Animated.View>
           <Animated.View entering={enter(160)}>
-            <GlassSurface radius={999} intensity={100} specular backgroundColor={LIQUID_FILL_STRONG} borderColor="rgba(255,255,255,0.9)" style={[styles.streakPill, LIQUID_RIM]}>
+            <GlassSurface radius={999} intensity={100} specular backgroundColor={LIQUID_FILL} borderColor={LIQUID_BORDER} style={[styles.streakPill, LIQUID_RIM]}>
               <Flame size={20} lit={streak > 0} />
               <View>
                 <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 17, letterSpacing: -0.4 }}>{streak}</Text>
@@ -273,13 +331,15 @@ export default function MapScreen() {
         </View>
 
         <View style={styles.rail} pointerEvents="box-none">
-          <GlassIconButton icon="locate" accessibilityLabel="Centrar en mi ubicación" onPress={() => locate(true)} />
+          <GlassIconButton liquid icon="navigate" accessibilityLabel="Centrar en mi ubicación" onPress={() => locate(true)} />
         </View>
       </SafeAreaView>
 
       {/* Layers: map < ride panel < top controls < launcher (its menu frosts everything below). */}
-      {status === "IDLE" && (
+      {status === "IDLE" && !eco && (
         <RideLauncher
+          near={center}
+          onEcoPick={pickEco}
           open={menuOpen}
           onOpenChange={setMenuOpen}
           onSelect={begin}
@@ -326,3 +386,33 @@ const styles = StyleSheet.create({
   achievementBanner: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 16, borderWidth: 1, padding: 10, marginTop: 14 },
   achievementText: { fontSize: 12.5, fontWeight: "700", flex: 1 },
 });
+
+/**
+ * Web compass (phones expose it through device orientation; desktops don't).
+ * Native maps draw the system location marker, which already shows heading.
+ * Throttled: orientation fires ~60 Hz, the arrow only needs a few updates a second.
+ */
+function useCompassHeading(): number | null {
+  const [deg, setDeg] = useState<number | null>(null);
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof window === "undefined") return;
+    let last = 0;
+    let lastDeg: number | null = null;
+    const on = (e: any) => {
+      const h = typeof e.webkitCompassHeading === "number" ? e.webkitCompassHeading : e.absolute && typeof e.alpha === "number" ? 360 - e.alpha : null;
+      const now = Date.now();
+      if (h == null || now - last < 150) return;
+      if (lastDeg != null && Math.abs(((h - lastDeg + 540) % 360) - 180) < 4) return;
+      last = now;
+      lastDeg = h;
+      setDeg(h);
+    };
+    window.addEventListener("deviceorientationabsolute", on);
+    window.addEventListener("deviceorientation", on);
+    return () => {
+      window.removeEventListener("deviceorientationabsolute", on);
+      window.removeEventListener("deviceorientation", on);
+    };
+  }, []);
+  return deg;
+}

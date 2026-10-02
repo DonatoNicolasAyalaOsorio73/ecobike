@@ -44,6 +44,13 @@ test("guest tour: home, map, stats, rewards, friends, profile, settings", async 
   await page.getByRole("button", { name: "Opciones de recorrido" }).click();
   await expect(page.getByText("¿Cómo quieres pedalear?")).toBeVisible();
   await expect(page.getByRole("button", { name: /^Eco ruta/ })).toBeVisible();
+  // Entrenamiento: your own goal (distance or time), then back to the modes
+  await page.getByRole("button", { name: /^Entrenamiento/ }).click();
+  await expect(page.getByRole("button", { name: "Iniciar entrenamiento" })).toBeVisible();
+  await page.getByRole("button", { name: "Más kilómetros" }).click();
+  await expect(page.getByText("11", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Volver a los modos" }).click();
+  await expect(page.getByRole("button", { name: /^Eco ruta/ })).toBeVisible();
   await page.getByRole("button", { name: "Cerrar opciones de recorrido" }).click();
   await expect(page.getByText("¿Cómo quieres pedalear?")).toHaveCount(0);
 
