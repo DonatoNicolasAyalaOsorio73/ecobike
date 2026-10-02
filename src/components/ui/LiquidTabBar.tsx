@@ -77,7 +77,7 @@ function Tab({ index, progress, name, label, focused, ink, soft }: { index: numb
  *   color through, opaque enough that labels stay legible where blur is
  *   unavailable (Android, older browsers); strong blur + saturation and a
  *   specular rim; shadow on an unclipped wrapper so it is never cut.
- * - Selection is a neutral glass "lens", not a colored pill. It slides with
+ * - Selection is a lime glass "lens" (brand color = selected state). It slides with
  *   the `.bouncy` spring and stretches like liquid while travelling
  *   (scaleX grows with the distance to the nearest tab, scaleY gives a bit).
  * - Pressing any tab swells the lens slightly (the iOS 26 magnify feel).
@@ -166,11 +166,11 @@ export default function LiquidTabBar({ state, descriptors, navigation }: TabBarP
   );
 }
 
-// Lens: brighter glass with a top highlight and a soft contact shadow (web
+// Lens: lime glass with a top highlight and a soft lime glow (web
 // renders the inset highlight; native gets the translucent fill).
 const LENS_WEB =
   Platform.OS === "web"
-    ? ({ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 4px rgba(0,0,0,0.06)" } as object)
+    ? ({ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75), 0 2px 10px rgba(140,200,60,0.45)" } as object)
     : elevation("low");
 
 // Web: a blurred lime blob. Native: same blob with a lime shadow (no CSS blur on RN).
@@ -185,7 +185,8 @@ const styles = StyleSheet.create({
   shadow: { borderRadius: BAR_RADIUS },
   row: { flexDirection: "row", margin: INSET, height: 46 },
   lensSlot: { position: "absolute", top: 0, bottom: 0, left: 0 },
-  lens: { flex: 1, marginHorizontal: 3, zIndex: 1, borderRadius: BAR_RADIUS - INSET, backgroundColor: "rgba(255,255,255,0.6)" },
+  // Brand lime lens (selection is functional state); ink icon/label on top, as on the primary button.
+  lens: { flex: 1, marginHorizontal: 3, zIndex: 1, borderRadius: BAR_RADIUS - INSET, backgroundColor: "rgba(173,241,75,0.92)" },
   item: { flex: 1, alignItems: "center", justifyContent: "center", gap: 1, paddingHorizontal: 2 },
   label: { fontSize: 10, letterSpacing: -0.1 },
 });

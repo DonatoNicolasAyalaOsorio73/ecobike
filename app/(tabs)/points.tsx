@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { RefreshControl, StyleSheet, Text, View } from "react-native";
+import { RefreshControl, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import LargeTitleScreen from "@/components/ui/LargeTitleScreen";
@@ -9,6 +9,7 @@ import GlassButton from "@/components/ui/GlassButton";
 import GlassIconButton from "@/components/ui/GlassIconButton";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import RewardList from "@/components/rewards/RewardList";
+import RewardCarousel from "@/components/rewards/RewardCarousel";
 import RedeemSheet from "@/components/rewards/RedeemSheet";
 import MissionsCard from "@/components/MissionsCard";
 import { useRiderStats } from "@/hooks/useRiderStats";
@@ -26,6 +27,7 @@ export default function PointsScreen() {
   const { points: availablePoints, isRealAccount } = useAvailablePoints(userId);
   const { rewards, usingRealCatalog, catalogError, loading, redeem, refresh } = useRewards(userId, isRealAccount);
   const [selected, setSelected] = useState<Reward | null>(null);
+  const [width, setWidth] = useState(360);
   const { level, nextLevelAt } = levelForPoints(availablePoints);
   const { rides } = useRiderStats(userId);
 
@@ -49,7 +51,7 @@ export default function PointsScreen() {
           </>
         }
       >
-        <View>
+        <View onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)}>
 
           <View style={styles.pad}>
             <View style={styles.hero}>
@@ -94,6 +96,9 @@ export default function PointsScreen() {
 
           {rewards.length > 0 && (
             <>
+              {/* Discover: featured carousel. Find: searchable list below. */}
+              <Text style={[styles.section, { color: colors.ink }]}>Destacadas</Text>
+              <RewardCarousel rewards={rewards} availablePoints={availablePoints} width={width} onPress={setSelected} />
               <Text style={[styles.section, { color: colors.ink }]}>Tiendas</Text>
               <View style={styles.pad}>
                 <RewardList rewards={rewards} availablePoints={availablePoints} onPress={setSelected} />

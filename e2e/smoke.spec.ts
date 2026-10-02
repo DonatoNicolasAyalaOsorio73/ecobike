@@ -66,7 +66,7 @@ test("guest tour: home, map, stats, rewards, friends, profile, settings", async 
   // Rewards: redeem an example reward and get a code
   await tab(page, "Premios").click();
   await expect(page.getByText("Recompensas").first()).toBeVisible();
-  await page.getByRole("button", { name: /^Coldest,/ }).click();
+  await page.getByRole("button", { name: /^Coldest,/ }).first().click();
   await page.getByRole("button", { name: "Canjear", exact: true }).click();
   await page.getByRole("button", { name: "Sí, canjear" }).click();
   await expect(page.getByText("¡Canje listo!")).toBeVisible();
