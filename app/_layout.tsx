@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Platform, View } from "react-native";
 import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ReduceMotion, ReducedMotionConfig } from "react-native-reanimated";
@@ -26,6 +26,17 @@ import { withMonitoring } from "@/services/monitoring";
 // Side effect: registers the background location task at startup.
 import "@/stores/rideStore";
 import NetInfo from "@react-native-community/netinfo";
+
+// We only use `isConnected` (see useNetworkStatus): turn off NetInfo's
+// reachability probe, which on web fires HEAD / again and again.
+NetInfo.configure({ reachabilityShouldRun: () => false });
+
+// Haptics on web map to navigator.vibrate, which browsers block (and log an
+// error) until the user has interacted with the page. Skip it until then.
+if (Platform.OS === "web" && typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+  const vibrate = navigator.vibrate.bind(navigator);
+  navigator.vibrate = ((pattern: VibratePattern) => ((navigator as any).userActivation?.hasBeenActive === false ? false : vibrate(pattern))) as Navigator["vibrate"];
+}
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 

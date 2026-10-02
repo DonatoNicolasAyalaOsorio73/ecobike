@@ -68,11 +68,10 @@ function stopTracking() {
   backgroundUpdates = false;
   if (tickInterval) clearInterval(tickInterval);
   tickInterval = null;
-  try {
-    deactivateKeepAwake(KEEP_AWAKE_TAG);
-  } catch {
-    // keep-awake was not active
-  }
+  // Rejects (async on web) when keep-awake was never activated: nothing to undo.
+  Promise.resolve()
+    .then(() => deactivateKeepAwake(KEEP_AWAKE_TAG))
+    .catch(() => {});
 }
 
 function onLocations(locs: Location.LocationObject[]) {
