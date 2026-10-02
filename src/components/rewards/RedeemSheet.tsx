@@ -1,6 +1,6 @@
 import AppModal from "@/components/ui/AppModal";
 import React, { useEffect, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, FadeInDown, SlideInDown, ZoomIn } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
@@ -9,6 +9,7 @@ import GlassSurface from "@/components/ui/GlassSurface";
 import GlassButton from "@/components/ui/GlassButton";
 import Confetti from "@/components/ui/Confetti";
 import HoldToConfirm from "./HoldToConfirm";
+import StoreLogo from "./StoreLogo";
 import { useTheme } from "@/theme/useTheme";
 import { type } from "@/theme/typography";
 import { enter } from "@/theme/motion";
@@ -33,21 +34,18 @@ export default function RedeemSheet({ reward, availablePoints, onClose, redeem }
   const [phase, setPhase] = useState<Phase>("details");
   const [result, setResult] = useState<Redemption | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [broken, setBroken] = useState(false);
 
   useEffect(() => {
     if (reward) {
       setPhase("details");
       setResult(null);
       setError(null);
-      setBroken(false);
     }
   }, [reward]);
 
   if (!reward) return null;
   const affordable = availablePoints >= reward.pointsCost;
   const missing = reward.pointsCost - availablePoints;
-  const logo = broken ? undefined : reward.imageUrl;
 
   const confirm = async () => {
     setPhase("working");
@@ -104,13 +102,7 @@ export default function RedeemSheet({ reward, availablePoints, onClose, redeem }
               <>
                 {/* Logo as a stamp: whole, no box. */}
                 <Animated.View entering={ZoomIn.springify().damping(16)} style={styles.stamp}>
-                  {logo ? (
-                    <Image source={{ uri: logo }} style={styles.stampImg} resizeMode="contain" onError={() => setBroken(true)} accessibilityIgnoresInvertColors />
-                  ) : (
-                    <View style={[styles.stampFallback, { backgroundColor: colors.chipFill }]}>
-                      <Ionicons name={reward.icon as any} size={44} color={colors.ink} />
-                    </View>
-                  )}
+                  <StoreLogo uri={reward.imageUrl} name={reward.title} size={120} />
                 </Animated.View>
                 <Animated.Text entering={enter(60)} style={[type.title2, styles.center, { color: colors.ink }]} numberOfLines={2}>
                   {reward.title}
@@ -162,8 +154,6 @@ const styles = StyleSheet.create({
   grabber: { width: 40, height: 5, borderRadius: 3, alignSelf: "center", marginBottom: 10 },
   center: { textAlign: "center" },
   stamp: { width: 120, height: 120, alignItems: "center", justifyContent: "center", marginBottom: 10 },
-  stampImg: { width: 120, height: 120 },
-  stampFallback: { width: 96, height: 96, borderRadius: 30, alignItems: "center", justifyContent: "center" },
   priceRow: { flexDirection: "row", alignItems: "baseline", gap: 6, marginTop: 16 },
   price: { fontSize: 40, fontWeight: "800", letterSpacing: -1.2 },
   meterWrap: { alignSelf: "stretch", marginTop: 10, paddingHorizontal: 30 },

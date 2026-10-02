@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   Easing,
   Extrapolation,
@@ -22,6 +22,7 @@ import { useTheme } from "@/theme/useTheme";
 import { elevation } from "@/theme/colors";
 import { SPRING, enter } from "@/theme/motion";
 import type { Reward } from "@/types/reward";
+import StoreLogo from "./StoreLogo";
 
 // Art for rewards without a logo: clean light surface; the only color on the
 // card is the "available" chip (state), the richness comes from motion.
@@ -53,17 +54,12 @@ function Orb({ size, color, x, y }: { size: number; color: string; x: number; y:
   return <View style={[styles.orb, { width: size, height: size, borderRadius: size / 2, backgroundColor: color, left: x, top: y }, ORB_BLUR]} />;
 }
 
-/** Clean card surface; the icon only stands in when there's no logo. Never moves on its own. */
-function Art({ reward }: { reward: Reward }) {
+/** Clean card surface. Never moves on its own. */
+function Art() {
   return (
     <LinearGradient colors={ART} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill}>
       <Orb size={180} color="rgba(255,255,255,0.75)" x={-40} y={-30} />
       <Orb size={140} color="rgba(255,255,255,0.9)" x={150} y={170} />
-      {!reward.imageUrl && (
-        <View style={styles.artIcon}>
-          <Ionicons name={reward.icon as any} size={120} color="rgba(28,36,16,0.16)" />
-        </View>
-      )}
     </LinearGradient>
   );
 }
@@ -81,9 +77,7 @@ function Card({ reward: source, index, cardWidth, cardHeight, step, scrollX, aff
   onPress: () => void;
 }) {
   const { colors } = useTheme();
-  // A logo URL that fails to load falls back to generated art (never an empty tile).
-  const [broken, setBroken] = React.useState(false);
-  const reward = broken ? { ...source, imageUrl: undefined } : source;
+  const reward = source;
   const press = useSharedValue(0);
   const shine = useSharedValue(-1);
   const ink = colors.ink;
@@ -145,7 +139,7 @@ function Card({ reward: source, index, cardWidth, cardHeight, step, scrollX, aff
           style={[styles.card, { height: cardHeight }]}
         >
           <Animated.View style={[StyleSheet.absoluteFill, artStyle]}>
-            <Art reward={reward} />
+            <Art />
           </Animated.View>
 
           {/* Legibility: light scrim under the text. */}
@@ -160,13 +154,12 @@ function Card({ reward: source, index, cardWidth, cardHeight, step, scrollX, aff
             </Animated.View>
           )}
 
-          {reward.imageUrl ? (
-            <Animated.View pointerEvents="none" style={[styles.stamp, logoStyle]}>
-              <Animated.View style={stampPressStyle}>
-                <Image source={{ uri: reward.imageUrl }} style={[styles.stampImg, STAMP_SHADOW]} resizeMode="contain" onError={() => setBroken(true)} accessibilityIgnoresInvertColors />
-              </Animated.View>
+          {/* Always a stamp: the logo, or the store's monogram when it has none. */}
+          <Animated.View pointerEvents="none" style={[styles.stamp, logoStyle]}>
+            <Animated.View style={stampPressStyle}>
+              <StoreLogo uri={reward.imageUrl} name={reward.title} size={170} />
             </Animated.View>
-          ) : null}
+          </Animated.View>
 
           <View style={styles.costPill}>
             <Ionicons name="ribbon" size={13} color={colors.ink} />
@@ -304,15 +297,12 @@ export default function RewardCarousel({ rewards, availablePoints, width, onPres
 
 // CSS blur softens the orbs on web; native keeps them as translucent circles.
 // Stamp shadow follows the logo's own shape (transparent PNG), not a box.
-const STAMP_SHADOW = Platform.OS === "web" ? ({ filter: "drop-shadow(0 6px 10px rgba(0,0,0,0.14))" } as object) : null;
 const ORB_BLUR = Platform.OS === "web" ? ({ filter: "blur(18px)" } as object) : { opacity: 0.6 };
 
 const styles = StyleSheet.create({
   card: { borderRadius: RADIUS, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.85)", justifyContent: "flex-end" },
   orb: { position: "absolute" },
   stamp: { position: "absolute", top: "12%", left: 0, right: 0, alignItems: "center" },
-  stampImg: { width: 170, height: 170 },
-  artIcon: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center", paddingBottom: 60 },
   scrim: { position: "absolute", left: 0, right: 0, bottom: 0, height: "62%" },
   shine: { position: "absolute", top: -40, bottom: -40, left: -60, width: 70 },
   costPill: { position: "absolute", top: 16, left: 16, flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.85)" },

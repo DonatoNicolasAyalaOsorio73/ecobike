@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mapStoreDoc, visibleRewards } from "../rewardsMapping.ts";
+import { mapStoreDoc, storeInitials, visibleRewards } from "../rewardsMapping.ts";
 
 test("mapStoreDoc: parses a legacy document with a string pointsRequired", () => {
   const reward = mapStoreDoc("s1", { name: "Coldest", description: "2x1", pointsRequired: "80" });
@@ -43,4 +43,12 @@ test("visibleRewards: search is accent- and case-insensitive over name and descr
   assert.deepEqual(visibleRewards(catalog, 0, "cafe", false).map((x) => x.id), ["c"]);
   assert.deepEqual(visibleRewards(catalog, 0, "REVISION", false).map((x) => x.id), ["d"]);
   assert.deepEqual(visibleRewards(catalog, 0, "nada", false), []);
+});
+
+test("storeInitials: monogram for stores without a logo", () => {
+  assert.equal(storeInitials("Taller CicloFix"), "TC");
+  assert.equal(storeInitials("coldest"), "C");
+  assert.equal(storeInitials("  Él  Café  Norte "), "ÉC");
+  assert.equal(storeInitials("- 7 Bikes"), "7B");
+  assert.equal(storeInitials("   "), "?");
 });

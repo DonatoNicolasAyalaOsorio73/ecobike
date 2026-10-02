@@ -29,3 +29,11 @@ export function visibleRewards(rewards: Reward[], points: number, query: string,
     .filter((r) => !q || norm(`${r.title} ${r.subtitle}`).includes(q))
     .sort((a, b) => Number(can(b)) - Number(can(a)) || a.pointsCost - b.pointsCost);
 }
+
+/** Up to two initials for a store without a usable logo ("Taller CicloFix" → "TC"). */
+export function storeInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w));
+  const first = (w: string) => w.match(/[\p{L}\p{N}]/u)![0].toUpperCase();
+  if (!words.length) return "?";
+  return words.length === 1 ? first(words[0]) : first(words[0]) + first(words[1]);
+}

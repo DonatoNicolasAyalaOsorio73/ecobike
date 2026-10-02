@@ -1,9 +1,10 @@
 rules_version = '2';
 
 // Deploy with: firebase deploy --only storage
-// Only avatar photos live in Storage today — everything else (rides,
-// achievements) is Firestore/local SQLite. Keep this file in sync if that
-// changes.
+// Storage holds avatar photos and store (reward) logos; everything else is
+// Firestore/local SQLite. Store logos are written only by admins: the check
+// reads usuarios/{uid} from Firestore (cross-service rules; the first deploy
+// asks to grant Storage access to Firestore — accept it).
 service firebase.storage {
   match /b/{bucket}/o {
     match /avatars/{uid}/{fileName} {
@@ -12,6 +13,16 @@ service firebase.storage {
         && request.auth.uid == uid
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/(jpeg|png|webp|heic|heif|gif)');
+    }
+    match /stores/{storeId}/{fileName} {
+      allow read: if true; // logos are public brand images shown in the app and web
+      allow write: if request.auth != null
+        && (request.auth.token.admin == true
+          || firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.get('role', '') == 'admin'
+          || firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.get('isAdmin', false) == true)
+        && (request.resource == null
+          || (request.resource.size < 2 * 1024 * 1024
+            && request.resource.contentType.matches('image/(jpeg|png|webp)')));
     }
   }
 }

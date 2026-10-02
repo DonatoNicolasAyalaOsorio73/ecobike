@@ -2,8 +2,10 @@
 // GET  /api/stores                         → list all stores, including inactive
 // POST /api/stores  { name, description?, logo?, pointsRequired }   → create
 // PUT  /api/stores  { id, name?, description?, logo?, pointsRequired?, isActive? } → update
+// DELETE /api/stores { id }                → delete (refused while partners point at it)
 // Admin = custom claim admin:true, or usuarios/{uid}.role == "admin" / isAdmin == true.
-const { admin, httpError, requireUser, isAdminUser, body, handler, isDocId } = require("./_lib");
+// Every write is audited in admin_logs.
+const { admin, httpError, requireAdmin, logAdmin, body, handler, isDocId } = require("./_lib");
 
 function clean(input, creating) {
   const out = {};
@@ -21,12 +23,14 @@ function clean(input, creating) {
     out.pointsRequired = n;
   }
   if (creating && (!out.name || !out.pointsRequired)) throw httpError(400, "Nombre y puntos son obligatorios.");
+  // Every reward is shown with its company logo, so a store can't exist without one.
+  if ((creating || out.logo !== undefined) && !out.logo) throw httpError(400, "Sube el logo de la tienda.");
   return out;
 }
 
-module.exports = handler(["GET", "POST", "PUT"], async (req) => {
-  const user = await requireUser(req);
-  if (!(await isAdminUser(user))) throw httpError(403, "No tienes permisos de administrador.");
+module.exports = handler(["GET", "POST", "PUT", "DELETE"], async (req) => {
+  const me = await requireAdmin(req);
+  const db = admin().firestore();
   const col = admin().firestore().collection("tiendas");
 
   if (req.method === "GET") {
@@ -35,16 +39,30 @@ module.exports = handler(["GET", "POST", "PUT"], async (req) => {
   }
   const input = body(req);
   if (req.method === "POST") {
-    const data = { isActive: true, description: "", logo: "", ...clean(input, true) };
+    const data = { isActive: true, description: "", ...clean(input, true) };
     const ref = await col.add(data);
+    await logAdmin(me.uid, "store.create", "store", ref.id, { name: data.name, pointsRequired: data.pointsRequired });
     return { store: { id: ref.id, ...data } };
   }
   if (!isDocId(input.id)) throw httpError(400, "Falta el id de la tienda.");
+  if (req.method === "DELETE") {
+    const ref = col.doc(input.id);
+    const snap = await ref.get();
+    if (!snap.exists) throw httpError(404, "La tienda no existe.");
+    const partners = await db.collection("usuarios").where("storeId", "==", input.id).limit(1).get();
+    if (!partners.empty) throw httpError(409, "Esta tienda tiene partners asignados. Quítales el rol o desactívala.");
+    await ref.delete(); // redeemed codes keep their own copy of the store name
+    await logAdmin(me.uid, "store.delete", "store", input.id, { name: snap.data().name ?? null });
+    return { deleted: true };
+  }
   const update = clean(input, false);
   if (!Object.keys(update).length) throw httpError(400, "No hay campos válidos para actualizar.");
   const ref = col.doc(input.id);
   if (!(await ref.get()).exists) throw httpError(404, "La tienda no existe.");
   await ref.update(update);
+  await logAdmin(me.uid, "store.update", "store", input.id, update);
   const fresh = await ref.get();
   return { store: { id: fresh.id, ...fresh.data() } };
 });
+
+module.exports.clean = clean;

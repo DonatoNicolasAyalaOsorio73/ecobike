@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from "react";
-import { Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeIn, FadeOut, LinearTransition } from "react-native-reanimated";
 import GlassSurface from "@/components/ui/GlassSurface";
+import StoreLogo from "./StoreLogo";
 import PressableScale from "@/components/ui/PressableScale";
 import RewardCarousel from "./RewardCarousel";
 import { useTheme } from "@/theme/useTheme";
@@ -114,17 +115,9 @@ function List({ rewards, availablePoints, onPress }: { rewards: Reward[]; availa
 function Row({ reward, availablePoints, onPress }: { reward: Reward; availablePoints: number; onPress: () => void }) {
   const { colors } = useTheme();
   const affordable = reward.pointsCost <= availablePoints;
-  const [broken, setBroken] = useState(false);
-  const logo = broken ? undefined : reward.imageUrl;
   return (
     <PressableScale depth={0.015} onPress={onPress} accessibilityLabel={`${reward.title}, ${reward.subtitle}, ${reward.pointsCost} puntos`} style={styles.row}>
-      <View style={styles.stamp}>
-        {logo ? (
-          <Image source={{ uri: logo }} style={[styles.stampImg, STAMP_SHADOW]} resizeMode="contain" onError={() => setBroken(true)} accessibilityIgnoresInvertColors />
-        ) : (
-          <Ionicons name={reward.icon as any} size={28} color={colors.inkSoft} />
-        )}
-      </View>
+      <StoreLogo uri={reward.imageUrl} name={reward.title} size={56} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={[type.headline, { color: colors.ink }]} numberOfLines={1}>
           {reward.title}
@@ -147,8 +140,6 @@ function Row({ reward, availablePoints, onPress }: { reward: Reward; availablePo
   );
 }
 
-// Shadow that follows the logo's own shape (transparent PNG) instead of a box.
-const STAMP_SHADOW = Platform.OS === "web" ? ({ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.12))" } as object) : null;
 
 const styles = StyleSheet.create({
   pad: { paddingHorizontal: 20 },
@@ -159,7 +150,5 @@ const styles = StyleSheet.create({
   count: { marginBottom: 6, marginLeft: 4 },
   row: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 12 },
   sep: { position: "absolute", top: 0, left: 74, right: 0, height: StyleSheet.hairlineWidth },
-  stamp: { width: 60, height: 60, alignItems: "center", justifyContent: "center" },
-  stampImg: { width: 60, height: 60 },
   status: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
 });

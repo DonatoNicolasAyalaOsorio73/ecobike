@@ -70,6 +70,51 @@ async function isAdminUser(decoded) {
   return d.role === "admin" || d.isAdmin === true;
 }
 
+/** Throws 403 unless the caller is an admin; returns the decoded token. */
+async function requireAdmin(req) {
+  const user = await requireUser(req);
+  if (!(await isAdminUser(user))) throw httpError(403, "No tienes permisos de administrador.");
+  return user;
+}
+
+/**
+ * Audit trail for every admin change (who, what, on whom, before/after,
+ * why). Server-only collection: firestore.rules deny all client access.
+ */
+async function logAdmin(adminUid, action, targetType, targetId, details = {}) {
+  const { FieldValue } = require("firebase-admin/firestore");
+  await admin().firestore().collection("admin_logs").add({ adminUid, action, targetType, targetId, details, at: FieldValue.serverTimestamp() });
+}
+
+/**
+ * Permanently erase a user and everything tied to them (right to erasure;
+ * used by the user themself in api/account.js and by admins in api/users.js):
+ * friend links, username reservation, chats, private + public profile with
+ * subcollections, avatar files and the Firebase Auth user.
+ */
+async function deleteUserData(uid) {
+  const a = admin();
+  const db = a.firestore();
+  const { FieldValue } = require("firebase-admin/firestore");
+  const friends = (await db.collection("usuarios").doc(uid).get()).data()?.amigos ?? [];
+  await Promise.all(
+    friends.map(async (f) => {
+      await db.collection("usuarios").doc(f).update({ amigos: FieldValue.arrayRemove(uid) }).catch(() => {});
+      await db.collection("usuarios_public").doc(f).set({ amigos: FieldValue.arrayRemove(uid) }, { merge: true }).catch(() => {});
+    })
+  );
+  const claims = await db.collection("usernames").where("uid", "==", uid).get();
+  await Promise.all(claims.docs.map((c) => c.ref.delete()));
+  const chats = await db.collection("chats").where("participants", "array-contains", uid).get();
+  await Promise.all(chats.docs.map((c) => db.recursiveDelete(c.ref)));
+  await db.recursiveDelete(db.collection("usuarios").doc(uid));
+  await db.collection("usuarios_public").doc(uid).delete().catch(() => {});
+  await a.storage().bucket().deleteFiles({ prefix: `avatars/${uid}/` }).catch(() => {});
+  await a.auth().deleteUser(uid).catch((e) => {
+    if (e?.code !== "auth/user-not-found") throw e;
+  });
+}
+
 function body(req) {
   if (typeof req.body === "string") {
     try {
@@ -287,4 +332,4 @@ function redemptionCode() {
   return require("crypto").randomBytes(6).toString("hex").toUpperCase();
 }
 
-module.exports = { analyzeTrack, scoreRide, DAILY_POINTS_CAP, isDocId, clampNum, MAX_RIDE_DURATION_S, weekKey, chatIdFor, cleanMessage, MAX_MESSAGE_LENGTH, sendPush, admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };
+module.exports = { requireAdmin, logAdmin, deleteUserData, analyzeTrack, scoreRide, DAILY_POINTS_CAP, isDocId, clampNum, MAX_RIDE_DURATION_S, weekKey, chatIdFor, cleanMessage, MAX_MESSAGE_LENGTH, sendPush, admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };

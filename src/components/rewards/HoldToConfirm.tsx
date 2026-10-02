@@ -53,7 +53,7 @@ export default function HoldToConfirm({ label, onConfirm, loading, disabled }: {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
-        accessibilityHint={screenReader ? "Toca dos veces para canjear" : "Mantén presionado para canjear"}
+        accessibilityHint={screenReader ? "Toca dos veces para confirmar" : "Mantén presionado para confirmar"}
         accessibilityState={{ disabled: !!disabled, busy: !!loading }}
         disabled={disabled || loading}
         onPressIn={start}
@@ -64,7 +64,7 @@ export default function HoldToConfirm({ label, onConfirm, loading, disabled }: {
         <Animated.View pointerEvents="none" style={[styles.fill, { backgroundColor: colors.primary }, fillStyle]} />
         <View style={styles.row} pointerEvents="none">
           <Ionicons name={loading ? "hourglass-outline" : "finger-print"} size={20} color={disabled ? "#A2ACA4" : colors.ink} />
-          <Text style={[styles.label, { color: disabled ? "#A2ACA4" : colors.ink }]}>{loading ? "Canjeando…" : label}</Text>
+          <Text style={[styles.label, { color: disabled ? "#A2ACA4" : colors.ink }]}>{loading ? "Un momento…" : label}</Text>
         </View>
       </Pressable>
     </Animated.View>
