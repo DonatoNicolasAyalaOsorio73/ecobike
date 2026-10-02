@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { listRides, listUnlockedAchievements } from "@/services/db";
-import { computeRiderStats, levelForPoints } from "@/utils/gamification";
+import { computeRiderStats, levelForPoints, validAchievements } from "@/utils/gamification";
 import type { Ride } from "@/types/ride";
 
 /**
@@ -22,8 +22,10 @@ export function useRiderStats(userId: string | null, pointsForLevel?: number) {
   useEffect(refresh, [refresh]);
 
   const stats = computeRiderStats(rides);
+  // Only achievements the verified history supports (see validAchievements).
+  const validUnlocked = validAchievements(unlockedCodes, stats);
 
   const { level, nextLevelAt } = levelForPoints(pointsForLevel ?? stats.totalPoints);
 
-  return { rides, stats, unlockedCodes, level, nextLevelAt, refresh };
+  return { rides, stats, unlockedCodes: validUnlocked, level, nextLevelAt, refresh };
 }

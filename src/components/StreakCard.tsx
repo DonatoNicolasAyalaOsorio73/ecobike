@@ -9,17 +9,20 @@ import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import { useTheme } from "@/theme/useTheme";
 import { accents } from "@/theme/colors";
 import { useSettingsStore } from "@/stores/settingsStore";
-import { computeStreakDays } from "@/utils/gamification";
-import { longestStreak, pointsToday, streakMessage, weekStreakDots } from "@/utils/streak";
+import { streakDays } from "@/utils/gamification";
+import { verifiedRides } from "@/utils/verified";
+import { longestStreak, pointsToday, streakMessage, weekStreakDots, effectiveDailyGoal } from "@/utils/streak";
 import type { Ride } from "@/types/ride";
 
 /** Duolingo-style streak + daily goal card. */
 export default function StreakCard({ rides, entranceDelay = 0 }: { rides: Ride[]; entranceDelay?: number }) {
   const { colors } = useTheme();
-  const dailyGoal = useSettingsStore((s) => s.dailyGoalPoints);
-  const current = useMemo(() => computeStreakDays(rides.map((r) => new Date(r.startedAt))), [rides]);
-  const best = useMemo(() => longestStreak(rides), [rides]);
-  const dots = useMemo(() => weekStreakDots(rides), [rides]);
+  const dailyGoal = effectiveDailyGoal(useSettingsStore((s) => s.dailyGoalPoints));
+  // Only verified (point-earning) rides keep a streak alive.
+  const verified = useMemo(() => verifiedRides(rides), [rides]);
+  const current = useMemo(() => streakDays(rides), [rides]);
+  const best = useMemo(() => longestStreak(verified), [verified]);
+  const dots = useMemo(() => weekStreakDots(verified), [verified]);
   const today = useMemo(() => pointsToday(rides), [rides]);
   const rodeToday = !dots.some((d) => d.status === "today");
 

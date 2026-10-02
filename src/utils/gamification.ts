@@ -1,6 +1,8 @@
 import { ACHIEVEMENTS, type RiderStats } from "@/types/achievement";
 import type { Ride } from "@/types/ride";
 import { analyzeTrack, downsample, scoreRide, type TrackSample } from "@/utils/rideScore";
+import { verifiedRides } from "@/utils/verified";
+import { longestStreak } from "@/utils/streak";
 
 /** The ride's GPS track in the compact form the server verifies. */
 export function rideTrack(ride: Ride): TrackSample[] {
@@ -54,14 +56,34 @@ export function evaluateAchievements(stats: RiderStats, alreadyUnlocked: Set<str
   );
 }
 
-/** Aggregate stats over a ride history (shared by stats screen, ride finish and demo seeding). */
-export function computeRiderStats(rides: Ride[]): RiderStats {
+/**
+ * Gamification stats over a ride history, counting VERIFIED rides only
+ * (rides that earned points): achievements can't be completed with walks,
+ * car trips or fake GPS.
+ */
+export function computeRiderStats(all: Ride[]): RiderStats {
+  const rides = verifiedRides(all);
   return {
     totalRides: rides.length,
     totalDistanceMeters: rides.reduce((s, r) => s + r.distanceMeters, 0),
     totalDurationSeconds: rides.reduce((s, r) => s + r.durationSeconds, 0),
     bestRide: rides.reduce<Ride | null>((best, r) => (!best || r.distanceMeters > best.distanceMeters ? r : best), null),
     currentStreakDays: computeStreakDays(rides.map((r) => new Date(r.startedAt))),
+    bestStreakDays: longestStreak(rides),
     totalPoints: rides.reduce((s, r) => s + r.pointsEarned, 0),
   };
+}
+
+/** Current streak in days, counting only verified (point-earning) rides. */
+export function streakDays(rides: Ride[]): number {
+  return computeStreakDays(verifiedRides(rides).map((r) => new Date(r.startedAt)));
+}
+
+/**
+ * Unlocked achievements that the verified history actually supports. Drops
+ * anything unlocked before verification existed (or by tampering with local
+ * data); every progress function is cumulative, so legit ones always stay.
+ */
+export function validAchievements(unlocked: Set<string>, stats: RiderStats): Set<string> {
+  return new Set([...unlocked].filter((code) => (ACHIEVEMENTS.find((a) => a.code === code)?.progress(stats) ?? 0) >= 1));
 }

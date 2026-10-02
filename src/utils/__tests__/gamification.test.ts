@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { computeStreakDays, levelForPoints, pointsForRide } from "../gamification.ts";
+import { computeRiderStats, computeStreakDays, evaluateAchievements, levelForPoints, pointsForRide, streakDays, validAchievements } from "../gamification.ts";
 import { createEmptyRide } from "../../types/ride.ts";
 
 test("pointsForRide: scores the ride's own GPS track (5 pts/km + bonus)", () => {
@@ -49,4 +49,31 @@ test("computeStreakDays: missing today doesn't reset a streak still active as of
   const twoDaysAgo = new Date();
   twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
   assert.equal(computeStreakDays([yesterday, twoDaysAgo]), 2);
+});
+
+const r = (day: number, km: number, pts: number) =>
+  ({ ...createEmptyRide("u1", `r${day}-${km}`), startedAt: new Date(2026, 9, day, 8).getTime(), distanceMeters: km * 1000, durationSeconds: 1800, pointsEarned: pts });
+
+test("strict: achievements can't be completed with rides that earned no points", () => {
+  const walksAndCars = [r(1, 50, 0), r(2, 120, 0), r(3, 5, 0)];
+  assert.equal(computeRiderStats(walksAndCars).totalRides, 0);
+  assert.deepEqual(evaluateAchievements(computeRiderStats(walksAndCars), new Set()), []);
+});
+
+test("verified rides unlock achievements as usual", () => {
+  const codes = evaluateAchievements(computeRiderStats([r(1, 12, 65)]), new Set()).map((a) => a.code);
+  assert.ok(codes.includes("first_ride") && codes.includes("10km_club"));
+});
+
+test("validAchievements drops unlocks the verified history doesn't support, keeps legit ones", () => {
+  const stats = computeRiderStats([r(1, 12, 65), r(2, 0.3, 0)]);
+  const kept = validAchievements(new Set(["first_ride", "10km_club", "100km_club", "century_ride"]), stats);
+  assert.deepEqual([...kept].sort(), ["10km_club", "first_ride"]);
+});
+
+test("streak counts verified rides only; an earned streak achievement stays earned", () => {
+  const verified = [r(1, 5, 30), r(2, 5, 30), r(3, 5, 30)];
+  assert.equal(computeRiderStats(verified).bestStreakDays, 3);
+  assert.ok(validAchievements(new Set(["streak_3"]), computeRiderStats(verified)).has("streak_3"));
+  assert.equal(streakDays([r(1, 5, 0)]), 0);
 });

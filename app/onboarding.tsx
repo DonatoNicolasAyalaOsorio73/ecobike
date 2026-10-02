@@ -28,7 +28,7 @@ const REASONS: Option[] = [
 const DAILY: Option[] = DAILY_GOALS.map((g, i) => ({
   value: String(g.points),
   title: g.label,
-  subtitle: `${g.points} puntos al día · ~${Math.round(Math.max(0, g.points - 20) / 10)} km`,
+  subtitle: `${g.points} puntos al día · ~${Math.max(1, Math.round((g.points - 5) / 5))} km en bici`,
   icon: (["leaf", "bicycle", "flash", "rocket"] as const)[i],
   accent: (["green", "blue", "orange", "purple"] as const)[i],
 }));

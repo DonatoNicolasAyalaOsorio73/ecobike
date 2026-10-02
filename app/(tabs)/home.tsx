@@ -28,7 +28,7 @@ import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useRiderStats } from "@/hooks/useRiderStats";
 import { useAvailablePoints } from "@/hooks/useAvailablePoints";
 import { useRewards } from "@/hooks/useRewards";
-import { computeStreakDays } from "@/utils/gamification";
+import { streakDays } from "@/utils/gamification";
 import { distanceThisWeek, environmentalImpact, periodComparison, trendSeries } from "@/utils/rideStats";
 import { formatDistance, formatDuration } from "@/utils/format";
 
@@ -73,7 +73,7 @@ export default function HomeScreen() {
   const firstName = (profile?.firstName || localFirst || "").trim();
   const weekKm = distanceThisWeek(rides) / 1000;
   const weekProgress = weeklyGoalKm > 0 ? weekKm / weeklyGoalKm : 0;
-  const streak = computeStreakDays(rides.map((r) => new Date(r.startedAt)));
+  const streak = streakDays(rides);
   const comparison = useMemo(() => periodComparison(rides, "week"), [rides]);
   const trend = useMemo(() => trendSeries(rides, "week"), [rides]);
   const lastRide = rides[0];

@@ -6,20 +6,26 @@ import GlassCard from "@/components/ui/GlassCard";
 import DuoProgressBar from "@/components/ui/DuoProgressBar";
 import { useTheme } from "@/theme/useTheme";
 import { useSettingsStore } from "@/stores/settingsStore";
-import { dailyMissions } from "@/utils/missions";
+import { dailyMissions, renewsIn } from "@/utils/missions";
+import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import type { Ride } from "@/types/ride";
 
 /** Duolingo-style daily quests computed from today's rides. */
 export default function MissionsCard({ rides, entranceDelay = 0 }: { rides: Ride[]; entranceDelay?: number }) {
   const { colors } = useTheme();
   const dailyGoal = useSettingsStore((s) => s.dailyGoalPoints);
-  const missions = useMemo(() => dailyMissions(rides, dailyGoal), [rides, dailyGoal]);
+  const userId = useCurrentUserId();
+  // Drawn per user and day; only verified rides count (see utils/missions.ts).
+  const missions = useMemo(() => dailyMissions(rides, dailyGoal, new Date(), userId ?? ""), [rides, dailyGoal, userId]);
   const done = missions.filter((m) => m.done).length;
 
   return (
     <GlassCard entranceDelay={entranceDelay}>
       <View style={styles.head}>
-        <Text style={[styles.title, { color: colors.ink }]}>Misiones de hoy</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.title, { color: colors.ink }]}>Misiones de hoy</Text>
+          <Text style={{ color: colors.inkSoft, fontSize: 12 }}>Nuevas en {renewsIn()} · solo cuentan recorridos verificados</Text>
+        </View>
         <View style={[styles.counter, { backgroundColor: done === missions.length ? colors.primary : colors.chipFill }]}>
           <Ionicons name="star" size={12} color={colors.ink} />
           <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 12 }}>

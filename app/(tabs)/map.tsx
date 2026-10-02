@@ -36,7 +36,7 @@ import { formatDistance, formatDuration, formatSpeed } from "@/utils/format";
 import { distanceThisWeek } from "@/utils/rideStats";
 import { goalLabel, goalProgress } from "@/utils/rideGoals";
 import { pointsToday } from "@/utils/streak";
-import { computeStreakDays } from "@/utils/gamification";
+import { streakDays } from "@/utils/gamification";
 import { useLayout } from "@/hooks/useLayout";
 import { bearingDegrees, haversineMeters } from "@/utils/geo";
 
@@ -209,7 +209,7 @@ export default function MapScreen() {
   const weekKm = distanceThisWeek(rides) / 1000;
   const weekProgress = weeklyGoalKm > 0 ? weekKm / weeklyGoalKm : 0;
   const riding = status === "ACTIVE" || status === "PAUSED";
-  const streak = computeStreakDays(rides.map((r) => new Date(r.startedAt)));
+  const streak = streakDays(rides);
   const rideGoalProgress = goal && ride ? goalProgress(goal, ride) : 0;
 
   // The bottom card slides down and fades while the options menu is open,

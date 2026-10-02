@@ -1,5 +1,6 @@
 import type { Ride } from "@/types/ride";
 import { startOfDay, startOfWeek } from "@/utils/rideStats";
+import { DAILY_POINTS_CAP } from "@/utils/rideScore";
 
 export type DayStatus = "done" | "today" | "missed" | "future";
 
@@ -40,13 +41,18 @@ export function pointsToday(rides: Ride[], now = new Date()): number {
   return rides.filter((r) => dayKey(r.startedAt) === today).reduce((s, r) => s + r.pointsEarned, 0);
 }
 
-/** Daily goal presets, Duolingo-style. */
+/** Daily goal presets, Duolingo-style. All reachable under the server's daily cap (150). */
 export const DAILY_GOALS = [
-  { label: "Casual", points: 50 },
-  { label: "Regular", points: 100 },
-  { label: "Serio", points: 200 },
-  { label: "Intenso", points: 400 },
+  { label: "Casual", points: 25 },
+  { label: "Regular", points: 50 },
+  { label: "Serio", points: 100 },
+  { label: "Intenso", points: 150 },
 ] as const;
+
+/** A saved goal above the daily points cap (old presets were 200/400) would be impossible: cap it. */
+export function effectiveDailyGoal(goal: number): number {
+  return Math.max(1, Math.min(goal, DAILY_POINTS_CAP));
+}
 
 /** Encouraging line for the streak card, based on today's state. */
 export function streakMessage(current: number, rodeToday: boolean): string {

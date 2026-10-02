@@ -99,6 +99,7 @@ test("every achievement has progress in [0,1] and demo history unlocks several",
     totalDurationSeconds: 0,
     bestRide: rides.reduce((m, x) => (x.distanceMeters > m.distanceMeters ? x : m)),
     currentStreakDays: 0,
+    bestStreakDays: 0,
     totalPoints: rides.reduce((s, x) => s + x.pointsEarned, 0),
   };
   for (const a of ACHIEVEMENTS) {
