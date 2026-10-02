@@ -2,7 +2,8 @@ import React, { useEffect } from "react";
 import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import Animated, { Easing, FadeIn, FadeOut, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSequence, withSpring, withTiming } from "react-native-reanimated";
+import Svg, { Circle } from "react-native-svg";
+import Animated, { Easing, FadeIn, FadeOut, useAnimatedProps, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import GlassSurface from "@/components/ui/GlassSurface";
 import { LinearGradient } from "expo-linear-gradient";
 import { GlintRing } from "@/components/ui/Glint";
@@ -18,6 +19,11 @@ import { RIDE_GOAL_OPTIONS, type RideGoal } from "@/utils/rideGoals";
 const LOGO = require("../../../assets/logo-mark.png");
 const BUTTON = 84;
 const DISC = BUTTON - 2; // the green disc fills the lens inside its 1 pt rim
+// Tap trace: a white stroke drawn around the circle, just outside its rim.
+const TRACE_SIZE = BUTTON + 10;
+const TRACE_R = TRACE_SIZE / 2 - 2;
+const TRACE_C = 2 * Math.PI * TRACE_R;
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 // Same "bouncy" release the tab-bar lens uses (SwiftUI .bouncy).
 const LENS_SPRING = spring(0.7, 0.5);
 
@@ -53,8 +59,11 @@ export default function RideLauncher({ open, onOpenChange, onSelect, weekProgres
   const pressStyle = useAnimatedStyle(() => ({ transform: [{ scaleX: 1 + 0.12 * press.value }, { scaleY: 1 + 0.06 * press.value }] }));
   const ripple = useSharedValue(1);
   const rippleStyle = useAnimatedStyle(() => ({ opacity: 0.85 * (1 - ripple.value), transform: [{ scale: 1 + 0.6 * ripple.value }] }));
-  // Under the finger a glass ring of light forms around the circle and grows a little; it melts away on release.
-  const pressRingStyle = useAnimatedStyle(() => ({ opacity: press.value, transform: [{ scale: 1.04 + 0.14 * press.value }] }));
+  // Tap: a white line of light runs once around the circle until it closes, then fades.
+  const trace = useSharedValue(0);
+  const traceOpacity = useSharedValue(0);
+  const traceProps = useAnimatedProps(() => ({ strokeDashoffset: TRACE_C * (1 - trace.value) }));
+  const traceStyle = useAnimatedStyle(() => ({ opacity: traceOpacity.value }));
   useEffect(() => {
     turn.value = withSpring(open ? 1 : 0, SPRING.default);
   }, [open, turn]);
@@ -108,16 +117,38 @@ export default function RideLauncher({ open, onOpenChange, onSelect, weekProgres
         {/* Beacon: a soft ring radiates from the button every few seconds (the button itself stays still). */}
         {/* Release ripple: one green ring that spreads out of the button when you tap it (never on its own). */}
         <Animated.View pointerEvents="none" style={[styles.ripple, rippleStyle]} />
-        <Animated.View pointerEvents="none" style={[styles.pressRing, PRESS_RING_GLOW, pressRingStyle]} />
+        <Animated.View pointerEvents="none" style={[styles.trace, TRACE_GLOW, traceStyle]}>
+          <Svg width={TRACE_SIZE} height={TRACE_SIZE} style={[{ transform: [{ rotate: "-90deg" }] }]}>
+            <AnimatedCircle
+              cx={TRACE_SIZE / 2}
+              cy={TRACE_SIZE / 2}
+              r={TRACE_R}
+              stroke="#FFFFFF"
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              fill="none"
+              strokeDasharray={TRACE_C}
+              animatedProps={traceProps}
+            />
+          </Svg>
+        </Animated.View>
         <Animated.View style={[styles.buttonWrap, elevation("mid"), entryStyle, pressStyle, disabled && { opacity: 0.5 }]}>
           <Pressable
             disabled={disabled}
             accessibilityRole="button"
             accessibilityLabel={open ? "Cerrar opciones de recorrido" : "Opciones de recorrido"}
             accessibilityHint={open ? undefined : `Meta semanal al ${Math.round(Math.min(999, weekProgress * 100))}%`}
-            onPressIn={() => (press.value = withSpring(1, SPRING.press))}
+            onPressIn={() => {
+              press.value = withSpring(1, SPRING.press);
+              if (!still) {
+                traceOpacity.value = 1;
+                trace.value = withSequence(withTiming(0, { duration: 0 }), withTiming(1, { duration: 520, easing: Easing.inOut(Easing.cubic) }));
+              }
+            }}
             onPressOut={() => {
               press.value = withSpring(0, LENS_SPRING);
+              // Let the line finish closing the circle, then fade it (quick taps still see the full loop).
+              traceOpacity.value = withDelay(420, withTiming(0, { duration: 320 }));
               if (!still) ripple.value = withSequence(withTiming(0, { duration: 0 }), withTiming(1, { duration: 650, easing: Easing.out(Easing.cubic) }));
             }}
             onPress={() => {
@@ -148,14 +179,14 @@ export default function RideLauncher({ open, onOpenChange, onSelect, weekProgres
 // Web: inner highlight on top and soft shade at the bottom give the green disc glass volume.
 const DISC_VOLUME = Platform.OS === "web" ? ({ boxShadow: "inset 0 -3px 8px rgba(20,60,0,0.18)" } as object) : null;
 
-// Soft light around the press ring (web blur glow; native gets the plain glass ring).
-const PRESS_RING_GLOW = Platform.OS === "web" ? ({ boxShadow: "0 0 14px rgba(255,255,255,0.9), 0 0 4px rgba(123,245,16,0.6)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" } as object) : null;
+// Web: the traced line glows softly (drop-shadow follows the stroke, not a box).
+const TRACE_GLOW = Platform.OS === "web" ? ({ filter: "drop-shadow(0 0 4px rgba(255,255,255,0.95)) drop-shadow(0 0 2px rgba(123,245,16,0.6))" } as object) : null;
 
 const styles = StyleSheet.create({
   anchor: { position: "absolute", left: 0, right: 0, alignItems: "center" },
   buttonWrap: { borderRadius: BUTTON / 2 },
   button: { width: BUTTON, height: BUTTON },
-  pressRing: { position: "absolute", bottom: 0, width: BUTTON, height: BUTTON, borderRadius: BUTTON / 2, borderWidth: 2, borderColor: "rgba(255,255,255,0.95)", backgroundColor: "rgba(255,255,255,0.12)" },
+  trace: { position: "absolute", bottom: -(TRACE_SIZE - BUTTON) / 2, width: TRACE_SIZE, height: TRACE_SIZE, zIndex: 2 },
   ripple: { position: "absolute", bottom: 0, width: BUTTON, height: BUTTON, borderRadius: BUTTON / 2, borderWidth: 2.5, borderColor: "rgba(123,245,16,0.95)" },
   center: { alignItems: "center", justifyContent: "center" },
   // Green disc inset in the glass lens; the square art is drawn a bit smaller so nothing touches the edge.
