@@ -23,9 +23,9 @@ interface Props {
 /**
  * One place to explore and to find. A single search bar with a
  * "Puedo canjear" chip beside it (no separate filter row):
- *  - idle: featured carousel to browse, then every store as a compact list
- *  - searching or filtering: the carousel steps aside and only matches show,
- *    redeemable first, with a live count
+ *  - idle: just the carousel (minimal; no long list competing with it)
+ *  - searching or filtering: the carousel steps aside and only matches show
+ *    as a compact list, redeemable first, with a live count
  */
 export default function RewardsBrowser({ rewards, availablePoints, width, onPress }: Props) {
   const { colors } = useTheme();
@@ -90,12 +90,6 @@ export default function RewardsBrowser({ rewards, availablePoints, width, onPres
       ) : (
         <Animated.View key="browse" entering={FadeIn.duration(260)}>
           <RewardCarousel rewards={rewards} availablePoints={availablePoints} width={width} onPress={onPress} />
-          <View style={styles.pad}>
-            <Text style={[type.title3, styles.listTitle, { color: colors.ink }]} accessibilityRole="header">
-              Todas las tiendas
-            </Text>
-            <List rewards={shown} availablePoints={availablePoints} onPress={onPress} />
-          </View>
         </Animated.View>
       )}
     </View>
@@ -163,7 +157,6 @@ const styles = StyleSheet.create({
   input: { flex: 1, fontSize: 15.5, minWidth: 0, ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : null) },
   chip: { flexDirection: "row", alignItems: "center", gap: 5, height: 44, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1 },
   count: { marginBottom: 6, marginLeft: 4 },
-  listTitle: { marginTop: 30, marginBottom: 6 },
   row: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 12 },
   sep: { position: "absolute", top: 0, left: 74, right: 0, height: StyleSheet.hairlineWidth },
   stamp: { width: 60, height: 60, alignItems: "center", justifyContent: "center" },
