@@ -4,19 +4,22 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Animated, { Easing, FadeIn, FadeOut, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import GlassSurface from "@/components/ui/GlassSurface";
+import { LinearGradient } from "expo-linear-gradient";
 import { GlintRing } from "@/components/ui/Glint";
 import ProgressRing from "@/components/ui/ProgressRing";
 import PressableScale from "@/components/ui/PressableScale";
 import { useTheme } from "@/theme/useTheme";
 import { elevation } from "@/theme/colors";
 import { SPRING, enter, spring } from "@/theme/motion";
-import { LIQUID_FILL_PROMINENT, LIQUID_RIM } from "@/theme/glass";
+import { LIQUID_FILL, LIQUID_RIM } from "@/theme/glass";
 import { type } from "@/theme/typography";
 import { RIDE_GOAL_OPTIONS, type RideGoal } from "@/utils/rideGoals";
 
 // Brand mark on its own #7BF510 field (square art; fits the circle with margin).
 const LOGO = require("../../../assets/logo-mark.png");
 const BUTTON = 84;
+const DISC = BUTTON - 6; // 3 pt of clear glass around the green disc
+const RING = BUTTON + 8;
 // Same "bouncy" release the tab-bar lens uses (SwiftUI .bouncy).
 const LENS_SPRING = spring(0.7, 0.5);
 
@@ -125,17 +128,20 @@ export default function RideLauncher({ open, onOpenChange, onSelect, weekProgres
               onOpenChange(!open);
             }}
           >
-            <ProgressRing progress={open ? 0 : Math.min(1, weekProgress)} size={BUTTON + 12} thickness={5} trackColor="rgba(255,255,255,0.92)">
-              {/* Liquid Glass lens: a frosted glass rim around the brand disc. */}
-              <GlassSurface radius={BUTTON / 2} intensity={100} specular backgroundColor={LIQUID_FILL_PROMINENT} borderColor="rgba(255,255,255,0.95)" style={[styles.button, styles.center, LIQUID_RIM]}>
-                <Animated.View style={[styles.disc, logoStyle]}>
+            {/* Thin weekly-progress ring (translucent track, green arc). */}
+            <ProgressRing progress={open ? 0 : Math.min(1, weekProgress)} size={RING} thickness={3} trackColor="rgba(255,255,255,0.45)">
+              {/* Clear Liquid Glass lens (same material as the tab bar) holding a tinted-glass brand disc. */}
+              <GlassSurface radius={BUTTON / 2} intensity={100} specular backgroundColor={LIQUID_FILL} borderColor="rgba(255,255,255,0.7)" style={[styles.button, styles.center, LIQUID_RIM]}>
+                <Animated.View style={[styles.disc, DISC_VOLUME, logoStyle]}>
                   <Image source={LOGO} style={styles.logo} resizeMode="contain" accessibilityIgnoresInvertColors />
+                  {/* Specular reflection on top of the green: tinted glass, not a flat sticker. */}
+                  <LinearGradient pointerEvents="none" colors={["rgba(255,255,255,0.55)", "rgba(255,255,255,0.08)", "rgba(255,255,255,0)"]} locations={[0, 0.45, 0.6]} start={{ x: 0.2, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
+                  {/* Light travelling around the glass edge. */}
+                  {!open && <GlintRing size={DISC} width={2.5} />}
                 </Animated.View>
                 <Animated.View style={[StyleSheet.absoluteFill, styles.center, closeStyle]}>
                   <Ionicons name="close" size={30} color={colors.ink} />
                 </Animated.View>
-                {/* Light travelling around the glass edge. */}
-                {!open && <GlintRing size={BUTTON} width={3} />}
               </GlassSurface>
             </ProgressRing>
           </Pressable>
@@ -145,16 +151,18 @@ export default function RideLauncher({ open, onOpenChange, onSelect, weekProgres
   );
 }
 
+// Web: inner highlight on top and soft shade at the bottom give the green disc glass volume.
+const DISC_VOLUME = Platform.OS === "web" ? ({ boxShadow: "inset 0 1.5px 0 rgba(255,255,255,0.75), inset 0 -3px 8px rgba(20,60,0,0.25)" } as object) : null;
+
 const styles = StyleSheet.create({
   anchor: { position: "absolute", left: 0, right: 0, alignItems: "center" },
-  buttonWrap: { borderRadius: (BUTTON + 12) / 2 },
+  buttonWrap: { borderRadius: RING / 2 },
   button: { width: BUTTON, height: BUTTON },
-  beacon: { position: "absolute", bottom: 0, width: BUTTON + 12, height: BUTTON + 12, borderRadius: (BUTTON + 12) / 2, borderWidth: 2, borderColor: "rgba(123,245,16,0.9)" },
+  beacon: { position: "absolute", bottom: 0, width: RING, height: RING, borderRadius: RING / 2, borderWidth: 3, borderColor: "rgba(123,245,16,0.95)" },
   center: { alignItems: "center", justifyContent: "center" },
-  // logo.png carries ~15% transparent padding, so it's drawn larger than the circle's inner area.
-  // Green disc inset in the glass rim; the square art is drawn a bit smaller so nothing touches the edge.
-  disc: { width: BUTTON - 12, height: BUTTON - 12, borderRadius: (BUTTON - 12) / 2, backgroundColor: "#7BF510", alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  logo: { width: (BUTTON - 12) * 0.92, height: (BUTTON - 12) * 0.92 },
+  // Green disc inset in the glass lens; the square art is drawn a bit smaller so nothing touches the edge.
+  disc: { width: DISC, height: DISC, borderRadius: DISC / 2, backgroundColor: "#7BF510", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  logo: { width: DISC * 0.92, height: DISC * 0.92 },
   menu: { position: "absolute", left: 24, right: 24, gap: 8, alignSelf: "center", maxWidth: 380, marginHorizontal: "auto" } as any,
   menuTitle: { textAlign: "center", marginBottom: 8 },
   option: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, paddingHorizontal: 12 },

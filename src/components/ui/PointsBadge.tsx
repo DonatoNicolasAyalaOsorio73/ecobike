@@ -9,7 +9,7 @@ import AnimatedNumber from "./AnimatedNumber";
 import { useTheme } from "@/theme/useTheme";
 import { elevation } from "@/theme/colors";
 import { SPRING } from "@/theme/motion";
-import { LIQUID_FILL_PROMINENT, LIQUID_RIM } from "@/theme/glass";
+import { LIQUID_FILL_STRONG, LIQUID_RIM } from "@/theme/glass";
 import { ShineSweep } from "./Glint";
 import { DAILY_POINTS_CAP } from "@/utils/rideScore";
 
@@ -39,8 +39,8 @@ export default function PointsBadge({ points, today }: Props) {
   return (
     <Animated.View style={popStyle}>
       <PressableScale depth={0.05} onPress={() => router.navigate("/(tabs)/points")} accessibilityLabel={`${points} puntos${today !== undefined ? `, ${today} hoy de ${DAILY_POINTS_CAP}` : ""}. Abrir premios`} style={[{ borderRadius: 999 }, elevation("low")]}>
-        {/* Prominent glass (clearer text) with a bright rim and a light that sweeps across now and then. */}
-        <GlassSurface radius={999} intensity={100} specular backgroundColor={LIQUID_FILL_PROMINENT} borderColor="rgba(255,255,255,0.98)" style={[styles.capsule, LIQUID_RIM]}>
+        {/* Translucent Liquid Glass with a bright rim and a light that sweeps across now and then. */}
+        <GlassSurface radius={999} intensity={100} specular backgroundColor={LIQUID_FILL_STRONG} borderColor="rgba(255,255,255,0.9)" style={[styles.capsule, LIQUID_RIM]}>
           <ShineSweep width={170} />
           <Animated.View style={[styles.icon, { backgroundColor: colors.primary }, iconStyle]}>
             <Ionicons name="ribbon" size={16} color={colors.onPrimary} />
@@ -63,7 +63,7 @@ export default function PointsBadge({ points, today }: Props) {
 }
 
 const styles = StyleSheet.create({
-  capsule: { flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 6, paddingRight: 16, paddingVertical: 6, borderWidth: 1.5 },
+  capsule: { flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 6, paddingRight: 16, paddingVertical: 6, borderWidth: 1 },
   icon: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
   row: { flexDirection: "row", alignItems: "baseline", gap: 4 },
   value: { fontSize: 19, fontWeight: "800", letterSpacing: -0.5 },

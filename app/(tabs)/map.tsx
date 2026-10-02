@@ -7,7 +7,7 @@ import Animated, { FadeIn, FadeInDown, FadeOutDown, ZoomIn, useAnimatedStyle, wi
 import RideMap from "@/components/map/RideMap";
 import RideLauncher from "@/components/map/RideLauncher";
 import PointsBadge from "@/components/ui/PointsBadge";
-import { LIQUID_FILL_PROMINENT, LIQUID_RIM } from "@/theme/glass";
+import { LIQUID_FILL_STRONG, LIQUID_RIM } from "@/theme/glass";
 import MapSheet from "@/components/map/MapSheet";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassSurface from "@/components/ui/GlassSurface";
@@ -25,6 +25,7 @@ import { useRideStore } from "@/stores/rideStore";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useRiderStats } from "@/hooks/useRiderStats";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useToastStore } from "@/stores/toastStore";
 import { useAvailablePoints } from "@/hooks/useAvailablePoints";
 import { formatDistance, formatDuration, formatSpeed } from "@/utils/format";
 import { distanceThisWeek } from "@/utils/rideStats";
@@ -60,6 +61,7 @@ export default function MapScreen() {
     recoverInProgressRide,
   } = useRideStore();
   const { desktop, bottomInset } = useLayout();
+  const toast = useToastStore((st) => st.show);
   const [menuOpen, setMenuOpen] = useState(false);
   // Panel detent: unfolded by default; the rider can fold it to see more map.
   const [sheetOpen, setSheetOpen] = useState(true);
@@ -92,22 +94,35 @@ export default function MapScreen() {
   }, []);
 
   async function locate(ask: boolean) {
+    const go = (p: Location.LocationObject | null) => {
+      if (!p) return false;
+      setIdleCenter({ lat: p.coords.latitude, lng: p.coords.longitude });
+      setRecenterKey((k) => k + 1);
+      return true;
+    };
+    // Never let one slow fix block the button: each reading gets a deadline.
+    const within = <T,>(ms: number, p: Promise<T>) => Promise.race([p, new Promise<null>((r) => setTimeout(() => r(null), ms))]).catch(() => null);
     try {
       let { status: perm } = await Location.getForegroundPermissionsAsync();
       if (perm !== "granted" && ask) perm = (await Location.requestForegroundPermissionsAsync()).status;
-      if (perm !== "granted") return;
-      // A cached fix can be hours old (another place): use it only if it's fresh,
-      // to move instantly, then always refine with a live high-accuracy fix.
-      const recent = await Location.getLastKnownPositionAsync({ maxAge: 60_000, requiredAccuracy: 100 }).catch(() => null);
-      if (recent) {
-        setIdleCenter({ lat: recent.coords.latitude, lng: recent.coords.longitude });
-        setRecenterKey((k) => k + 1);
+      if (perm !== "granted") {
+        if (ask) toast("Activa el permiso de ubicación para centrar el mapa en ti.", "error");
+        return;
       }
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      setIdleCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-      setRecenterKey((k) => k + 1);
+      // 1) A cached fix only if it's fresh (an old one can be far away): instant move.
+      const recent = await within(1500, Location.getLastKnownPositionAsync({ maxAge: 60_000, requiredAccuracy: 150 }));
+      const movedFast = go(recent);
+      // 2) A quick live fix (Wi-Fi/cell assisted) with a deadline.
+      const quick = await within(8000, Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
+      const moved = go(quick) || movedFast;
+      // 3) Refine with GPS in the background (can take a while indoors; never blocks).
+      within(15000, Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High })).then((p) => go(p));
+      // 4) Last resort: any known position, else tell the rider why nothing moved.
+      if (!moved && !go(await within(1500, Location.getLastKnownPositionAsync())) && ask) {
+        toast("No pudimos obtener tu ubicación. Revisa que el GPS esté activo.", "error");
+      }
     } catch {
-      // Location unavailable (browser blocked, GPS off): the map just stays where it is.
+      if (ask) toast("No pudimos obtener tu ubicación. Revisa que el GPS esté activo.", "error");
     }
   }
 
@@ -237,7 +252,7 @@ export default function MapScreen() {
             <PointsBadge points={availablePoints} today={pointsToday(rides)} />
           </Animated.View>
           <Animated.View entering={enter(160)}>
-            <GlassSurface radius={999} intensity={100} specular backgroundColor={LIQUID_FILL_PROMINENT} borderColor="rgba(255,255,255,0.98)" style={[styles.streakPill, LIQUID_RIM]}>
+            <GlassSurface radius={999} intensity={100} specular backgroundColor={LIQUID_FILL_STRONG} borderColor="rgba(255,255,255,0.9)" style={[styles.streakPill, LIQUID_RIM]}>
               <Flame size={20} lit={streak > 0} />
               <View>
                 <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 17, letterSpacing: -0.4 }}>{streak}</Text>
@@ -294,7 +309,7 @@ const styles = StyleSheet.create({
   safe: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
   topRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 10, paddingTop: 10 },
   pointsPill: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 9 },
-  streakPill: { flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: 12, paddingRight: 16, paddingVertical: 6, minHeight: 46, borderWidth: 1.5 },
+  streakPill: { flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: 12, paddingRight: 16, paddingVertical: 6, minHeight: 46, borderWidth: 1 },
   rail: { position: "absolute", right: 14, top: 120, gap: 12, alignItems: "center" },
   bottom: { position: "absolute", left: 14, right: 14 },
   // Desktop: a floating panel at the leading edge so the map stays the protagonist.
