@@ -10,8 +10,6 @@ import Animated, {
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
-  withDelay,
-  withRepeat,
   withSequence,
   withSpring,
   withTiming,
@@ -50,25 +48,17 @@ function offset(scrollX: number, index: number, step: number) {
   return scrollX / step - index;
 }
 
-/** Soft light orb drifting inside the art (decorative, off with reduce motion). */
-function Orb({ size, color, x, y, delay, still }: { size: number; color: string; x: number; y: number; delay: number; still: boolean }) {
-  const t = useSharedValue(0);
-  useEffect(() => {
-    if (still) return;
-    t.value = withDelay(delay, withRepeat(withTiming(1, { duration: 5200, easing: Easing.inOut(Easing.sin) }), -1, true));
-  }, [t, delay, still]);
-  const style = useAnimatedStyle(() => ({
-    transform: [{ translateX: t.value * 26 }, { translateY: -t.value * 18 }, { scale: 1 + t.value * 0.12 }],
-  }));
-  return <Animated.View style={[styles.orb, { width: size, height: size, borderRadius: size / 2, backgroundColor: color, left: x, top: y }, ORB_BLUR, style]} />;
+/** Soft static light highlight inside the art. */
+function Orb({ size, color, x, y }: { size: number; color: string; x: number; y: number }) {
+  return <View style={[styles.orb, { width: size, height: size, borderRadius: size / 2, backgroundColor: color, left: x, top: y }, ORB_BLUR]} />;
 }
 
-/** Clean card surface with drifting light orbs; the icon only stands in when there's no logo. */
-function Art({ reward, still }: { reward: Reward; still: boolean }) {
+/** Clean card surface; the icon only stands in when there's no logo. Never moves on its own. */
+function Art({ reward }: { reward: Reward }) {
   return (
     <LinearGradient colors={ART} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill}>
-      <Orb size={180} color="rgba(255,255,255,0.75)" x={-40} y={-30} delay={0} still={still} />
-      <Orb size={140} color="rgba(255,255,255,0.9)" x={150} y={170} delay={900} still={still} />
+      <Orb size={180} color="rgba(255,255,255,0.75)" x={-40} y={-30} />
+      <Orb size={140} color="rgba(255,255,255,0.9)" x={150} y={170} />
       {!reward.imageUrl && (
         <View style={styles.artIcon}>
           <Ionicons name={reward.icon as any} size={120} color="rgba(28,36,16,0.16)" />
@@ -99,15 +89,6 @@ function Card({ reward: source, index, cardWidth, cardHeight, step, scrollX, aff
   const ink = colors.ink;
   const inkSoft = colors.inkSoft;
 
-  // A band of light sweeps across redeemable cards every few seconds.
-  useEffect(() => {
-    if (still || !affordable) return;
-    shine.value = withDelay(
-      600 + index * 250,
-      withRepeat(withSequence(withTiming(1.4, { duration: 1300, easing: Easing.inOut(Easing.cubic) }), withTiming(1.4, { duration: 2600 }), withTiming(-1, { duration: 0 })), -1)
-    );
-  }, [shine, still, affordable, index]);
-
   // Coverflow: neighbours rotate away in 3D, shrink, sink and dim.
   const cardStyle = useAnimatedStyle(() => {
     const o = offset(scrollX.value, index, step);
@@ -134,13 +115,10 @@ function Card({ reward: source, index, cardWidth, cardHeight, step, scrollX, aff
       transform: [{ translateX: interpolate(o, [-1, 0, 1], [40, 0, -40], Extrapolation.CLAMP) }, { translateY: interpolate(Math.abs(o), [0, 1], [0, 16], Extrapolation.CLAMP) }],
     };
   });
-  // The stamp floats gently (a slow bob and a hint of tilt) while focused.
-  const float = useSharedValue(0);
-  useEffect(() => {
-    if (still) return;
-    float.value = withDelay(index * 300, withRepeat(withTiming(1, { duration: 2800, easing: Easing.inOut(Easing.sin) }), -1, true));
-  }, [float, still, index]);
-  const floatStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -6 * float.value }, { rotate: `${-2 + 4 * float.value}deg` }] }));
+  // The stamp only reacts to your finger: under a press it lifts, grows and tilts a little.
+  const stampPressStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: -6 * press.value }, { scale: 1 + 0.06 * press.value }, { rotate: `${still ? 0 : -4 * press.value}deg` }],
+  }));
   const logoStyle = useAnimatedStyle(() => {
     const o = offset(scrollX.value, index, step);
     return { transform: [{ translateX: interpolate(o, [-1, 0, 1], [-cardWidth * 0.12, 0, cardWidth * 0.12], Extrapolation.CLAMP) }, { scale: interpolate(Math.abs(o), [0, 1], [1, 0.85], Extrapolation.CLAMP) }] };
@@ -159,13 +137,15 @@ function Card({ reward: source, index, cardWidth, cardHeight, step, scrollX, aff
           onPress={onPress}
           onPressIn={() => {
             press.value = withSpring(1, SPRING.press);
+            // Redeemable cards answer the touch with one sweep of light.
+            if (affordable && !still) shine.value = withSequence(withTiming(-1, { duration: 0 }), withTiming(1.4, { duration: 650, easing: Easing.out(Easing.cubic) }));
             if (Platform.OS !== "web") Haptics.selectionAsync().catch(() => {});
           }}
           onPressOut={() => (press.value = withSpring(0, SPRING.momentum))}
           style={[styles.card, { height: cardHeight }]}
         >
           <Animated.View style={[StyleSheet.absoluteFill, artStyle]}>
-            <Art reward={reward} still={still} />
+            <Art reward={reward} />
           </Animated.View>
 
           {/* Legibility: light scrim under the text. */}
@@ -182,7 +162,7 @@ function Card({ reward: source, index, cardWidth, cardHeight, step, scrollX, aff
 
           {reward.imageUrl ? (
             <Animated.View pointerEvents="none" style={[styles.stamp, logoStyle]}>
-              <Animated.View style={floatStyle}>
+              <Animated.View style={stampPressStyle}>
                 <Image source={{ uri: reward.imageUrl }} style={[styles.stampImg, STAMP_SHADOW]} resizeMode="contain" onError={() => setBroken(true)} accessibilityIgnoresInvertColors />
               </Animated.View>
             </Animated.View>
@@ -244,9 +224,10 @@ function Dot({ index, step, scrollX, onPress }: { index: number; step: number; s
 
 /**
  * Featured rewards: tall clean cards in a 3D coverflow, each with the
- * company logo as a large floating stamp (no box, no background). Every
- * motion is scroll-driven on the UI thread (no re-render per frame);
- * "reduce motion" keeps paging but drops tilt, float, orbs and light sweep.
+ * company logo as a large stamp (no box, no background). Nothing moves on
+ * its own: every motion answers the finger (swipe drives the coverflow and
+ * parallax on the UI thread; a press lifts the stamp and, on redeemable
+ * cards, sweeps a light once). "Reduce motion" drops the 3D tilt.
  */
 export default function RewardCarousel({ rewards, availablePoints, width, onPress }: Props) {
   const scrollX = useSharedValue(0);
