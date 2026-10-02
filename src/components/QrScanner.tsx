@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     height: 240,
     borderRadius: 24,
     borderWidth: 3,
-    borderColor: "#ADF14B",
+    borderColor: "#7BF510",
   },
   close: { position: "absolute", top: 56, right: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center" },
   hint: { position: "absolute", bottom: 80, alignSelf: "center", color: "#fff", fontSize: 15, fontWeight: "700" },

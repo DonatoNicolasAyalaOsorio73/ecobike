@@ -1,5 +1,5 @@
 // EcoBike design tokens — Liquid Glass palette.
-// Primary green anchored to the brand color (#ADF14B), keeping the original
+// Primary green anchored to the brand color (#7BF510), keeping the original
 // mockup's near-white/soft-green "glass on blobs" identity for light mode
 // and adding a real dark-mode counterpart (same hues, inverted surfaces).
 import { Platform } from "react-native";
@@ -8,14 +8,14 @@ export type Theme = Record<keyof typeof lightColorTokens, string>;
 
 const lightColorTokens = {
   bgTop: "#FFFFFF",
-  bgBottom: "#F2FBE9",
-  blobGreen: "#C3EE7C",
-  blobGreenSoft: "#E3F9C8",
+  bgBottom: "#F1FCE6",
+  blobGreen: "#B8F57E",
+  blobGreenSoft: "#E2FCC9",
 
-  primary: "#ADF14B",
+  primary: "#7BF510",
   // Not a dark green: the "on lime" ink used for text/icons that need emphasis.
   primaryDark: "#1C2410",
-  primaryLight: "#D8FBA6",
+  primaryLight: "#CAFB9F",
   onPrimary: "#14210A",
 
   ink: "#14171A",
@@ -38,7 +38,7 @@ const lightColorTokens = {
   placeholder: "#9AA69C",
   divider: "rgba(20,23,26,0.12)",
 
-  success: "#ADF14B",
+  success: "#7BF510",
   warning: "#5B6660",
   danger: "#E5484D",
   info: "#1C2410",
@@ -53,14 +53,14 @@ export const lightColors: Theme = lightColorTokens;
  * near-black ink for text/icons. Only destructive actions use red.
  */
 export const accents = {
-  green: { base: "#ADF14B", soft: "#F1F2F0", lip: "#1C2410" },
-  lime: { base: "#C3F57A", soft: "#F1F2F0", lip: "#1C2410" },
-  blue: { base: "#B9F45F", soft: "#F1F2F0", lip: "#1C2410" },
-  orange: { base: "#A6EC45", soft: "#F1F2F0", lip: "#1C2410" },
-  gold: { base: "#BDF26A", soft: "#F1F2F0", lip: "#1C2410" },
-  purple: { base: "#9EE23C", soft: "#F1F2F0", lip: "#1C2410" },
+  green: { base: "#7BF510", soft: "#F1F2F0", lip: "#1C2410" },
+  lime: { base: "#7BF510", soft: "#F1F2F0", lip: "#1C2410" },
+  blue: { base: "#7BF510", soft: "#F1F2F0", lip: "#1C2410" },
+  orange: { base: "#7BF510", soft: "#F1F2F0", lip: "#1C2410" },
+  gold: { base: "#7BF510", soft: "#F1F2F0", lip: "#1C2410" },
+  purple: { base: "#7BF510", soft: "#F1F2F0", lip: "#1C2410" },
   red: { base: "#E5484D", soft: "#FDE7E8", lip: "#B83236" },
-  teal: { base: "#CDF78C", soft: "#F1F2F0", lip: "#1C2410" },
+  teal: { base: "#7BF510", soft: "#F1F2F0", lip: "#1C2410" },
 } as const;
 export type AccentName = keyof typeof accents;
 

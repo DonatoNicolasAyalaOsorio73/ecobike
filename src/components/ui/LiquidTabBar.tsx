@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", margin: INSET, height: 46 },
   lensSlot: { position: "absolute", top: 0, bottom: 0, left: 0 },
   // Brand lime lens (selection is functional state); ink icon/label on top, as on the primary button.
-  lens: { flex: 1, marginHorizontal: 3, zIndex: 1, borderRadius: BAR_RADIUS - INSET, backgroundColor: "rgba(173,241,75,0.92)" },
+  lens: { flex: 1, marginHorizontal: 3, zIndex: 1, borderRadius: BAR_RADIUS - INSET, backgroundColor: "rgba(123,245,16,0.92)" },
   item: { flex: 1, alignItems: "center", justifyContent: "center", gap: 1, paddingHorizontal: 2 },
   label: { fontSize: 10, letterSpacing: -0.1 },
 });

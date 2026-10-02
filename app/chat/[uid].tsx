@@ -205,7 +205,7 @@ export default function ChatScreen() {
 }
 
 // iMessage-style bubbles in the app green.
-const SENT = "#ADF14B";
+const SENT = "#7BF510";
 const RECEIVED = "#E9EFE8";
 
 const styles = StyleSheet.create({

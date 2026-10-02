@@ -153,7 +153,7 @@ async function ensureTracking() {
         foregroundService: {
           notificationTitle: "EcoBike está registrando tu recorrido",
           notificationBody: "Toca para volver a la app.",
-          notificationColor: "#ADF14B",
+          notificationColor: "#7BF510",
         },
       });
       backgroundUpdates = true;

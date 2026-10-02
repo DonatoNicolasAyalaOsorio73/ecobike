@@ -52,9 +52,9 @@ export default function AreaChart({ values, labels, height = 140, accessibilityL
                 </LinearGradient>
               </Defs>
               <Path d={area} fill="url(#areaFill)" />
-              <Path d={line} stroke="#9EE23C" strokeWidth={2.5} fill="none" strokeLinecap="round" />
+              <Path d={line} stroke="#7BF510" strokeWidth={2.5} fill="none" strokeLinecap="round" />
               {values[maxIndex] > 0 && (
-                <Circle cx={pts[maxIndex].x} cy={pts[maxIndex].y} r={4.5} fill={colors.surface} stroke="#9EE23C" strokeWidth={2.5} />
+                <Circle cx={pts[maxIndex].x} cy={pts[maxIndex].y} r={4.5} fill={colors.surface} stroke="#7BF510" strokeWidth={2.5} />
               )}
             </Svg>
           </Animated.View>

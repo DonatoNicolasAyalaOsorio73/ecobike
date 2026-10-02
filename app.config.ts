@@ -66,7 +66,7 @@ const config: ExpoConfig = {
     name: "EcoBike",
     shortName: "EcoBike",
     description: "Pedalea, registra tus recorridos y gana puntos para canjear en tiendas aliadas.",
-    themeColor: "#ADF14B",
+    themeColor: "#7BF510",
     backgroundColor: "#F6FBF3",
     lang: "es",
     bundler: "metro",
@@ -91,7 +91,7 @@ const config: ExpoConfig = {
         recordAudioAndroid: false,
       },
     ],
-    ["expo-notifications", { color: "#ADF14B" }],
+    ["expo-notifications", { color: "#7BF510" }],
     // Required peer of @expo/vector-icons / expo-symbols — without it icons
     // fail to load in a real (non-Expo-Go) native build.
     "expo-font",

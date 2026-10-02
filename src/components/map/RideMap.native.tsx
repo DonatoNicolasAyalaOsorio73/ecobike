@@ -38,11 +38,12 @@ export default function RideMap({ route, center, height = 260, fill, recenterKey
   const cameraPosition = React.useMemo(() => {
     const fit = fitRoute ? routeCamera(route) : null;
     if (fit) return { coordinates: { latitude: fit.center.lat, longitude: fit.center.lng }, zoom: fit.zoom };
-    return center ? { coordinates: { latitude: center.lat, longitude: center.lng }, zoom: 16 } : undefined;
+    // Street level: the rider wants to see the road around them, not the city.
+    return center ? { coordinates: { latitude: center.lat, longitude: center.lng }, zoom: 17.5 } : undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [center?.lat, center?.lng, recenterKey, fitRoute, route.length]);
   // Ink casing under the lime line (Apple Maps style) keeps the light route legible.
-  const polylines = coordinates.length > 1 ? [{ coordinates, color: "rgba(28,36,16,0.35)", width: 9 }, { coordinates, color: "#ADF14B", width: 6 }] : [];
+  const polylines = coordinates.length > 1 ? [{ coordinates, color: "rgba(28,36,16,0.35)", width: 9 }, { coordinates, color: "#7BF510", width: 6 }] : [];
   const wrap = fill ? StyleSheet.absoluteFill : [styles.card, { height }];
 
   return (

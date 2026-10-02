@@ -12,7 +12,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { passwordStrength, validateEmail, validateName } from "@/utils/profileForm";
 
 // Weak reads as an error; the rest step up through the brand lime (functional color).
-const STRENGTH_COLORS = ["#E5484D", "#E5484D", "#CDF78C", "#B9F45F", "#ADF14B"];
+const STRENGTH_COLORS = ["#E5484D", "#E5484D", "#B5F977", "#97F743", "#7BF510"];
 
 export default function RegisterScreen() {
   const { colors } = useTheme();

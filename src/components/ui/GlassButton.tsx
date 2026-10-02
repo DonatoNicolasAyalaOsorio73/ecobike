@@ -21,7 +21,7 @@ interface Props {
 // scales down slightly under the finger and settles back critically damped.
 // Same props as before, so every button in the app picks up the new feel.
 const PALETTE = {
-  primary: { fill: ["#B9F45F", "#9EE23C"] as const, border: "rgba(255,255,255,0.55)", text: "#15240A" },
+  primary: { fill: ["#8EF733", "#72E80C"] as const, border: "rgba(255,255,255,0.55)", text: "#15240A" },
   secondary: { fill: ["rgba(255,255,255,0.62)", "rgba(255,255,255,0.42)"] as const, border: "rgba(255,255,255,0.85)", text: "#1C2420" },
   danger: { fill: ["#FFFFFF", "#FFF6F6"] as const, border: "rgba(229,72,77,0.25)", text: "#D93036" },
   disabled: { fill: ["#EEF1EC", "#EEF1EC"] as const, border: "transparent", text: "#A2ACA4" },

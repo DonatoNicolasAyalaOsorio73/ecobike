@@ -7,7 +7,7 @@ import Animated, { FadeIn, FadeInDown, FadeOutDown, ZoomIn, useAnimatedStyle, wi
 import RideMap from "@/components/map/RideMap";
 import RideLauncher from "@/components/map/RideLauncher";
 import PointsBadge from "@/components/ui/PointsBadge";
-import { LIQUID_BORDER, LIQUID_FILL_STRONG, LIQUID_RIM } from "@/theme/glass";
+import { LIQUID_FILL_PROMINENT, LIQUID_RIM } from "@/theme/glass";
 import MapSheet from "@/components/map/MapSheet";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassSurface from "@/components/ui/GlassSurface";
@@ -96,7 +96,14 @@ export default function MapScreen() {
       let { status: perm } = await Location.getForegroundPermissionsAsync();
       if (perm !== "granted" && ask) perm = (await Location.requestForegroundPermissionsAsync()).status;
       if (perm !== "granted") return;
-      const pos = (await Location.getLastKnownPositionAsync().catch(() => null)) ?? (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
+      // A cached fix can be hours old (another place): use it only if it's fresh,
+      // to move instantly, then always refine with a live high-accuracy fix.
+      const recent = await Location.getLastKnownPositionAsync({ maxAge: 60_000, requiredAccuracy: 100 }).catch(() => null);
+      if (recent) {
+        setIdleCenter({ lat: recent.coords.latitude, lng: recent.coords.longitude });
+        setRecenterKey((k) => k + 1);
+      }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       setIdleCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
       setRecenterKey((k) => k + 1);
     } catch {
@@ -230,7 +237,7 @@ export default function MapScreen() {
             <PointsBadge points={availablePoints} today={pointsToday(rides)} />
           </Animated.View>
           <Animated.View entering={enter(160)}>
-            <GlassSurface radius={999} intensity={80} specular backgroundColor={LIQUID_FILL_STRONG} borderColor={LIQUID_BORDER} style={[styles.streakPill, LIQUID_RIM]}>
+            <GlassSurface radius={999} intensity={100} specular backgroundColor={LIQUID_FILL_PROMINENT} borderColor="rgba(255,255,255,0.98)" style={[styles.streakPill, LIQUID_RIM]}>
               <Flame size={20} lit={streak > 0} />
               <View>
                 <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 17, letterSpacing: -0.4 }}>{streak}</Text>
@@ -287,7 +294,7 @@ const styles = StyleSheet.create({
   safe: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
   topRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 10, paddingTop: 10 },
   pointsPill: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 9 },
-  streakPill: { flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: 12, paddingRight: 16, paddingVertical: 6, minHeight: 46 },
+  streakPill: { flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: 12, paddingRight: 16, paddingVertical: 6, minHeight: 46, borderWidth: 1.5 },
   rail: { position: "absolute", right: 14, top: 120, gap: 12, alignItems: "center" },
   bottom: { position: "absolute", left: 14, right: 14 },
   // Desktop: a floating panel at the leading edge so the map stays the protagonist.

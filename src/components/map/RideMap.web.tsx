@@ -7,6 +7,9 @@ import { useTheme } from "@/theme/useTheme";
 import { routeCamera } from "@/utils/mapCamera";
 
 const BOGOTA = { lat: 4.711, lng: -74.0721 };
+// Integer zooms: Leaflet snaps fractional ones (17.5 → 18, where OSM floods the map with shop icons).
+const STREET_ZOOM = 17;
+const FOLLOW_ZOOM = 16;
 
 // Dark mode for OSM tiles without another tile provider: invert + hue-rotate
 // keeps streets readable and matches the app's dark glass surfaces.
@@ -25,12 +28,18 @@ function injectCss() {
 
 function Recenter({ center, recenterKey, fitTo }: { center: { lat: number; lng: number } | null; recenterKey: number; fitTo: [[number, number], [number, number]] | null }) {
   const map = useMap();
+  const lastKey = React.useRef(recenterKey);
   useEffect(() => {
     if (fitTo) {
       map.fitBounds(fitTo, { padding: [28, 28] });
       return;
     }
-    if (center) map.flyTo([center.lat, center.lng], map.getZoom() < 14 ? 16 : map.getZoom(), { duration: 0.8 });
+    if (!center) return;
+    // "Locate me" always lands at street level (the rider wants to see the road);
+    // following updates keep the rider's zoom but never drift out past FOLLOW_ZOOM.
+    const located = lastKey.current !== recenterKey;
+    lastKey.current = recenterKey;
+    map.flyTo([center.lat, center.lng], located ? STREET_ZOOM : Math.max(map.getZoom(), FOLLOW_ZOOM), { duration: 0.8 });
   }, [center?.lat, center?.lng, recenterKey, map, fitTo?.[0][0], fitTo?.[1][1]]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
@@ -48,7 +57,7 @@ export default function RideMap({ route, center, height = 260, fill, recenterKey
     <View style={fill ? [StyleSheet.absoluteFill, { zIndex: 0 }] : [styles.card, { height, zIndex: 0 }]}>
       <MapContainer
         center={[initialCenter.lat, initialCenter.lng]}
-        zoom={15}
+        zoom={STREET_ZOOM}
         zoomControl={false} // pinch / wheel to zoom; keeps the corners free for app controls
         className={isDark ? "ecobike-dark" : undefined}
         style={{ height: "100%", width: "100%" }}
@@ -62,7 +71,7 @@ export default function RideMap({ route, center, height = 260, fill, recenterKey
         />
         {/* Lime route with an ink casing (Apple Maps style) so a light line stays legible on any tile. */}
         {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: "#1C2410", weight: 9, opacity: 0.35, lineCap: "round" }} />}
-        {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: "#ADF14B", weight: 6, lineCap: "round" }} />}
+        {positions.length > 1 && <Polyline positions={positions} pathOptions={{ color: "#7BF510", weight: 6, lineCap: "round" }} />}
         {/* You-are-here: soft accuracy halo + ink dot with a white ring (readable on any street color). */}
         {center && <CircleMarker center={[center.lat, center.lng]} radius={22} pathOptions={{ stroke: false, fillColor: "#1C2410", fillOpacity: 0.1 }} />}
         {center && (

@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming } from "react-native-reanimated";
 import { seededRandom } from "@/utils/random";
 
-const COLORS = ["#ADF14B", "#C3F57A", "#D8FBA6", "#9EE23C", "#E9FBCB", "#FFFFFF"];
+const COLORS = ["#7BF510", "#A3F85A", "#CAFB9F", "#5FD60A", "#E4FDCC", "#FFFFFF"];
 
 function Piece({ x, delay, rotate, color, drift }: { x: number; delay: number; rotate: number; color: string; drift: number }) {
   const t = useSharedValue(0);

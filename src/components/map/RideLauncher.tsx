@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Animated, { Easing, FadeIn, FadeOut, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import GlassSurface from "@/components/ui/GlassSurface";
+import { GlintRing } from "@/components/ui/Glint";
 import ProgressRing from "@/components/ui/ProgressRing";
 import PressableScale from "@/components/ui/PressableScale";
 import { useTheme } from "@/theme/useTheme";
@@ -13,7 +14,8 @@ import { LIQUID_FILL_PROMINENT, LIQUID_RIM } from "@/theme/glass";
 import { type } from "@/theme/typography";
 import { RIDE_GOAL_OPTIONS, type RideGoal } from "@/utils/rideGoals";
 
-const LOGO = require("../../../assets/logo.png");
+// Brand mark on its own #7BF510 field (square art; fits the circle with margin).
+const LOGO = require("../../../assets/logo-mark.png");
 const BUTTON = 84;
 // Same "bouncy" release the tab-bar lens uses (SwiftUI .bouncy).
 const LENS_SPRING = spring(0.7, 0.5);
@@ -124,14 +126,16 @@ export default function RideLauncher({ open, onOpenChange, onSelect, weekProgres
             }}
           >
             <ProgressRing progress={open ? 0 : Math.min(1, weekProgress)} size={BUTTON + 12} thickness={5} trackColor="rgba(255,255,255,0.92)">
-              {/* Liquid Glass lens (prominent variant: frosted so the logo always reads over the map). */}
-              <GlassSurface radius={BUTTON / 2} intensity={100} specular backgroundColor={LIQUID_FILL_PROMINENT} borderColor="rgba(255,255,255,0.95)" style={[styles.button, LIQUID_RIM]}>
-                <Animated.View style={[StyleSheet.absoluteFill, styles.center, logoStyle]}>
+              {/* Liquid Glass lens: a frosted glass rim around the brand disc. */}
+              <GlassSurface radius={BUTTON / 2} intensity={100} specular backgroundColor={LIQUID_FILL_PROMINENT} borderColor="rgba(255,255,255,0.95)" style={[styles.button, styles.center, LIQUID_RIM]}>
+                <Animated.View style={[styles.disc, logoStyle]}>
                   <Image source={LOGO} style={styles.logo} resizeMode="contain" accessibilityIgnoresInvertColors />
                 </Animated.View>
                 <Animated.View style={[StyleSheet.absoluteFill, styles.center, closeStyle]}>
                   <Ionicons name="close" size={30} color={colors.ink} />
                 </Animated.View>
+                {/* Light travelling around the glass edge. */}
+                {!open && <GlintRing size={BUTTON} width={3} />}
               </GlassSurface>
             </ProgressRing>
           </Pressable>
@@ -145,10 +149,12 @@ const styles = StyleSheet.create({
   anchor: { position: "absolute", left: 0, right: 0, alignItems: "center" },
   buttonWrap: { borderRadius: (BUTTON + 12) / 2 },
   button: { width: BUTTON, height: BUTTON },
-  beacon: { position: "absolute", bottom: 0, width: BUTTON + 12, height: BUTTON + 12, borderRadius: (BUTTON + 12) / 2, borderWidth: 2, borderColor: "rgba(173,241,75,0.9)" },
+  beacon: { position: "absolute", bottom: 0, width: BUTTON + 12, height: BUTTON + 12, borderRadius: (BUTTON + 12) / 2, borderWidth: 2, borderColor: "rgba(123,245,16,0.9)" },
   center: { alignItems: "center", justifyContent: "center" },
   // logo.png carries ~15% transparent padding, so it's drawn larger than the circle's inner area.
-  logo: { width: BUTTON * 0.95, height: BUTTON * 0.95 },
+  // Green disc inset in the glass rim; the square art is drawn a bit smaller so nothing touches the edge.
+  disc: { width: BUTTON - 12, height: BUTTON - 12, borderRadius: (BUTTON - 12) / 2, backgroundColor: "#7BF510", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  logo: { width: (BUTTON - 12) * 0.92, height: (BUTTON - 12) * 0.92 },
   menu: { position: "absolute", left: 24, right: 24, gap: 8, alignSelf: "center", maxWidth: 380, marginHorizontal: "auto" } as any,
   menuTitle: { textAlign: "center", marginBottom: 8 },
   option: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, paddingHorizontal: 12 },
