@@ -35,14 +35,13 @@ should keep working when a capability isn't available." Guest and
 authenticated sessions share the exact same local-first ride/stats code path
 — the only difference is whether `firebaseUser`/`profile` are populated.
 
-**`expo-maps` (native) + Leaflet/OpenStreetMap (web), behind one interface.**
-`expo-maps` is Expo's current first-party Apple Maps / Google Maps wrapper —
-more "Apple-first" than the older community `react-native-maps` — but it has
-no web target. Rather than leave Web with a dead placeholder,
-`RideMap.native.tsx` / `RideMap.web.tsx` expose the same
-`{ route, center, height }` props; Metro's platform-extension resolution
-picks the right one. OpenStreetMap tiles need no API key, so Web works out
-of the box.
+**One map contract, three free implementations.** `RideMap.types.ts` defines
+the props; Metro picks the file per platform: `RideMap.web.tsx` (Leaflet +
+OpenStreetMap), `RideMap.android.tsx` (MapLibre + OpenFreeMap vector tiles)
+and `RideMap.native.tsx` (Apple Maps through `expo-maps`, used on iOS). None
+needs an API key or a billing account. Android uses MapLibre instead of
+Google Maps so it needs no key and shares the web's OSM data, route styling
+and heading arrow.
 
 **Biometrics as a local unlock, not identity.** `expo-local-authentication`
 gates re-entry into an *already-authenticated* session

@@ -3,8 +3,7 @@ import type { ExpoConfig } from "expo/config";
 // Public, client-embeddable config only. Firebase's `apiKey` etc. are not
 // secrets (they identify a project, not authorize access — Firestore/Storage
 // security rules do the actual authorization) but we still keep them in env
-// vars so this file never hard-codes a specific project. See ENVIRONMENT.md.
-const googleMapsAndroidApiKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY;
+// vars so this file never hard-codes a specific project. See docs/environment.md.
 
 const config: ExpoConfig = {
   name: "EcoBike",
@@ -58,9 +57,6 @@ const config: ExpoConfig = {
       "android.permission.RECORD_AUDIO",
       "android.permission.WRITE_EXTERNAL_STORAGE",
     ],
-    ...(googleMapsAndroidApiKey
-      ? { config: { googleMaps: { apiKey: googleMapsAndroidApiKey } } }
-      : {}),
   },
   web: {
     name: "EcoBike",
@@ -104,6 +100,8 @@ const config: ExpoConfig = {
           "EcoBike accede a tus fotos solo para que elijas una imagen de perfil.",
       },
     ],
+    // Android map: MapLibre + OpenFreeMap (free, no API key). iOS keeps Apple Maps via expo-maps.
+    "@maplibre/maplibre-react-native",
     [
       "expo-maps",
       {

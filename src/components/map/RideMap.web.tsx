@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { MapContainer, TileLayer, Polyline, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import type { RideMapProps } from "./RideMap.native";
+import type { RideMapProps } from "./RideMap.types";
 import { useTheme } from "@/theme/useTheme";
 import { routeCamera } from "@/utils/mapCamera";
 

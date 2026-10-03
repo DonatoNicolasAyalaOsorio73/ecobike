@@ -76,18 +76,13 @@ provision this for you.
 ## 4. Maps
 
 - **iOS**: uses Apple Maps natively via `expo-maps` — no API key needed.
-- **Android**: `expo-maps`' Google Maps backend needs a Maps SDK for Android
-  key. Get one in Google Cloud Console (APIs & Services > Credentials,
-  restrict it to "Maps SDK for Android"), then set:
-  ```
-  GOOGLE_MAPS_ANDROID_API_KEY=...
-  ```
-  in `.env` (this one is read by `app.config.ts` at prebuild time, not by
-  the app at runtime, so it doesn't need the `EXPO_PUBLIC_` prefix).
+- **Android**: MapLibre with OpenFreeMap vector tiles (OpenStreetMap data),
+  `src/components/map/RideMap.android.tsx`. Free for commercial use, no API
+  key, no registration, no request limits; attribution is shown by MapLibre.
 - **Web**: OpenStreetMap tiles via Leaflet — no key needed, works
   immediately.
-- `expo-maps` requires a native build (same `prebuild`/`run:ios`/`run:android`
-  as above) — it is not available in Expo Go.
+- `expo-maps` (iOS) and MapLibre (Android) require a native build (same
+  `prebuild`/`run:ios`/`run:android` as above); neither is in Expo Go.
 
 ## 5. Push notifications
 
@@ -127,4 +122,4 @@ Code is wired and stays off until a DSN exists:
 | Google sign-in | Yes | Firebase + Google OAuth client IDs |
 | Face ID / biometric unlock | Yes | device with biometric hardware |
 | Sign in with Apple | **No** — dev client only | Apple Developer account + Firebase |
-| Native maps (`expo-maps`) | **No** — dev client only | Android also needs a Maps API key |
+| Native maps (Apple Maps, MapLibre) | **No** — dev client only | nothing (no keys) |

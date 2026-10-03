@@ -51,7 +51,7 @@ flowchart TB
     st[(Cloud Storage)]
   end
   geo[Photon + Valhalla<br/>place search, bike routing]
-  maps[Apple Maps, Google Maps<br/>OpenStreetMap tiles]
+  maps[Maps: Apple Maps on iOS<br/>OpenFreeMap / OSM on Android and web]
 
   Clients --> local
   Clients -- "ID token" --> api
@@ -72,7 +72,7 @@ flowchart TB
 | API | `api/` on Vercel | Points, rides, redemptions, roles, stores, admin, friends, chat, account deletion, export |
 | Database | Firestore | Shared data for all platforms; client writes limited by `firebase/firestore.rules` |
 | Files | Cloud Storage | Avatars (owner), store logos (admins) |
-| Maps and routing | expo-maps, Leaflet + OSM, Photon, Valhalla | Map display, place search, bicycle routes |
+| Maps and routing | Apple Maps (iOS), MapLibre + OpenFreeMap (Android), Leaflet + OSM (web), Photon, Valhalla | Map display, place search, bicycle routes; all free, no API keys |
 
 The 15 architecture rules every change must follow are in [docs/architecture/spine.md](docs/architecture/spine.md). Each rule states what it binds and the divergence it prevents.
 
@@ -131,7 +131,7 @@ Platform differences live in **paired files with the same exported API**, never 
 | `services/kv` | SecureStore (keychain/keystore) | localStorage |
 | `services/connectivity` | NetInfo | `navigator.onLine` |
 | `services/push`, `services/reminders` | expo-notifications | no-ops |
-| `components/map/RideMap` | expo-maps (Apple/Google) | Leaflet + OpenStreetMap |
+| `components/map/RideMap` | iOS: Apple Maps (`.native.tsx`); Android: MapLibre + OpenFreeMap (`.android.tsx`) | Leaflet + OpenStreetMap |
 
 ## Key flows
 
@@ -190,7 +190,7 @@ sequenceDiagram
 │   ├── components/             UI, grouped by feature
 │   │   ├── ui/                   Design system: Liquid Glass primitives, tab bar, large titles, motion
 │   │   ├── app-shell/            Error boundary, biometric lock, web shell, email-verify banner
-│   │   ├── map/                  RideMap (.native/.web), launcher, Eco ruta, training, navigation banner
+│   │   ├── map/                  RideMap (.android MapLibre, .native Apple Maps, .web Leaflet), launcher, Eco ruta, navigation
 │   │   ├── ride/                 Ride-complete celebration
 │   │   ├── rewards/              Catalog, carousel, redeem sheet, hold-to-confirm, store logos
 │   │   ├── gamification/         Streak and daily missions cards
@@ -311,7 +311,8 @@ Files starting with `_` in `api/` are not deployed as functions. `android/` and 
 | Technology | Use | Reason |
 | --- | --- | --- |
 | expo-location + expo-task-manager | Foreground and background GPS, mocked-location filter | Rides keep recording with the screen off |
-| expo-maps (alpha) | Apple Maps (iOS), Google Maps (Android) with clean styles | First-party Expo maps |
+| expo-maps (alpha) | Apple Maps on iOS, parks and transit only | First-party, free, no key on iOS |
+| MapLibre React Native 11 + OpenFreeMap | Android map: Positron vector style, glowing route, heading arrow | Free for commercial use, no API key, no request limits (attribution shown); same look and markers as web |
 | Leaflet 1.9 + react-leaflet 5 | Web map with OSM tiles, rider arrow (or dot without heading), glowing route | expo-maps has no web target; OSM needs no key |
 | Photon (komoot) | Place search, ranked by distance to the rider | Free OSM geocoder; position coarsened to about 100 m |
 | Valhalla (FOSSGIS) | Bicycle routing with `avoid_bad_surfaces`, `use_roads`, alternates, Spanish instructions | Free OSM router that understands unpaved surfaces |
@@ -423,7 +424,7 @@ Agents draft plans and code. Changes are verified with typecheck, lint, tests, t
 | Public profile readable only by id; search through the API | Client list queries on `usuarios_public` | Profiles can't be enumerated; "hide me" is enforced | One function call per search; old app versions can't search until updated |
 | Per-user rate limits in a Firestore collection | Redis, Vercel KV or firewall rules | No new service; atomic in a transaction | One extra read and write per limited call |
 | Admin logos uploaded directly to Storage, checked by role | Upload through an API route | No 4.5 MB function body limit; no function used | Cross-service rules; orphan files if an editor is abandoned |
-| expo-maps on native, Leaflet on web | react-native-maps everywhere | First-party native maps, OSM on web with no key | expo-maps is alpha; no rotated arrow on native yet |
+| Apple Maps on iOS, MapLibre + OpenFreeMap on Android, Leaflet on web | Google Maps on Android (expo-maps), react-native-maps everywhere | No API keys or billing accounts anywhere; Android and web share OSM data, style and the heading arrow | Three map implementations behind one contract (`RideMap.types.ts`); expo-maps on iOS is alpha |
 | Free Photon and Valhalla servers | Paid geocoding/routing or self-hosting | No keys, no cost, understands unpaved roads | No SLA; fair-use limits |
 | Paired platform files (`name.ts` / `name.web.ts`) | `Platform.OS` branches in services | Web never imports native-only modules | Two files to keep in sync per service |
 | Press-and-hold to redeem | Two-step confirmation dialog | One deliberate gesture, less text | Needs a screen-reader alternative (provided) |
@@ -480,7 +481,6 @@ Press `w` for web. iOS and Android need a development build, because the app use
 | `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, `_ANDROID_`, `_WEB_` | Client (public) | Google Sign-In |
 | `EXPO_PUBLIC_API_URL` | Client (public) | Vercel deployment URL for native apps (web uses same origin) |
 | `EXPO_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_SUPPORT_EMAIL`, `EXPO_PUBLIC_APP_ENV` | Client (public) | Monitoring, support contact, environment label |
-| `GOOGLE_MAPS_ANDROID_API_KEY` | Build time (EAS secret) | Google Maps on Android; without it the Android map is blank |
 | `FIREBASE_SERVICE_ACCOUNT_KEY` | Server (Vercel) | Admin SDK credentials (JSON) |
 | `FIREBASE_STORAGE_BUCKET` | Server (Vercel, optional) | Bucket for deletions and logos |
 | `SENTRY_DSN` | Server (Vercel, optional) | Server error reporting |
@@ -507,14 +507,12 @@ Order matters, because rules must never require something the deployed API doesn
    ```bash
    eas build --profile production --platform all
    ```
-   Set `GOOGLE_MAPS_ANDROID_API_KEY` in the EAS `production` environment first.
 
 Keep `api/` at 12 functions or fewer on Vercel Hobby. Details: [docs/deployment.md](docs/deployment.md).
 
 ## Known limitations and next steps
 
-- **Google Maps key for Android:** not configured anywhere yet, so the Android map renders blank. Create a "Maps SDK for Android" key restricted to `com.justdona.EcoBike` and add it to EAS.
-- **Native rider arrow:** expo-maps has no rotated custom marker, so phones show the system location dot. Decision pending: react-native-maps, or wait for expo-maps.
+- **iOS rider arrow:** Android and web draw a heading arrow; iOS shows Apple's system location marker (which also shows heading). Moving iOS to MapLibre would make all three identical.
 - **Device attestation:** App Check on `/api/rides` would stop fabricated tracks. It needs a native module, since the Firebase JS SDK providers are web-only.
 - **Web bundle size:** a large shared chunk (about 5.2 MB) needs a dependency audit before route splitting pays off.
 - **Rules allowlist:** the `usuarios` update rule uses a denylist of server fields; move it to an allowlist.

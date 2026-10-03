@@ -176,7 +176,7 @@ flowchart LR
 | expo-router | ~57.0.24 |
 | react-native-reanimated | 4.5.1 (SDK-aligned) |
 | Firebase JS SDK / firebase-admin | 12.19.0 (+ `@firebase/auth` pin) / ^13.10.0 |
-| expo-maps (alpha) / Leaflet + react-leaflet | ~57.0.3 / 1.9.4 + 5.0.0 |
+| expo-maps (alpha, iOS) / MapLibre RN (Android) / Leaflet + react-leaflet (web) | ~57.0.3 / 11.4.1 / 1.9.4 + 5.0.0 |
 | expo-sqlite / Zustand | ~57.0.3 / 5.0.15 |
 | Node (Vercel functions) | 24.x |
 | Monitoring | Sentry (client + server), request ids |
@@ -226,7 +226,7 @@ erDiagram
 
 ## Deferred
 
-- **Native heading arrow** — `expo-maps` is alpha with no rotated marker; decide `react-native-maps` or wait.
+- **iOS heading arrow** — Android (MapLibre) and web draw the arrow; iOS keeps Apple's system marker. Moving iOS to MapLibre would unify all three.
 - **App Check / device attestation on `/api/rides`** — needs a native module (`@react-native-firebase/app-check` or `@expo/app-integrity`) since the JS SDK's providers are web-only; Play Integrity requires Play Store distribution.
 - **Expo SDK 58 / RN 0.88** — upgrade after it is stable; **firebase-admin 14** (Node ≥ 22) in its own change.
 - **Routing provider** — FOSSGIS Valhalla allows 1 req/s per user and asks apps to identify themselves; register and send the client id, then self-host or pay before heavy use.

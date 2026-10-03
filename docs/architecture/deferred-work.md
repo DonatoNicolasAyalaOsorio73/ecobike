@@ -16,7 +16,7 @@ Proyecto: `C:\Users\donat\Documents\ecobike-app` (rama `main`).
 
 ## Deferred from: code review (2026-10-02), grupo 3 (pantallas y componentes)
 
-- **La flecha del usuario solo existe en la web.** En iOS y Android, `RideMap.native.tsx` usa el punto azul del sistema (`expo-maps` no permite marcador personalizado rotado de forma fiable), y `useCompassHeading` solo funciona en web. Pediste "que sea una flecha", y eso choca con "Expo idéntico a web". Opciones: un marcador con imagen de flecha rotada en `expo-maps` (cuando lo soporte bien) o `react-native-maps` con un `Marker` rotado. Requiere decidir la librería.
+- **Flecha del usuario en iOS.** Resuelto en Android: ahora usa MapLibre + OpenFreeMap (gratis, sin clave) con la misma flecha que la web. iOS sigue con el marcador del sistema de Apple Maps (que también indica dirección). Pasar iOS a MapLibre dejaría las tres plataformas idénticas.
 - **Cambio en la política de privacidad sin versión ni nuevo consentimiento.** `app/legal/[doc].tsx` ahora dice que se envía un trazado GPS reducido al servidor. Falta fecha de actualización y pedir aceptación a los usuarios existentes.
 - **Barra lateral de escritorio con semántica de pestañas incompleta.** `DesktopSidebar` usa `role="tab"` sin navegación con flechas. Mejor usar enlaces reales en un `nav`.
 - **Doble vibración en algunos toques.** `PressableScale` vibra por defecto y algunos llamadores vuelven a vibrar (opciones del lanzador, chip de filtro). Menor.
