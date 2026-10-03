@@ -7,6 +7,7 @@ import { getOrCreateGuestId, isGuestMode, setGuestMode } from "@/services/guest"
 import { seedDemoIfEmpty } from "@/services/demo.service";
 import { setMonitoringUser } from "@/services/monitoring";
 import { initDb, wipeAllLocalData } from "@/services/db";
+import { E2E_SESSION } from "@/services/e2e";
 import type { UserProfile } from "@/types/user";
 
 export type SessionStatus = "loading" | "signedOut" | "locked" | "signedIn";
@@ -33,6 +34,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isGuest: false,
 
   init: (biometricUnlockEnabled: boolean) => {
+    if (E2E_SESSION) {
+      // Test build only (see services/e2e.ts): a signed-in account without Firebase Auth.
+      initDb();
+      const s = E2E_SESSION;
+      set({ status: "signedIn", isGuest: false, profile: s.profile, firebaseUser: { uid: s.uid, email: s.profile.email, emailVerified: true, providerData: [], getIdToken: async () => s.token } as unknown as User });
+      return;
+    }
     if (!isFirebaseConfigured) {
       isGuestMode().then((guest) => (guest ? get().continueAsGuest() : set({ status: "signedOut" })));
       return;
@@ -98,8 +106,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   refreshProfile: async () => {
     const uid = get().firebaseUser?.uid;
-    if (!uid) return;
-    const profile = await fetchUserProfile(uid).catch(() => null);
-    set({ profile });
+    if (!uid || E2E_SESSION) return;
+    // A failed refresh (offline) keeps the last known profile instead of
+    // dropping to null, which other code would read as "no account".
+    const profile = await fetchUserProfile(uid).catch(() => undefined);
+    if (profile !== undefined) set({ profile });
   },
 }));

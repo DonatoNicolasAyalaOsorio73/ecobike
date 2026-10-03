@@ -1,5 +1,6 @@
 import { Platform } from "react-native";
 import { getFirebaseAuth } from "./firebase";
+import { E2E_SESSION } from "./e2e";
 
 // Server functions live in /api on the same Vercel deployment as the web app.
 // Web in production calls them same-origin; native (and local `expo start`)
@@ -11,7 +12,7 @@ export async function api<T = unknown>(path: string, method: "GET" | "POST" | "P
   if (!BASE && Platform.OS !== "web") {
     throw new Error("Falta EXPO_PUBLIC_API_URL (URL del despliegue en Vercel).");
   }
-  const user = getFirebaseAuth().currentUser;
+  const user = E2E_SESSION ? { getIdToken: async () => E2E_SESSION!.token } : getFirebaseAuth().currentUser;
   if (!user) throw new Error("Necesitas iniciar sesión.");
   const token = await user.getIdToken();
   // A hung request must not leave the UI spinning forever.

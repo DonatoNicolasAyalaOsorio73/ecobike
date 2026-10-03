@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import NetInfo from "@react-native-community/netinfo";
+import { onConnectivityChange } from "@/services/connectivity";
 
 /**
  * True/false once NetInfo reports; null only for the first instant before
@@ -18,9 +18,7 @@ export function useNetworkStatus(): boolean | null {
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
 
   useEffect(() => {
-    return NetInfo.addEventListener((state) => {
-      setIsConnected(state.isConnected ?? true);
-    });
+    return onConnectivityChange(setIsConnected);
   }, []);
 
   return isConnected;

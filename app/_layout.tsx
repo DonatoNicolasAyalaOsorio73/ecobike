@@ -25,11 +25,7 @@ import { setWeeklyReminder } from "@/services/reminders";
 import { withMonitoring } from "@/services/monitoring";
 // Side effect: registers the background location task at startup.
 import "@/stores/rideStore";
-import NetInfo from "@react-native-community/netinfo";
-
-// We only use `isConnected` (see useNetworkStatus): turn off NetInfo's
-// reachability probe, which on web fires HEAD / again and again.
-NetInfo.configure({ reachabilityShouldRun: () => false });
+import { onConnectivityChange } from "@/services/connectivity";
 
 // Haptics on web map to navigator.vibrate, which browsers block (and log an
 // error) until the user has interacted with the page. Skip it until then.
@@ -100,12 +96,12 @@ function RootLayout() {
   }, [signedInUid, notificationsEnabled, hydrated]);
 
   useEffect(() => {
-    return NetInfo.addEventListener((state) => {
+    return onConnectivityChange((connected) => {
       const uid = useAuthStore.getState().firebaseUser?.uid;
       // Same conservative signal as useNetworkStatus — a retry that fails
       // because we were wrong about connectivity costs nothing (it stays
       // flagged unsynced), but never retrying does.
-      if (uid && state.isConnected !== false) syncRides(uid);
+      if (uid && connected) syncRides(uid);
     });
   }, []);
 

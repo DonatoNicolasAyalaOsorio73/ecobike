@@ -2,6 +2,7 @@ import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import * as Crypto from "expo-crypto";
 import { getDb, isFirebaseConfigured } from "./firebase";
 import { api } from "./api";
+import { E2E_SESSION } from "./e2e";
 import { listRedemptions as listLocalRedemptions, saveRedemption as saveLocalRedemption } from "./db";
 import { mapStoreDoc } from "@/utils/rewardsMapping";
 import { DEFAULT_REWARDS, type Redemption, type Reward } from "@/types/reward";
@@ -20,6 +21,10 @@ export async function fetchRewardsCatalog(
   realAccount = false
 ): Promise<{ rewards: Reward[]; usingRealCatalog: boolean; error: boolean }> {
   if (!isFirebaseConfigured || !realAccount) return { rewards: DEFAULT_REWARDS, usingRealCatalog: false, error: false };
+  if (E2E_SESSION) {
+    const rewards = E2E_SESSION.catalog.filter((d) => d.data.isActive !== false).map((d) => mapStoreDoc(d.id, d.data)).filter((rw) => rw.pointsCost > 0);
+    return { rewards, usingRealCatalog: true, error: false };
+  }
   try {
     const snap = await getDocs(collection(getDb(), STORES_COLLECTION));
     const rewards = snap.docs

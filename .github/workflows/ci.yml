@@ -19,7 +19,7 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm test
       - name: Web build
-        run: npx expo export --platform web
+        run: npm run build:web
       - name: Native bundles (iOS + Android, same code as web)
         run: npx expo export --platform ios --platform android --output-dir dist-native
       - name: Expo doctor
@@ -54,7 +54,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - name: Build web
-        run: npx expo export --platform web
+        run: npm run build:web && npm run build:web:e2e
       - name: E2E smoke tests (phone + desktop)
         run: npx playwright test
       - uses: actions/upload-artifact@v4

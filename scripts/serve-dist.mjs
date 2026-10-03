@@ -11,7 +11,7 @@ import { extname, join, normalize, resolve } from "node:path";
 // comparing a forward-slash ROOT against join()'s backslashes made every
 // containment check fail on Windows, and the SPA fallback then served
 // index.html in place of the JS bundle.
-const ROOT = resolve(fileURLToPath(new URL("../dist/", import.meta.url)));
+const ROOT = resolve(fileURLToPath(new URL(`../${process.env.DIST_DIR ?? "dist"}/`, import.meta.url)));
 const PORT = Number(process.env.PORT ?? 8082);
 
 const TYPES = {
@@ -45,4 +45,4 @@ createServer(async (req, res) => {
   }
 
   res.writeHead(404).end("Not found");
-}).listen(PORT, () => console.log(`Serving dist/ on http://localhost:${PORT}`));
+}).listen(PORT, () => console.log(`Serving ${ROOT} on http://localhost:${PORT}`));
