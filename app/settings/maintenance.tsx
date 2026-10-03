@@ -94,7 +94,7 @@ export default function MaintenanceScreen() {
             ))}
           </GlassCard>
           <Text style={[styles.foot, { color: colors.inkFaint }]}>
-            Los kilómetros se cuentan con tus recorridos registrados en EcoBike. Empezamos a contar la primera vez que abriste esta sección. Marca "Hecho" cuando hagas el servicio y el contador vuelve a cero.
+            Los kilómetros se cuentan con tus recorridos registrados en EcoBike. Empezamos a contar la primera vez que abriste esta sección. Marca “Hecho” cuando hagas el servicio y el contador vuelve a cero.
           </Text>
     </LargeTitleScreen>
   );

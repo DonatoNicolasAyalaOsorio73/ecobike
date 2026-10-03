@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isoToBirthInput, maskBirthDate, parseBirthDate, profileCompletion, validateName, validateUsername } from "../profileForm.ts";
+import { isoToBirthInput, maskBirthDate, parseBirthDate, passwordStrength, profileCompletion, validateEmail, validateName, validateUsername } from "../profileForm.ts";
 
 const NOW = new Date(2026, 9, 1);
 
@@ -47,7 +47,6 @@ test("profileCompletion counts filled fields and suggests the next one", () => {
   assert.equal(profileCompletion(full).nextHint, null);
 });
 
-import { passwordStrength, validateEmail } from "../profileForm.ts";
 
 test("validateEmail", () => {
   assert.equal(validateEmail("ana@correo.co"), null);

@@ -17,6 +17,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx tsc --noEmit
+      - run: npm run lint
       - run: npm test
       - name: Web build
         run: npm run build:web

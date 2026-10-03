@@ -1,8 +1,12 @@
 {
   "name": "ecobike-app",
   "version": "2.0.0",
-  "main": "expo-router/entry",
+  "description": "EcoBike: cycling app for Nariño, Colombia. One Expo codebase for iOS, Android and web, Firebase and Vercel functions.",
   "private": true,
+  "main": "expo-router/entry",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
@@ -10,7 +14,7 @@
     "web": "expo start --web",
     "prebuild": "expo prebuild",
     "typecheck": "tsc --noEmit",
-    "lint": "expo lint",
+    "lint": "eslint .",
     "test": "node --import ./scripts/register-alias-loader.mjs --test src/utils/__tests__/*.test.ts api/*.test.mjs",
     "build:web": "expo export --platform web --clear",
     "deploy:rules": "firebase deploy --only firestore,storage --project ecobike-9dedd",
@@ -81,6 +85,9 @@
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.2",
     "@types/react-dom": "~19.2",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~57.0.2",
+    "globals": "^14.0.0",
     "typescript": "~6.0.3"
   }
 }

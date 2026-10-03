@@ -70,7 +70,7 @@ export default function ChatScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [other, me, isDemo]);
 
-  const messages = isDemo ? demo.chats[other ?? ""] ?? [] : [...remote, ...pending];
+  const messages = useMemo(() => (isDemo ? demo.chats[other ?? ""] ?? [] : [...remote, ...pending]), [isDemo, demo, other, remote, pending]);
 
   // Day separators between messages from different days.
   const rows = useMemo(() => {

@@ -1,6 +1,5 @@
 import { create } from "zustand";
-import * as SecureStore from "expo-secure-store";
-import { Platform } from "react-native";
+import { kvGetJson, kvSetJson } from "@/services/kv";
 
 const KEY = "ecobike_local_profile_v1";
 
@@ -38,20 +37,8 @@ const DEFAULTS: LocalProfile = {
   ridingGoal: "",
 };
 
-async function readStorage(): Promise<Partial<LocalProfile> | null> {
-  try {
-    const raw = Platform.OS === "web" ? localStorage.getItem(KEY) : await SecureStore.getItemAsync(KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-async function writeStorage(profile: LocalProfile) {
-  const raw = JSON.stringify(profile);
-  if (Platform.OS === "web") localStorage.setItem(KEY, raw);
-  else await SecureStore.setItemAsync(KEY, raw);
-}
+const readStorage = () => kvGetJson<Partial<LocalProfile>>(KEY);
+const writeStorage = (value: LocalProfile) => kvSetJson(KEY, value);
 
 interface LocalProfileState extends LocalProfile {
   hydrated: boolean;

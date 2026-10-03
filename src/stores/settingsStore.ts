@@ -1,25 +1,11 @@
 import { create } from "zustand";
-import * as SecureStore from "expo-secure-store";
-import { Platform } from "react-native";
+import { kvGetJson, kvSetJson } from "@/services/kv";
 import { DEFAULT_SETTINGS, type UserSettings } from "@/types/user";
 
 const KEY = "ecobike_settings_v1";
 
-async function readStorage(): Promise<Partial<UserSettings> | null> {
-  try {
-    const raw =
-      Platform.OS === "web" ? localStorage.getItem(KEY) : await SecureStore.getItemAsync(KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-async function writeStorage(settings: UserSettings) {
-  const raw = JSON.stringify(settings);
-  if (Platform.OS === "web") localStorage.setItem(KEY, raw);
-  else await SecureStore.setItemAsync(KEY, raw);
-}
+const readStorage = () => kvGetJson<Partial<UserSettings>>(KEY);
+const writeStorage = (value: UserSettings) => kvSetJson(KEY, value);
 
 interface SettingsState extends UserSettings {
   hydrated: boolean;

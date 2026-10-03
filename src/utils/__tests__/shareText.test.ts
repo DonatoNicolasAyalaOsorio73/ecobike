@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { rideShareText } from "../shareText.ts";
+import { inviteText, rideShareText } from "../shareText.ts";
 
 test("rideShareText includes distance, time, points and CO2", () => {
   const t = rideShareText({ distanceMeters: 12_400, durationSeconds: 2700, pointsEarned: 144 }, "metric");
@@ -10,7 +10,6 @@ test("rideShareText includes distance, time, points and CO2", () => {
   assert.match(t, /https:\/\//);
 });
 
-import { inviteText } from "../shareText.ts";
 
 test("inviteText includes the handle only when known", () => {
   assert.match(inviteText("ana.bike"), /@ana\.bike/);

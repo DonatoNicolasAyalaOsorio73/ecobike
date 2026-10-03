@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text } from "react-native";
 import Animated, { FadeIn, LinearTransition } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import LargeTitleScreen from "@/components/ui/LargeTitleScreen";

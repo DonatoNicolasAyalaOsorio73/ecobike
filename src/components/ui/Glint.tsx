@@ -26,8 +26,6 @@ export function ShineSweep({ width, every = 6000 }: { width: number; every?: num
   );
 }
 
-// Web: blur the arc a hair so it reads as light, not a drawn line.
-const SOFT = Platform.OS === "web" ? ({ filter: "blur(0.6px)" } as object) : null;
 
 const styles = StyleSheet.create({
   ring: { position: "absolute" },
