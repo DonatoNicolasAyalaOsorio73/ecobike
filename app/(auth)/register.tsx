@@ -9,7 +9,7 @@ import { useTheme } from "@/theme/useTheme";
 import { signUpWithEmail } from "@/services/auth.service";
 import { isFirebaseConfigured } from "@/services/firebase";
 import { useAuthStore } from "@/stores/authStore";
-import { passwordStrength, validateEmail, validateName } from "@/utils/profileForm";
+import { passwordStrength, validateEmail, validateName } from "@/domain/profileForm";
 
 // Weak reads as an error; the rest step up through the brand lime (functional color).
 const STRENGTH_COLORS = ["#E5484D", "#E5484D", "#B5F977", "#97F743", "#7BF510"];

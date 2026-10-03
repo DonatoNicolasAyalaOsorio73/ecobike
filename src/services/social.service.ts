@@ -1,7 +1,7 @@
 import { doc, getDoc } from "firebase/firestore";
 import { getDb, isFirebaseConfigured } from "./firebase";
 import { api } from "./api";
-import { weekKey } from "@/utils/week";
+import { weekKey } from "@/domain/week";
 import type { UserProfile } from "@/types/user";
 
 // Real, live collection — see types/user.ts and auth.service.ts for the

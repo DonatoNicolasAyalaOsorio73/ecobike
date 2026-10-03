@@ -216,7 +216,7 @@ function handler(methods, fn) {
 }
 
 // ─── Ride scoring + bicycle detection (pure, see api/_lib.test.mjs) ─────────
-// KEEP IDENTICAL to src/utils/rideScore.ts (same rules, same test cases).
+// KEEP IDENTICAL to src/domain/rideScore.ts (same rules, same test cases).
 // The client uploads a downsampled track ONLY for this check; it is analysed
 // here and never stored (privacy: the polyline still lives only on-device).
 const POINTS_PER_KM = 5;
@@ -298,7 +298,7 @@ function sanitizeTrack(track, startedAt, endedAt) {
   }
   // Fixes outside the ride window (a stale cached first fix) are dropped, not
   // fatal: they can't add distance, and rejecting the whole track for one of
-  // them zeroed legitimate rides. Same rule in src/utils/rideScore.ts.
+  // them zeroed legitimate rides. Same rule in src/domain/rideScore.ts.
   const inWindow = track.filter((p) => p[2] >= startedAt - 120_000 && p[2] <= endedAt + 120_000);
   return inWindow.length >= 2 ? inWindow : null;
 }
@@ -383,7 +383,7 @@ async function sendPush(uids, title, message, type = "friends", data = undefined
 
 // ─── Weekly league ─────────────────────────────────────────────────────────
 // ISO week ("2026-W40") of a timestamp in Colombia time (UTC-5, no DST).
-// Keep identical to src/utils/week.ts (both are tested with the same cases).
+// Keep identical to src/domain/week.ts (both are tested with the same cases).
 // ponytail: single fixed timezone; per-user timezone if the app expands abroad.
 function weekKey(ms, tzOffsetHours = -5) {
   const d = new Date(ms + tzOffsetHours * 3_600_000);

@@ -15,7 +15,7 @@ import { accents, elevation, type AccentName } from "@/theme/colors";
 import { useAuthStore } from "@/stores/authStore";
 import { useToastStore } from "@/stores/toastStore";
 import { fetchPublicProfiles, listFriendUids, removeFriend, type PublicProfile } from "@/services/social.service";
-import { levelForPoints } from "@/utils/gamification";
+import { levelForPoints } from "@/domain/gamification";
 import { DEMO_FRIENDS } from "@/utils/demoData";
 
 const LEVEL_FLOOR = [0, 100, 300, 700, 1500, 3000, 6000, 12000];

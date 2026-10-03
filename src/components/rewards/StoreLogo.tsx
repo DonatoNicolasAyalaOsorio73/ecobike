@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Image, Platform, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { useTheme } from "@/theme/useTheme";
-import { storeInitials } from "@/utils/rewardsMapping";
+import { storeInitials } from "@/domain/rewardsMapping";
 
 // Shadow that follows the logo's own shape (transparent PNG) instead of a box.
 const STAMP_SHADOW = Platform.OS === "web" ? ({ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.12))" } as object) : null;

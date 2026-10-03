@@ -3,11 +3,11 @@ import { Platform } from "react-native";
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
 import * as Haptics from "expo-haptics";
-import { goalProgress, type RideGoal } from "@/utils/rideGoals";
+import { goalProgress, type RideGoal } from "@/domain/rideGoals";
 import { createEmptyRide, type Ride, type RideStatus, type TrackPoint } from "@/types/ride";
 import { avgSpeedKmh, estimateCalories, incrementalDistanceMeters, totalElevationGainMeters } from "@/utils/geo";
-import { scoreLocalRide, computeRiderStats, evaluateAchievements, validAchievements } from "@/utils/gamification";
-import { capRidePoints } from "@/utils/rideScore";
+import { scoreLocalRide, computeRiderStats, evaluateAchievements, validAchievements } from "@/domain/gamification";
+import { capRidePoints } from "@/domain/rideScore";
 import type { AchievementDef } from "@/types/achievement";
 import * as db from "@/services/db";
 import { queueRideForSync } from "@/services/rides.service";
@@ -15,7 +15,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { isFirebaseConfigured } from "@/services/firebase";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
-import { MOVING_SPEED_MS, autoPauseAction, speedMs } from "@/utils/autoPause";
+import { MOVING_SPEED_MS, autoPauseAction, speedMs } from "@/domain/autoPause";
 
 interface RideState {
   status: RideStatus;

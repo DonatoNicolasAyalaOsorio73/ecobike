@@ -8,7 +8,7 @@ import GlassButton from "@/components/ui/GlassButton";
 import { useTheme } from "@/theme/useTheme";
 import { type } from "@/theme/typography";
 import { enter } from "@/theme/motion";
-import type { RideGoal } from "@/utils/rideGoals";
+import type { RideGoal } from "@/domain/rideGoals";
 
 const KM_PRESETS = [5, 10, 20, 42];
 const MIN_PRESETS = [30, 45, 60, 90];

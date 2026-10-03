@@ -12,7 +12,7 @@ import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import AreaChart from "@/components/charts/AreaChart";
 import BarChart from "@/components/charts/BarChart";
 import DeltaBadge from "@/components/charts/DeltaBadge";
-import StreakCard from "@/components/StreakCard";
+import StreakCard from "@/components/gamification/StreakCard";
 import { useTheme } from "@/theme/useTheme";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useRiderStats } from "@/hooks/useRiderStats";
@@ -32,7 +32,7 @@ import {
   trendSeries,
   weekdayDistribution,
   type StatsPeriod,
-} from "@/utils/rideStats";
+} from "@/domain/rideStats";
 
 const PERIOD_OPTIONS: { label: string; value: StatsPeriod }[] = [
   { label: "Semana", value: "week" },

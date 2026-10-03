@@ -5,14 +5,14 @@ import * as Haptics from "expo-haptics";
 import Animated, { FadeIn, FadeOut, LinearTransition } from "react-native-reanimated";
 import GlassSurface from "@/components/ui/GlassSurface";
 import StoreLogo from "./StoreLogo";
-import { POINTS_PER_KM } from "@/utils/rideScore";
+import { POINTS_PER_KM } from "@/domain/rideScore";
 import PressableScale from "@/components/ui/PressableScale";
 import RewardCarousel from "./RewardCarousel";
 import { useTheme } from "@/theme/useTheme";
 import { type } from "@/theme/typography";
 import { enter } from "@/theme/motion";
 import type { Reward } from "@/types/reward";
-import { visibleRewards } from "@/utils/rewardsMapping";
+import { visibleRewards } from "@/domain/rewardsMapping";
 
 interface Props {
   rewards: Reward[];

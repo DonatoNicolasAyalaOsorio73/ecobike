@@ -12,7 +12,7 @@ import { elevation } from "@/theme/colors";
 import { EASE_EMPHASIZED_DECEL, SPRING, enter } from "@/theme/motion";
 import { LIQUID_FILL } from "@/theme/glass";
 import { type } from "@/theme/typography";
-import type { RideGoal } from "@/utils/rideGoals";
+import type { RideGoal } from "@/domain/rideGoals";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import EcoRoutePanel from "./EcoRoutePanel";
 import TrainingPanel from "./TrainingPanel";

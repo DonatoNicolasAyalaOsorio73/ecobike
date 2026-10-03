@@ -19,7 +19,7 @@ import { useRiderStats } from "@/hooks/useRiderStats";
 import { useAvailablePoints } from "@/hooks/useAvailablePoints";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { formatDistance, formatDuration, sentenceCase } from "@/utils/format";
-import { groupRidesByMonth, ridesInPeriod, type StatsPeriod } from "@/utils/rideStats";
+import { groupRidesByMonth, ridesInPeriod, type StatsPeriod } from "@/domain/rideStats";
 import { deleteRideEverywhere } from "@/services/rides.service";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "@/stores/toastStore";

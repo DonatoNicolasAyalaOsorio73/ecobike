@@ -1,8 +1,8 @@
 import { ACHIEVEMENTS, type RiderStats } from "@/types/achievement";
 import type { Ride } from "@/types/ride";
-import { analyzeTrack, downsample, sanitizeTrack, scoreRide, type TrackSample } from "@/utils/rideScore";
-import { verifiedRides } from "@/utils/verified";
-import { longestStreak } from "@/utils/streak";
+import { analyzeTrack, downsample, sanitizeTrack, scoreRide, type TrackSample } from "@/domain/rideScore";
+import { verifiedRides } from "@/domain/verified";
+import { longestStreak } from "@/domain/streak";
 
 /** The ride's GPS track in the compact form the server verifies. */
 export function rideTrack(ride: Ride): TrackSample[] {

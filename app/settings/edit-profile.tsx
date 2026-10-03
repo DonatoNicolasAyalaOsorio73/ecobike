@@ -31,7 +31,7 @@ import {
   validateName,
   validateUsername,
   type ProfileFormValues,
-} from "@/utils/profileForm";
+} from "@/domain/profileForm";
 
 const BIKES: Choice[] = [
   { value: "Urbana", label: "Urbana", icon: "bicycle" },

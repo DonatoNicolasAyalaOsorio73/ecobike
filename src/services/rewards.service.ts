@@ -4,7 +4,7 @@ import { getDb, isFirebaseConfigured } from "./firebase";
 import { api } from "./api";
 import { E2E_SESSION } from "./e2e";
 import { listRedemptions as listLocalRedemptions, saveRedemption as saveLocalRedemption } from "./db";
-import { mapStoreDoc } from "@/utils/rewardsMapping";
+import { mapStoreDoc } from "@/domain/rewardsMapping";
 import { DEFAULT_REWARDS, type Redemption, type Reward } from "@/types/reward";
 
 // Real, live collections — the shipping mobile app's rewards catalog and

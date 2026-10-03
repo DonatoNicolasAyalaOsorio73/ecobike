@@ -27,7 +27,8 @@ Tags: **[ADOPTED]** the code already follows it. **[TARGET]** binding for new wo
 | UI components | `src/components/` | theme, utils, types; read-only hooks |
 | State | `src/stores/` (Zustand) | services, utils |
 | Services (I/O) | `src/services/` | firebase client SDK, `api.ts`, utils |
-| Pure domain rules | `src/utils/`, `src/types/` | nothing app-level |
+| Domain rules (pure) | `src/domain/`, `src/types/` | `src/utils/` only |
+| Generic helpers | `src/utils/` | nothing app-level |
 | Server | `api/*.js` + `api/_lib.js` | firebase-admin only |
 
 ```mermaid
@@ -56,7 +57,7 @@ flowchart LR
 
 ### AD-2 — One scoring rulebook, two copies kept identical by test [ADOPTED]
 
-- **Binds:** `src/utils/rideScore.ts`, `src/utils/week.ts`, `api/_lib.js` (`analyzeTrack`, `sanitizeTrack`, `scoreRide`, `capRidePoints`, `weekKey`, constants).
+- **Binds:** `src/domain/rideScore.ts`, `src/domain/week.ts`, `api/_lib.js` (`analyzeTrack`, `sanitizeTrack`, `scoreRide`, `capRidePoints`, `weekKey`, constants).
 - **Prevents:** the finish screen promising points the server refuses; client/server drift in scoring or week boundaries.
 - **Rule:** a change lands in both copies in one commit and `scoreParity.test.ts` (scoring and week keys) passes. The server's result overwrites the local one on sync.
 
@@ -64,7 +65,7 @@ flowchart LR
 
 - **Binds:** achievements, missions, streaks, the 3-ride redemption gate, admin stats, league.
 - **Prevents:** one feature counting walks or rejected rides while another doesn't; two meanings of "today".
-- **Rule:** client uses `isVerified`/`verifiedRides` (`src/utils/verified.ts`); server uses `rides.verified == true`. Never test `pointsEarned > 0`. Windows: **economy caps** = rolling 24 h server time; **missions/streak** = device local calendar day; **league** = ISO week in Colombia time (`weekKey`).
+- **Rule:** client uses `isVerified`/`verifiedRides` (`src/domain/verified.ts`); server uses `rides.verified == true`. Never test `pointsEarned > 0`. Windows: **economy caps** = rolling 24 h server time; **missions/streak** = device local calendar day; **league** = ISO week in Colombia time (`weekKey`).
 
 ### AD-4 — Every privileged action is checked and audited on the server [ADOPTED]
 
@@ -161,7 +162,7 @@ flowchart LR
 | Time | Epoch ms in rides; `serverTimestamp()` for server-owned times; windows per AD-3. |
 | Errors | `httpError(status, message)`; JSON `{ error, requestId, retryable }`; Spanish messages. |
 | Value fields | Integer points ≥ 0; prices read from `tiendas/<storeId>.pointsRequired` on the server only. |
-| Copy that states rules | Numbers imported from `src/utils/rideScore.ts`, never typed into text. |
+| Copy that states rules | Numbers imported from `src/domain/rideScore.ts`, never typed into text. |
 | Config and secrets | `EXPO_PUBLIC_*` = public client config only; service account and Sentry DSN for the server are Vercel env vars; nothing secret in the repo or bundle. |
 | New user-linked data | Any new collection or file keyed by user is added to `deleteUserData` and `api/export.js` in the same change. |
 | Palette and motion | Lime `#7BF510` only for functional state; neutral elevation; motion tokens from `src/theme/motion.ts`. |

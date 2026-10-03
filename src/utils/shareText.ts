@@ -1,5 +1,5 @@
 import { formatDistance, formatDuration } from "@/utils/format";
-import { environmentalImpact } from "@/utils/rideStats";
+import { environmentalImpact } from "@/domain/rideStats";
 
 /** Human, shareable summary of a ride (Spanish, no emojis). */
 export function rideShareText(r: { distanceMeters: number; durationSeconds: number; pointsEarned: number }, units: "metric" | "imperial"): string {

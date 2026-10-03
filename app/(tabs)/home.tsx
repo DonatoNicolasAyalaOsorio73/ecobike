@@ -14,11 +14,11 @@ import ProgressRing from "@/components/ui/ProgressRing";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import Flame from "@/components/ui/Flame";
 import PointsBadge from "@/components/ui/PointsBadge";
-import { pointsToday } from "@/utils/streak";
+import { pointsToday } from "@/domain/streak";
 import BarChart from "@/components/charts/BarChart";
 import DeltaBadge from "@/components/charts/DeltaBadge";
-import MissionsCard from "@/components/MissionsCard";
-import EmailVerifyBanner from "@/components/EmailVerifyBanner";
+import MissionsCard from "@/components/gamification/MissionsCard";
+import EmailVerifyBanner from "@/components/app-shell/EmailVerifyBanner";
 import { useTheme } from "@/theme/useTheme";
 import { type } from "@/theme/typography";
 import { useAuthStore } from "@/stores/authStore";
@@ -28,8 +28,8 @@ import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useRiderStats } from "@/hooks/useRiderStats";
 import { useAvailablePoints } from "@/hooks/useAvailablePoints";
 import { useRewards } from "@/hooks/useRewards";
-import { streakDays } from "@/utils/gamification";
-import { distanceThisWeek, environmentalImpact, periodComparison, trendSeries } from "@/utils/rideStats";
+import { streakDays } from "@/domain/gamification";
+import { distanceThisWeek, environmentalImpact, periodComparison, trendSeries } from "@/domain/rideStats";
 import { formatDistance, formatDuration } from "@/utils/format";
 
 function greeting(h: number) {

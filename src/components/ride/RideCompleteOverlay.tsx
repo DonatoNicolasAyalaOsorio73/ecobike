@@ -1,6 +1,6 @@
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { effectiveDailyGoal } from "@/utils/streak";
+import { effectiveDailyGoal } from "@/domain/streak";
 import Animated, { FadeInDown, ZoomIn } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -13,10 +13,10 @@ import Confetti from "@/components/ui/Confetti";
 import { accents, type AccentName } from "@/theme/colors";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { formatDuration } from "@/utils/format";
-import { goalLabel, type RideGoal } from "@/utils/rideGoals";
+import { goalLabel, type RideGoal } from "@/domain/rideGoals";
 import type { Ride } from "@/types/ride";
 import type { AchievementDef } from "@/types/achievement";
-import { levelForPoints, scoreLocalRide } from "@/utils/gamification";
+import { levelForPoints, scoreLocalRide } from "@/domain/gamification";
 import { shareText } from "@/services/share";
 import { rideShareText } from "@/utils/shareText";
 

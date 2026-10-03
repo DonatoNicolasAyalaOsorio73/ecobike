@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { listRides, listUnlockedAchievements } from "@/services/db";
-import { computeRiderStats, levelForPoints, validAchievements } from "@/utils/gamification";
+import { computeRiderStats, levelForPoints, validAchievements } from "@/domain/gamification";
 import type { Ride } from "@/types/ride";
 
 /**

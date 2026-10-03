@@ -14,7 +14,7 @@ import { accents, elevation, type AccentName } from "@/theme/colors";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useAuthStore } from "@/stores/authStore";
 import { updateUserProfile } from "@/services/auth.service";
-import { DAILY_GOALS } from "@/utils/streak";
+import { DAILY_GOALS } from "@/domain/streak";
 
 type Option = { value: string; title: string; subtitle: string; icon: keyof typeof Ionicons.glyphMap; accent: AccentName };
 

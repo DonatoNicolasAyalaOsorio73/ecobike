@@ -15,7 +15,7 @@
     "prebuild": "expo prebuild",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "node --import ./scripts/register-alias-loader.mjs --test src/utils/__tests__/*.test.ts api/*.test.mjs",
+    "test": "node --import ./scripts/register-alias-loader.mjs --test \"src/**/__tests__/*.test.ts\" \"api/*.test.mjs\"",
     "build:web": "expo export --platform web --clear",
     "deploy:rules": "firebase deploy --only firestore,storage --project ecobike-9dedd",
     "test:rules": "firebase emulators:exec --only firestore --project demo-ecobike-rules \"node --test firebase/firestore.rules.test.mjs\"",

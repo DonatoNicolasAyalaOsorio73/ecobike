@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import AuthScaffold, { AuthLink, Rise } from "@/components/auth/AuthScaffold";
 import GlassInput from "@/components/ui/GlassInput";
-import { validateEmail } from "@/utils/profileForm";
+import { validateEmail } from "@/domain/profileForm";
 import GlassButton from "@/components/ui/GlassButton";
 import { useTheme } from "@/theme/useTheme";
 import { signInWithEmail } from "@/services/auth.service";

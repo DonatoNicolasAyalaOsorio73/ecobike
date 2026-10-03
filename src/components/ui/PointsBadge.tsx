@@ -11,7 +11,7 @@ import { elevation } from "@/theme/colors";
 import { SPRING } from "@/theme/motion";
 import { LIQUID_BORDER, LIQUID_FILL, LIQUID_RIM } from "@/theme/glass";
 import { ShineSweep } from "./Glint";
-import { DAILY_POINTS_CAP } from "@/utils/rideScore";
+import { DAILY_POINTS_CAP } from "@/domain/rideScore";
 
 interface Props {
   points: number;

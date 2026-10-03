@@ -1,6 +1,6 @@
 import type { Ride } from "@/types/ride";
-import { startOfDay, startOfWeek } from "@/utils/rideStats";
-import { DAILY_POINTS_CAP } from "@/utils/rideScore";
+import { startOfDay, startOfWeek } from "@/domain/rideStats";
+import { DAILY_POINTS_CAP } from "@/domain/rideScore";
 
 export type DayStatus = "done" | "today" | "missed" | "future";
 

@@ -8,7 +8,7 @@ import {
   trendSeries,
   weekdayDistribution,
 } from "../rideStats.ts";
-import { DEMO_RIDE_PREFIX, generateDemoRides, seededRandom } from "../demoData.ts";
+import { DEMO_RIDE_PREFIX, generateDemoRides, seededRandom } from "../../utils/demoData.ts";
 import { ACHIEVEMENTS } from "../../types/achievement.ts";
 import { evaluateAchievements } from "../gamification.ts";
 import type { Ride } from "../../types/ride.ts";

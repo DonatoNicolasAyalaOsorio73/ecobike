@@ -18,7 +18,7 @@ import { exportMyData, getAccountPrefs, setNotificationPrefs, setSearchable, sig
 import { resetLocalCache } from "@/services/rides.service";
 import { resetDemoData } from "@/services/demo.service";
 import { DEFAULT_NOTIF_PREFS } from "@/types/user";
-import { DAILY_GOALS } from "@/utils/streak";
+import { DAILY_GOALS } from "@/domain/streak";
 
 const PROVIDER_LABEL: Record<string, string> = { password: "Correo y contraseña", "google.com": "Google", "apple.com": "Apple" };
 

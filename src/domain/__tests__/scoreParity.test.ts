@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import * as client from "@/utils/rideScore";
-import { isVerified } from "@/utils/verified";
-import { weekKey } from "@/utils/week";
+import * as client from "@/domain/rideScore";
+import { isVerified } from "@/domain/verified";
+import { weekKey } from "@/domain/week";
 
 // The device and the server score rides with hand-copied rules (rideScore.ts
 // and api/_lib.js). This keeps the two copies from drifting apart.

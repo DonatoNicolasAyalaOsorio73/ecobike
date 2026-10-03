@@ -1,5 +1,5 @@
 import type { Ride, TrackPoint } from "@/types/ride";
-import { pointsForRide } from "@/utils/gamification";
+import { pointsForRide } from "@/domain/gamification";
 import { estimateCalories, totalElevationGainMeters } from "@/utils/geo";
 import { seededRandom } from "@/utils/random";
 

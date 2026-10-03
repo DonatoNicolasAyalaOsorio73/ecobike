@@ -9,9 +9,9 @@ import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import { useTheme } from "@/theme/useTheme";
 import { accents } from "@/theme/colors";
 import { useSettingsStore } from "@/stores/settingsStore";
-import { streakDays } from "@/utils/gamification";
-import { verifiedRides } from "@/utils/verified";
-import { longestStreak, pointsToday, streakMessage, weekStreakDots, effectiveDailyGoal } from "@/utils/streak";
+import { streakDays } from "@/domain/gamification";
+import { verifiedRides } from "@/domain/verified";
+import { longestStreak, pointsToday, streakMessage, weekStreakDots, effectiveDailyGoal } from "@/domain/streak";
 import type { Ride } from "@/types/ride";
 
 /** Duolingo-style streak + daily goal card. */

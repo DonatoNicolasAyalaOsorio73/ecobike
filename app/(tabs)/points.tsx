@@ -11,14 +11,14 @@ import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import RewardsBrowser from "@/components/rewards/RewardsBrowser";
 import RewardsInfoSheet from "@/components/rewards/RewardsInfoSheet";
 import RedeemSheet from "@/components/rewards/RedeemSheet";
-import MissionsCard from "@/components/MissionsCard";
+import MissionsCard from "@/components/gamification/MissionsCard";
 import { useRiderStats } from "@/hooks/useRiderStats";
-import EmailVerifyBanner from "@/components/EmailVerifyBanner";
+import EmailVerifyBanner from "@/components/app-shell/EmailVerifyBanner";
 import { useTheme } from "@/theme/useTheme";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useAvailablePoints } from "@/hooks/useAvailablePoints";
 import { useRewards } from "@/hooks/useRewards";
-import { levelForPoints } from "@/utils/gamification";
+import { levelForPoints } from "@/domain/gamification";
 import type { Reward } from "@/types/reward";
 
 export default function PointsScreen() {

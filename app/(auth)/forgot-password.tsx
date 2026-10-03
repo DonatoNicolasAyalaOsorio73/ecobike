@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Animated, { ZoomIn } from "react-native-reanimated";
 import AuthScaffold, { AuthLink, Rise } from "@/components/auth/AuthScaffold";
 import GlassInput from "@/components/ui/GlassInput";
-import { validateEmail } from "@/utils/profileForm";
+import { validateEmail } from "@/domain/profileForm";
 import GlassButton from "@/components/ui/GlassButton";
 import { useTheme } from "@/theme/useTheme";
 import { type } from "@/theme/typography";

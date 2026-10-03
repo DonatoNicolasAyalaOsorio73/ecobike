@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 const { validateRide, isDocId, clampNum, analyzeTrack, scoreRide } = createRequire(import.meta.url)("./_lib.js");
 
 const now = 1_800_000_000_000;
-// Same cases as src/utils/__tests__/rideScore.test.ts (identical rules).
+// Same cases as src/domain/__tests__/rideScore.test.ts (identical rules).
 const M_PER_DEG = 111194.93;
 function line(kmh, km, dtS = 5, t0 = now - 3600_000) {
   const stepM = (kmh / 3.6) * dtS;

@@ -1,7 +1,7 @@
 import { decodePolyline } from "@/utils/polyline";
-import { CO2_KG_PER_KM } from "@/utils/rideStats";
+import { CO2_KG_PER_KM } from "@/domain/rideStats";
 import { haversineMeters } from "@/utils/geo";
-import type { Maneuver } from "@/utils/navigation";
+import type { Maneuver } from "@/domain/navigation";
 
 /**
  * Eco ruta: place search + bike routing on OpenStreetMap data.

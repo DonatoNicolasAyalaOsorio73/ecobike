@@ -7,7 +7,7 @@ import BackButton from "@/components/ui/BackButton";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassButton from "@/components/ui/GlassButton";
 import { useTheme } from "@/theme/useTheme";
-import { DAILY_POINTS_CAP, MAX_RIDES_PER_DAY, MIN_DISTANCE_M, POINTS_PER_KM, RIDE_BONUS } from "@/utils/rideScore";
+import { DAILY_POINTS_CAP, MAX_RIDES_PER_DAY, MIN_DISTANCE_M, POINTS_PER_KM, RIDE_BONUS } from "@/domain/rideScore";
 
 const SUPPORT = process.env.EXPO_PUBLIC_SUPPORT_EMAIL;
 

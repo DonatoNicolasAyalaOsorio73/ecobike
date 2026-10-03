@@ -6,7 +6,7 @@ import GlassCard from "@/components/ui/GlassCard";
 import DuoProgressBar from "@/components/ui/DuoProgressBar";
 import { useTheme } from "@/theme/useTheme";
 import { useSettingsStore } from "@/stores/settingsStore";
-import { dailyMissions, renewsIn } from "@/utils/missions";
+import { dailyMissions, renewsIn } from "@/domain/missions";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import type { Ride } from "@/types/ride";
 

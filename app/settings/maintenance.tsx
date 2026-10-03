@@ -14,7 +14,7 @@ import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useRiderStats } from "@/hooks/useRiderStats";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { toast } from "@/stores/toastStore";
-import { BIKE_PARTS, maintenanceOverview } from "@/utils/maintenance";
+import { BIKE_PARTS, maintenanceOverview } from "@/domain/maintenance";
 
 const km = (v: number) => Math.round(v).toLocaleString("es-CO");
 

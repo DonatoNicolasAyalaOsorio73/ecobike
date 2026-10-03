@@ -2,7 +2,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { getDb, isFirebaseConfigured } from "./firebase";
 import { api } from "./api";
 import { deleteRide, getRide, initDb, listRides, markSynced, saveRide, unlockAchievement, unsyncedRides, wipeAllLocalData } from "./db";
-import { computeRiderStats, evaluateAchievements, rideTrack } from "@/utils/gamification";
+import { computeRiderStats, evaluateAchievements, rideTrack } from "@/domain/gamification";
 import type { Ride } from "@/types/ride";
 
 /**

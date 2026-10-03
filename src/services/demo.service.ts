@@ -1,6 +1,6 @@
 import { listRides, saveRide, unlockAchievement, wipeAllLocalData } from "./db";
 import { generateDemoRides } from "@/utils/demoData";
-import { computeRiderStats, evaluateAchievements } from "@/utils/gamification";
+import { computeRiderStats, evaluateAchievements } from "@/domain/gamification";
 
 /** Fills a brand-new guest session with a realistic history (see utils/demoData). */
 export function seedDemoIfEmpty(userId: string) {

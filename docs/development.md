@@ -53,8 +53,9 @@ npm run build:web:e2e    # test build with the e2e session -> dist-e2e/
 npm run test:e2e         # Playwright, phone and desktop (needs both builds)
 ```
 
-- **Unit tests** live next to the code they test: `src/utils/__tests__/`
-  for domain rules and `api/_*.test.mjs` for the server. Handler tests run the
+- **Unit tests** live next to the code they test, in `__tests__/` folders:
+  `src/domain/__tests__/` (business rules), `src/utils/__tests__/` (helpers),
+  `src/services/__tests__/` (storage, routing) and `api/_*.test.mjs` (server). Handler tests run the
   real `api/*.js` against the in-memory Firebase Admin in `api/_fake-admin.cjs`.
 - **End-to-end**: `e2e/smoke.spec.ts` (guest tour on the production build)
   and `e2e/flows.spec.ts` (signed-in flows on the test build, every external
@@ -71,7 +72,7 @@ and every pull request.
   [architecture/spine.md](architecture/spine.md). The most common ones:
   - **Value is written only by the server.** Points, roles, codes and stores go
     through `api/*.js`; balances only through `applyPoints`.
-  - **Scoring rules exist in two copies.** `src/utils/rideScore.ts` and
+  - **Scoring rules exist in two copies.** `src/domain/rideScore.ts` and
     `api/_lib.js` change together, and the parity test must pass.
   - **One definition of "verified".** Use `isVerified` / `verifiedRides`, never
     `pointsEarned > 0`.
@@ -87,7 +88,7 @@ and every pull request.
   used). Add endpoints as actions of an existing handler; helpers and tests
   start with `_`.
 - **Copy that states a rule** (points per km, caps) imports the number from
-  `src/utils/rideScore.ts`.
+  `src/domain/rideScore.ts`.
 - **Style**: TypeScript strict, no `any` outside justified bridges to
   third-party types, Spanish for user-facing text, English for code and docs.
 

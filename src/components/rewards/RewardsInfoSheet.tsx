@@ -8,7 +8,7 @@ import GlassButton from "@/components/ui/GlassButton";
 import { useTheme } from "@/theme/useTheme";
 import { type } from "@/theme/typography";
 import { enter } from "@/theme/motion";
-import { DAILY_POINTS_CAP, POINTS_PER_KM } from "@/utils/rideScore";
+import { DAILY_POINTS_CAP, POINTS_PER_KM } from "@/domain/rideScore";
 
 const STEPS: { icon: keyof typeof Ionicons.glyphMap; title: string; text: string }[] = [
   { icon: "bicycle", title: "Pedalea", text: `${POINTS_PER_KM} pts por km en bici verificada.` },

@@ -1,7 +1,7 @@
 import type { Ride } from "@/types/ride";
-import { startOfDay, CO2_KG_PER_KM } from "@/utils/rideStats";
-import { verifiedRides } from "@/utils/verified";
-import { effectiveDailyGoal } from "@/utils/streak";
+import { startOfDay, CO2_KG_PER_KM } from "@/domain/rideStats";
+import { verifiedRides } from "@/domain/verified";
+import { effectiveDailyGoal } from "@/domain/streak";
 
 export interface Mission {
   id: string;

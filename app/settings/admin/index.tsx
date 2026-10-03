@@ -12,7 +12,7 @@ import GlassIconButton from "@/components/ui/GlassIconButton";
 import PressableScale from "@/components/ui/PressableScale";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import StoreLogo, { Avatar } from "@/components/rewards/StoreLogo";
-import QrScanner from "@/components/QrScanner";
+import QrScanner from "@/components/admin/QrScanner";
 import { useTheme } from "@/theme/useTheme";
 import { type } from "@/theme/typography";
 import { enter } from "@/theme/motion";

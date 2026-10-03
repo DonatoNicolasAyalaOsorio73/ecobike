@@ -7,7 +7,7 @@ import { useTheme } from "@/theme/useTheme";
 import { elevation } from "@/theme/colors";
 import { type } from "@/theme/typography";
 import { LIQUID_BORDER, LIQUID_FILL_STRONG, LIQUID_RIM } from "@/theme/glass";
-import { distanceLabel, remainingLabel, maneuverIcon, type NavState } from "@/utils/navigation";
+import { distanceLabel, remainingLabel, maneuverIcon, type NavState } from "@/domain/navigation";
 
 interface Props {
   nav: NavState;
