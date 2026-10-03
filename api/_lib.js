@@ -126,9 +126,13 @@ async function rateLimit(uid, action, everyMs, message = "Demasiadas solicitudes
  * passed the public rules. Friend lists are never public.
  */
 const PUBLIC_PHOTO_RE = /^https:\/\/(firebasestorage\.googleapis\.com|lh[0-9]\.googleusercontent\.com)\//;
+const PUBLIC_DATA_PHOTO_RE = /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/;
 function projectPublic(d) {
   const name = (v) => (typeof v === "string" ? v.trim().slice(0, 60) : "");
-  const photo = typeof d.profileImageUrl === "string" && d.profileImageUrl.length <= 2000 && PUBLIC_PHOTO_RE.test(d.profileImageUrl) ? d.profileImageUrl : null;
+  // Same check as validPhoto in firestore.rules: legacy Storage/Google URL, or the app's inline 160 px JPEG.
+  const p = d.profileImageUrl;
+  const photo =
+    typeof p === "string" && ((p.length <= 2000 && PUBLIC_PHOTO_RE.test(p)) || (p.length <= 60000 && PUBLIC_DATA_PHOTO_RE.test(p))) ? p : null;
   return { nombre: name(d.nombre ?? d.nombres), apellido: name(d.apellido), profileImageUrl: photo, puntosAcumulados: Number.isFinite(d.puntosAcumulados) ? d.puntosAcumulados : 0 };
 }
 

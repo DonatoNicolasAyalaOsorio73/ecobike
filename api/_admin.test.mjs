@@ -73,3 +73,13 @@ test("users: an admin can't demote or suspend themself, but can manage others", 
   assert.doesNotThrow(() => assertNotSelfLockout(parseUserUpdate({ id: me, nombre: "Ana" }), me));
   assert.doesNotThrow(() => assertNotSelfLockout(parseUserUpdate({ id: "other1", role: "user" }), me));
 });
+
+test("projectPublic: keeps only safe photos (Google/Storage URL or the app's inline JPEG)", () => {
+  const { projectPublic } = require("./_lib.js");
+  const jpeg = "data:image/jpeg;base64,/9j/4AAQ";
+  assert.equal(projectPublic({ profileImageUrl: jpeg }).profileImageUrl, jpeg);
+  assert.equal(projectPublic({ profileImageUrl: "https://lh3.googleusercontent.com/a" }).profileImageUrl, "https://lh3.googleusercontent.com/a");
+  assert.equal(projectPublic({ profileImageUrl: "https://evil.test/track.png" }).profileImageUrl, null);
+  assert.equal(projectPublic({ profileImageUrl: "data:image/svg+xml;base64,PHN2Zz4=" }).profileImageUrl, null);
+  assert.equal(projectPublic({ profileImageUrl: "data:image/jpeg;base64," + "A".repeat(60000) }).profileImageUrl, null);
+});
