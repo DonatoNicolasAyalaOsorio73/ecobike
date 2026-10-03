@@ -21,7 +21,7 @@ export async function searchUserByUsername(username: string): Promise<UserProfil
   requireFirebase();
   // Server-side lookup: clients can't list usuarios_public (no enumeration),
   // and the server honors "hide me from search".
-  const { user: data } = await api<{ user: { uid: string; username: string; nombre: string; apellido: string; profileImageUrl: string | null; puntosAcumulados: number } | null }>(
+  const { user: data } = await api<{ user: { uid: string; username: string; nombre: string; apellido: string; profileImageUrl: string | null; points: number } | null }>(
     "friends",
     "POST",
     { action: "search", username }
@@ -43,7 +43,7 @@ export async function searchUserByUsername(username: string): Promise<UserProfil
     experience: null,
     ridingGoal: null,
     friends: [],
-    puntosAcumulados: data.puntosAcumulados,
+    puntosAcumulados: data.points,
     role: "user",
     createdAt: Date.now(),
     providers: ["password"],

@@ -258,3 +258,28 @@ test("validate: a partner confirms a code of its store once, and it's audited", 
   assert.equal(log.adminUid, "partner1");
   assert.equal((await call(validate, { method: "POST", token: riderTok, body: { code: "ECO7K2Q9" } })).status, 403);
 });
+
+test("points: one writer (applyPoints); league moves only with rides", async () => {
+  // No handler writes balances or league fields itself (spine AD-9).
+  const fs = await import("node:fs");
+  const writers = fs
+    .readdirSync(new URL(".", import.meta.url))
+    .filter((f) => f.endsWith(".js") && f !== "_lib.js")
+    .filter((f) => /puntosAcumulados\s*:|\.puntosAcumulados\s*=[^=]|weekPoints\s*:/.test(fs.readFileSync(new URL(f, import.meta.url), "utf8")));
+  assert.deepEqual(writers, []);
+
+  const { weekKey } = require("./_lib.js");
+  const week = weekKey(db.now);
+  db.put(`usuarios_public/${RIDER}`, { ...db.get(`usuarios_public/${RIDER}`), weekKey: week, weekPoints: 40 });
+  const ride = bikeRide("ride-league1", db.now - 3600_000, 2);
+  await call(rides, { method: "POST", token: riderTok, body: ride });
+  assert.equal(db.get(`usuarios_public/${RIDER}`).weekPoints, 40 + 15);
+  verifiedRides(3);
+  await call(redeem, { method: "POST", token: riderTok, body: { rewardId: "coldest" } });
+  assert.equal(db.get(`usuarios_public/${RIDER}`).weekPoints, 55); // redeeming doesn't lower the league
+  assert.equal(db.get(`usuarios_public/${RIDER}`).puntosAcumulados, 500 + 15 - 400);
+  const del = await call(rides, { method: "DELETE", token: riderTok, body: { id: "ride-league1" } });
+  assert.equal(del.body.pointsRemoved, 15);
+  assert.equal(db.get(`usuarios_public/${RIDER}`).weekPoints, 40);
+  assert.equal(db.get(`usuarios/${RIDER}`).puntosAcumulados, 100);
+});

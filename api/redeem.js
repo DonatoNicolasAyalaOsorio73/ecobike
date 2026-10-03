@@ -2,7 +2,7 @@
 // The price is read from tiendas/{rewardId} on the server, never from the client.
 // Anti-abuse limits (redeemLimitError in _lib.js): rewards have to be earned
 // by riding and can't be emptied in one burst or farmed from fresh accounts.
-const { admin, httpError, requireUser, body, handler, redemptionCode, isDocId, redeemLimitError, MIN_VERIFIED_RIDES, SAME_STORE_COOLDOWN_DAYS } = require("./_lib");
+const { admin, httpError, requireUser, body, handler, redemptionCode, isDocId, redeemLimitError, MIN_VERIFIED_RIDES, SAME_STORE_COOLDOWN_DAYS, applyPoints } = require("./_lib");
 
 module.exports = handler(["POST"], async (req) => {
   const user = await requireUser(req);
@@ -46,8 +46,7 @@ module.exports = handler(["POST"], async (req) => {
       userId: user.uid,
       createdAt: FieldValue.serverTimestamp(),
     });
-    tx.update(userRef, { puntosAcumulados: FieldValue.increment(-cost), updatedAt: FieldValue.serverTimestamp() });
-    tx.set(db.collection("usuarios_public").doc(user.uid), { puntosAcumulados: balance - cost }, { merge: true });
+    applyPoints(tx, user.uid, { user: userSnap.data(), pub: null }, { delta: -cost }); // redemptions don't move the league
     return { id: codeRef.id, code, rewardId, rewardTitle: store.data().name ?? "Recompensa", pointsSpent: cost, balance: balance - cost };
   });
 });

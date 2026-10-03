@@ -77,6 +77,32 @@ async function requireAdmin(req) {
   return user;
 }
 
+/** Weekly league points after adding `delta` for a ride in `rideWeek` (resets when the week changes). */
+function nextWeekly(pub, rideWeek, delta) {
+  const current = weekKey(Date.now());
+  if (rideWeek !== current) return null; // rides from past weeks don't count for this week's league
+  const base = pub?.weekKey === current ? pub.weekPoints ?? 0 : 0;
+  return { weekKey: current, weekPoints: Math.max(0, base + delta) };
+}
+
+/**
+ * The only place a balance changes (spine AD-9): updates usuarios.puntosAcumulados
+ * and its usuarios_public mirror together, never below 0, and the weekly league
+ * only for rides (`leagueWeek` = the ride's week). Redemptions and admin
+ * adjustments don't move the league. Call inside a transaction, after its reads:
+ * `user`/`pub` are the docs' data read in that transaction. Returns the new balance.
+ */
+function applyPoints(tx, uid, { user, pub }, change) {
+  const { FieldValue } = require("firebase-admin/firestore");
+  const db = admin().firestore();
+  const before = user?.puntosAcumulados ?? 0;
+  const balance = Math.max(0, change.set ?? before + change.delta);
+  tx.update(db.collection("usuarios").doc(uid), { puntosAcumulados: balance, updatedAt: FieldValue.serverTimestamp() });
+  const weekly = change.leagueWeek ? nextWeekly(pub, change.leagueWeek, balance - before) : null;
+  tx.set(db.collection("usuarios_public").doc(uid), { puntosAcumulados: balance, ...(weekly ?? {}) }, { merge: true });
+  return balance;
+}
+
 /**
  * Per-user rate limit (spine AD-13): at most one `action` every `everyMs`.
  * State lives in rate_limits/{uid}, which clients can't read or write
@@ -400,4 +426,4 @@ function redemptionCode() {
   return require("crypto").randomBytes(6).toString("hex").toUpperCase();
 }
 
-module.exports = { rateLimit, projectPublic, sanitizeTrack, capRidePoints, redeemLimitError, MIN_VERIFIED_RIDES, SAME_STORE_COOLDOWN_DAYS, requireAdmin, logAdmin, deleteUserData, analyzeTrack, scoreRide, DAILY_POINTS_CAP, isDocId, clampNum, MAX_RIDE_DURATION_S, weekKey, chatIdFor, cleanMessage, MAX_MESSAGE_LENGTH, sendPush, admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };
+module.exports = { applyPoints, nextWeekly, rateLimit, projectPublic, sanitizeTrack, capRidePoints, redeemLimitError, MIN_VERIFIED_RIDES, SAME_STORE_COOLDOWN_DAYS, requireAdmin, logAdmin, deleteUserData, analyzeTrack, scoreRide, DAILY_POINTS_CAP, isDocId, clampNum, MAX_RIDE_DURATION_S, weekKey, chatIdFor, cleanMessage, MAX_MESSAGE_LENGTH, sendPush, admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };

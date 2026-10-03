@@ -82,7 +82,7 @@ async function lookupUsername(me, action, raw) {
   if (!uid) return { user: null };
   const p = (await db.collection("usuarios_public").doc(uid).get()).data();
   if (!p || p.buscable === false) return { user: null }; // chose not to appear in search
-  return { user: { uid, username: p.username ?? username, nombre: p.nombre ?? "", apellido: p.apellido ?? "", profileImageUrl: p.profileImageUrl ?? null, puntosAcumulados: p.puntosAcumulados ?? 0 } };
+  return { user: { uid, username: p.username ?? username, nombre: p.nombre ?? "", apellido: p.apellido ?? "", profileImageUrl: p.profileImageUrl ?? null, points: p.puntosAcumulados ?? 0 } };
 }
 
 module.exports.lookupUsername = lookupUsername;

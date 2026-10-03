@@ -5,7 +5,7 @@
 // GET    /api/users?stats=1             → dashboard KPIs (aggregation queries only)
 // PUT    /api/users { id, role?, storeId?, points?, reason?, disabled?, nombre?, apellido? } → update
 // DELETE /api/users { id, reason }      → permanently delete the user and their data
-const { admin, httpError, requireAdmin, logAdmin, deleteUserData, body, handler, isDocId } = require("./_lib");
+const { admin, httpError, requireAdmin, logAdmin, deleteUserData, body, handler, isDocId, applyPoints } = require("./_lib");
 
 const PAGE = 25;
 const ROLES = ["user", "partner", "admin"];
@@ -198,8 +198,6 @@ module.exports = handler(["GET", "POST", "PUT", "DELETE"], async (req) => {
     if (u.points !== undefined) {
       const current = before.puntosAcumulados ?? 0;
       if (u.expectedPoints !== undefined && u.expectedPoints !== current) throw httpError(409, `El saldo cambió a ${current} pts mientras editabas. Revisa y vuelve a intentarlo.`);
-      update.puntosAcumulados = u.points;
-      pub.puntosAcumulados = u.points;
       changed.points = { from: current, to: u.points, reason: u.reason };
     }
     if (u.disabled !== undefined) {
@@ -215,6 +213,7 @@ module.exports = handler(["GET", "POST", "PUT", "DELETE"], async (req) => {
     }
     tx.update(ref, update);
     if (Object.keys(pub).length) tx.set(pubRef, pub, { merge: true });
+    if (u.points !== undefined) applyPoints(tx, u.id, { user: before, pub: null }, { set: u.points }); // admin adjustments don't move the league
     return changed;
   });
 

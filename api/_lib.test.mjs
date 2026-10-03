@@ -87,7 +87,7 @@ test("cleanMessage trims, rejects empty, non-strings and over-long text", () => 
   assert.equal(cleanMessage("x".repeat(1000)).text.length, 1000);
 });
 
-const { nextWeekly } = createRequire(import.meta.url)("./rides.js");
+const { nextWeekly } = createRequire(import.meta.url)("./_lib.js");
 const { weekKey } = createRequire(import.meta.url)("./_lib.js");
 
 test("nextWeekly adds this week, resets on a new week, ignores past-week rides, never negative", () => {
