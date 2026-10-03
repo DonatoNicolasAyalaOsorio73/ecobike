@@ -39,17 +39,23 @@ serverless functions in [`api/`](api) with the Firebase Admin SDK:
 
 | Endpoint | What it does |
 |---|---|
-| `POST /api/rides` | Validates a ride summary (speed <= 45 km/h, <= 200 km, <= 30 days old, max 20 rewarded rides/24h), computes points server-side, writes `usuarios/{uid}/rides/{id}` and `puntosAcumulados` in one transaction. Idempotent by ride id. |
-| `POST /api/redeem` | Requires a verified email for password accounts (anti-farming). Reads the price from `tiendas/{id}`, checks and deducts the balance, writes `codigos_canjeados`. |
-| `POST /api/friends` | request / accept / reject / remove, writing both users atomically. Max 100 pending requests per user. |
-| `GET/POST/PUT /api/stores` | Rewards catalog admin. Requires `role == "admin"` or legacy `isAdmin == true` on `usuarios/{uid}`, or an `admin` custom claim. |
-| `POST /api/validate` | Store staff (role `partner`) or admin looks up a redemption code and marks it used, once. |
-| `POST /api/roles` | Admin assigns `partner` / `user` / `admin` by username. |
-| `POST /api/me` | After sign-in: rebuilds the public mirror from the server copy (legacy accounts), dedupes auto usernames, and changes username with a uniqueness check. |
+| `POST /api/rides` | Validates a ride and its downsampled GPS track (bike speeds 7–50 km/h for most of the moving time, no GPS jumps, distance capped by the track), computes points server-side with daily caps (150 pts and 20 rides per rolling 24 h), writes `usuarios/{uid}/rides/{id}` (`verified`, `pointsReason`) and the balance in one transaction. Idempotent by ride id. `DELETE` takes the ride's points back. |
+| `POST /api/redeem` | Verified email for password accounts, 3 verified rides before the first redemption, 1 redemption per 24 h, same store every 7 days. Price read from `tiendas/{id}`, never from the client. |
+| `POST /api/friends` | request / accept / reject / remove, both users atomically (rate limited); `search` and `available` look up an exact username server-side, honoring "hide me from search". |
+| `GET/POST/PUT/DELETE /api/stores` | Rewards catalog admin: logo required, no delete while partners or unused codes exist; audited. |
+| `GET/POST/PUT/DELETE /api/users` | Admin user management: list, search (in the body), detail, role, points (with reason and the expected balance), suspend, names, delete; audited. `?stats=1` returns the dashboard KPIs. |
+| `POST /api/validate` | Partner (own store only) or admin looks up a redemption code and marks it used, once; audited. |
+| `POST /api/me` | After sign-in: rebuilds the public mirror through the server's validated projection (no friend lists), dedupes auto usernames, changes username with a uniqueness check. |
 | `POST /api/messages` | Chat between friends only (checked server-side both ways), text trimmed and capped at 1000 chars, max 20 messages/min, push honors the recipient notification prefs; also read receipts. |
-| `GET /api/export` | Everything stored about the caller as JSON (right of access / portability); excludes the push token. |
+| `GET /api/export` | Everything stored about the caller as JSON (right of access / portability); excludes the push token; at most once every 10 minutes. |
 | `POST /api/sessions` | Revokes all refresh tokens ("cerrar sesión en todos los dispositivos"); `requireUser` verifies tokens with `checkRevoked`, so it applies immediately. |
 | `DELETE /api/account` | Deletes Firestore data, public mirror, avatars, friend links and the Auth user. |
+
+All balance changes go through `applyPoints` in `api/_lib.js`; every admin or
+partner write is recorded in `admin_logs`. Per-user rate limits live in
+`rate_limits/{uid}` (server-only). `usuarios_public` can only be read by id
+(no list queries), so profiles can't be enumerated. The architecture rules
+are in the spine kept with the BMad review (`architecture-ecobike-platform.md`).
 
 Every call sends the user Firebase ID token (`Authorization: Bearer`),
 verified server-side.

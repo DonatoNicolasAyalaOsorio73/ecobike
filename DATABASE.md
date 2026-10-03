@@ -28,10 +28,11 @@ servidor (`api/*.js` en Vercel, Admin SDK). El cliente solo lee.
 | `usuarios/{uid}` | perfil privado: nombre, email, `role` (user/partner/admin), `storeId` (partner), `puntosAcumulados`, `cuentaActiva` | servidor (perfil básico: el propio usuario) |
 | `usuarios/{uid}/rides/{id}` | recorridos; `pointsEarned > 0` = verificado | servidor |
 | `usuarios/{uid}/codigos_canjeados/{id}` | canjes con su código QR y nombre de tienda | servidor |
-| `usuarios_public/{uid}` | espejo público: username, nombre, foto, puntos | servidor / propio usuario |
+| `usuarios_public/{uid}` | espejo público: username, nombre, foto validada, puntos, liga semanal. Se lee solo por id (sin listados); la búsqueda va por `/api/friends` | servidor (proyección validada) / propio usuario (nombre, foto, `buscable`) |
 | `usernames/{name}` | reserva única de nombres de usuario | servidor |
 | `tiendas/{id}` | premio: `name`, `description`, `logo` (https, obligatorio), `pointsRequired`, `isActive` | solo admin vía `/api/stores` |
 | `chats/{id}/messages/{id}` | chat entre amigos | servidor |
+| `rate_limits/{uid}` | último momento de acciones limitadas (exportar, solicitudes de amistad) | solo servidor; sin acceso de cliente |
 | `admin_logs/{id}` | auditoría: `adminUid`, `action`, `targetType`, `targetId`, `details`, `at` | solo servidor; nadie lo lee desde el cliente |
 
 Storage:
@@ -46,7 +47,8 @@ Storage:
 | Endpoint | Uso |
 |---|---|
 | `GET /api/stores` · `POST` · `PUT` · `DELETE` | CRUD de tiendas (logo obligatorio al crear; no se borra una tienda con partners) |
-| `GET /api/users?q=` | buscar por `@usuario` (prefijo) o correo exacto; sin `q`, paginado |
+| `POST /api/users { q }` | buscar por `@usuario` (prefijo) o correo exacto, en el cuerpo (el correo nunca va en la URL) |
+| `GET /api/users` | lista paginada |
 | `GET /api/users?id=` | detalle: cuenta, actividad y últimos cambios |
 | `PUT /api/users` | rol (partner con tienda), puntos (con motivo), suspender, nombre |
 | `DELETE /api/users` | elimina la cuenta y todos sus datos (con motivo) |
@@ -63,5 +65,5 @@ Para nombrar al primer admin: en la consola de Firestore, en
 
 El plan Hobby admite como máximo 12 funciones por despliegue: cada archivo de
 `api/` cuenta, salvo los que empiezan con `_` (por eso `_lib.js` y los tests
-`_*.test.mjs`). Hoy hay 11. Antes de añadir un endpoint nuevo, súmalo a uno
+`_*.test.mjs`, `_fake-admin.cjs`). Hoy hay 11. Antes de añadir un endpoint nuevo, súmalo a uno
 existente.

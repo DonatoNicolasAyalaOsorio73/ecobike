@@ -116,19 +116,21 @@ IDLE → PREPARING → ACTIVE ⇄ PAUSED → FINISHING → COMPLETED
 ```
 
 - Distance is accumulated incrementally per GPS fix (`utils/geo.ts`,
-  haversine) and rejects fixes implying >120 km/h, which is GPS noise, not a
-  real cyclist.
+  haversine) and rejects fixes implying >80 km/h (GPS glitches), mocked
+  locations, stale cached fixes and repeated timestamps.
 - The in-progress ride is autosaved to local storage every ~15s while
   active/paused, and `recoverInProgressRide(userId)` looks for one on the
   Map tab's mount — an app kill mid-ride loses at most ~15s of the track,
   not the whole ride.
-- `finishRide()` computes final stats, persists the ride, evaluates
-  achievements against full history, and best-effort syncs to Firestore
-  (`services/rides.service.ts`) if configured — sync failure never loses the
-  local copy. On a real (non-guest) account it also adds the ride's points to
-  `usuarios/{uid}.puntosAcumulados`, the real shared balance the mobile app
-  reads — see SECURITY.md for why the raw ride-summary sync itself has no
-  real collection to land in yet (no Cloud Functions on this project).
+- `finishRide()` computes final stats, scores the ride with the same rules
+  and daily caps as the server (`utils/rideScore.ts`, kept identical to
+  `api/_lib.js` by `scoreParity.test.ts`), persists it, evaluates
+  achievements and syncs it to `POST /api/rides`. The server is the only
+  writer of points: its verdict (`pointsEarned`, `verified`, `pointsReason`)
+  replaces the local one. Sync failure never loses the local copy; only a
+  permanent rejection (400/403/409/413/422) zeroes a ride.
+- Local storage keeps ride summaries apart from GPS tracks: lists and stats
+  never parse tracks (`listRides` returns summaries, `getRide` the track).
 
 ## Motion
 
