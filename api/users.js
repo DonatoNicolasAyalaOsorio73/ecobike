@@ -102,22 +102,42 @@ async function list(db, q, after) {
 async function stats(db) {
   const { AggregateField, Timestamp } = require("firebase-admin/firestore");
   const weekAgoMs = Date.now() - 7 * 86_400_000;
-  const [users, rides, codes, used, stores] = await Promise.all([
-    db.collection("usuarios").count().get(),
-    db.collectionGroup("rides").where("startedAt", ">=", weekAgoMs).aggregate({ n: AggregateField.count(), meters: AggregateField.sum("distanceMeters"), pts: AggregateField.sum("pointsEarned") }).get(),
-    db.collectionGroup("codigos_canjeados").where("createdAt", ">=", Timestamp.fromMillis(weekAgoMs)).count().get(),
-    db.collectionGroup("codigos_canjeados").where("status", "==", "used").count().get(),
-    db.collection("tiendas").count().get(),
+  const weekRides = db.collectionGroup("rides").where("startedAt", ">=", weekAgoMs);
+  // The sums need the composite index in firestore.indexes.json; while it is
+  // missing or still building, add up the week's rides instead of failing.
+  const rideTotals = () =>
+    Promise.resolve()
+      .then(() => weekRides.aggregate({ n: AggregateField.count(), meters: AggregateField.sum("distanceMeters"), pts: AggregateField.sum("pointsEarned") }).get())
+      .then((s) => s.data())
+      .catch(async (e) => {
+        console.warn("stats: ride sums fell back to a scan:", e.message);
+        const snap = await weekRides.select("distanceMeters", "pointsEarned").get();
+        const sum = (f) => snap.docs.reduce((s, d) => s + (Number(d.data()[f]) || 0), 0);
+        return { n: snap.size, meters: sum("distanceMeters"), pts: sum("pointsEarned") };
+      });
+  const count = (q) => q.count().get().then((s) => s.data().count);
+  // Each figure on its own: one failing query must not blank the whole dashboard.
+  const [users, rides, codes, used, stores] = await Promise.allSettled([
+    count(db.collection("usuarios")),
+    rideTotals(),
+    count(db.collectionGroup("codigos_canjeados").where("createdAt", ">=", Timestamp.fromMillis(weekAgoMs))),
+    count(db.collectionGroup("codigos_canjeados").where("status", "==", "used")),
+    count(db.collection("tiendas")),
   ]);
-  const r = rides.data();
+  const val = (r) => {
+    if (r.status === "fulfilled") return r.value;
+    console.error("stats:", r.reason?.message ?? r.reason);
+    return null;
+  };
+  const r = val(rides);
   return {
-    users: users.data().count,
-    ridesWeek: r.n ?? 0,
-    kmWeek: Math.round((r.meters ?? 0) / 1000),
-    pointsWeek: r.pts ?? 0,
-    redemptionsWeek: codes.data().count,
-    codesUsedTotal: used.data().count,
-    stores: stores.data().count,
+    users: val(users),
+    ridesWeek: r ? r.n ?? 0 : null,
+    kmWeek: r ? Math.round((r.meters ?? 0) / 1000) : null,
+    pointsWeek: r ? r.pts ?? 0 : null,
+    redemptionsWeek: val(codes),
+    codesUsedTotal: val(used),
+    stores: val(stores),
   };
 }
 

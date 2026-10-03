@@ -69,9 +69,13 @@ function KpiStrip() {
   const { colors } = useTheme();
   const [kpis, setKpis] = useState<Kpis | null>(null);
   useEffect(() => {
-    getKpis().then(setKpis).catch(() => setKpis(null));
+    // One retry: a cold serverless start can time out the first call.
+    getKpis()
+      .catch(() => getKpis())
+      .then(setKpis)
+      .catch(() => setKpis(null));
   }, []);
-  const items: [string, number | undefined][] = [
+  const items: [string, number | null | undefined][] = [
     ["Usuarios", kpis?.users],
     ["Km 7 d", kpis?.kmWeek],
     ["Canjes 7 d", kpis?.redemptionsWeek],
@@ -81,7 +85,7 @@ function KpiStrip() {
       {items.map(([label, value], i) => (
         <Animated.View key={label} entering={enter(i * 50)} style={styles.kpi}>
           <Text style={[styles.kpiValue, { color: colors.ink }]} numberOfLines={1} adjustsFontSizeToFit>
-            {value === undefined ? "–" : value.toLocaleString("es-CO")}
+            {value == null ? "–" : value.toLocaleString("es-CO")}
           </Text>
           <Text style={[type.caption, { color: colors.inkSoft }]}>{label}</Text>
         </Animated.View>

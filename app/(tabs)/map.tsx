@@ -126,14 +126,16 @@ export default function MapScreen() {
       // 2) A quick live fix (Wi-Fi/cell assisted) with a deadline.
       const quick = await within(8000, Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
       const moved = go(quick) || movedFast;
-      // 3) Refine with GPS in the background (can take a while indoors; never blocks).
-      within(15000, Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High })).then((p) => {
-        if (useRideStore.getState().status === "IDLE") go(p);
+      // 3) Refine with GPS (can take a while indoors). Doesn't block when we already moved.
+      const refine = within(15000, Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High })).then((p) => {
+        if (useRideStore.getState().status !== "IDLE") return !!p;
+        return go(p);
       });
-      // 4) Last resort: any known position, else tell the rider why nothing moved.
-      if (!moved && !go(await within(1500, Location.getLastKnownPositionAsync())) && ask) {
-        toast("No pudimos obtener tu ubicación. Revisa que el GPS esté activo.", "error");
-      }
+      if (moved) return;
+      // 4) Nothing yet: wait for that GPS fix (a cold GPS often answers after
+      // the quick deadline), then any known position. Only then tell the rider.
+      if ((await refine) || go(await within(1500, Location.getLastKnownPositionAsync()))) return;
+      if (ask) toast("No pudimos obtener tu ubicación. Revisa que el GPS esté activo.", "error");
     } catch {
       if (ask) toast("No pudimos obtener tu ubicación. Revisa que el GPS esté activo.", "error");
     }
@@ -148,14 +150,24 @@ export default function MapScreen() {
   const ecoReq = React.useRef(0);
   const pickEco = async (place: Place, prefs: RoutePrefs) => {
     setMenuOpen(false);
-    if (!center) {
-      toast("Necesitamos tu ubicación para planear la ruta. Toca el botón de ubicación.", "error");
-      return;
-    }
     const req = ++ecoReq.current;
     setEco({ place, prefs, routes: [], idx: 0, loading: true, error: null });
+    // The map may not have a fix yet (cold GPS): ask for one instead of failing.
+    let from = center;
+    if (!from) {
+      const p = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => Location.getLastKnownPositionAsync().catch(() => null));
+      if (p) {
+        from = { lat: p.coords.latitude, lng: p.coords.longitude };
+        setIdleCenter(from);
+      }
+    }
+    if (!from) {
+      if (req === ecoReq.current) setEco(null);
+      toast("Necesitamos tu ubicación para planear la ruta. Revisa que el GPS esté activo.", "error");
+      return;
+    }
     try {
-      const routes = await planBikeRoute(center, place, prefs);
+      const routes = await planBikeRoute(from, place, prefs);
       if (req === ecoReq.current) setEco((e) => (e ? { ...e, routes, loading: false } : e));
     } catch (err: any) {
       if (req === ecoReq.current) setEco((e) => (e ? { ...e, loading: false, error: err?.message ?? "No pudimos calcular la ruta." } : e));

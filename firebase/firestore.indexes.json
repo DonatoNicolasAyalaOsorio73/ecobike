@@ -1,6 +1,15 @@
 {
   "indexes": [
     {
+      "collectionGroup": "rides",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "startedAt", "order": "ASCENDING" },
+        { "fieldPath": "distanceMeters", "order": "ASCENDING" },
+        { "fieldPath": "pointsEarned", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "chats",
       "queryScope": "COLLECTION",
       "fields": [

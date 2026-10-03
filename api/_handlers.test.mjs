@@ -282,3 +282,29 @@ test("points: one writer (applyPoints); league moves only with rides", async () 
   assert.equal(db.get(`usuarios_public/${RIDER}`).weekPoints, 40);
   assert.equal(db.get(`usuarios/${RIDER}`).puntosAcumulados, 100);
 });
+
+test("users stats: dashboard figures, and a fallback when the sum index is missing", async () => {
+  const now = Date.now();
+  db.put(`usuarios/${RIDER}/rides/s1`, { startedAt: now - 3600_000, distanceMeters: 4200, pointsEarned: 26 });
+  db.put(`usuarios/${RIDER}/rides/s2`, { startedAt: now - 10 * 86_400_000, distanceMeters: 9000, pointsEarned: 50 }); // older than 7 days
+  const ok = await call(users, { token: adminTok, query: { stats: "1" } });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.body.kmWeek, 4);
+  assert.equal(ok.body.pointsWeek, 26);
+  assert.ok(ok.body.users >= 2);
+
+  // Production failed with FAILED_PRECONDITION until the composite index existed: the scan fallback keeps the numbers.
+  const { AggregateField } = require("firebase-admin/firestore");
+  const realSum = AggregateField.sum;
+  AggregateField.sum = () => {
+    throw new Error("9 FAILED_PRECONDITION: The query requires an index.");
+  };
+  try {
+    const fb = await call(users, { token: adminTok, query: { stats: "1" } });
+    assert.equal(fb.status, 200);
+    assert.equal(fb.body.kmWeek, 4);
+    assert.equal(fb.body.ridesWeek, 1);
+  } finally {
+    AggregateField.sum = realSum;
+  }
+});

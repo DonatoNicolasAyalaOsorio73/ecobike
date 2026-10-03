@@ -47,14 +47,15 @@ export interface AdminUserDetail extends AdminUserSummary {
   stats: { rides: number; verifiedRides: number; codes: number };
 }
 
+/** Dashboard figures; null when that one query failed (the others still show). */
 export interface Kpis {
-  users: number;
-  ridesWeek: number;
-  kmWeek: number;
-  pointsWeek: number;
-  redemptionsWeek: number;
-  codesUsedTotal: number;
-  stores: number;
+  users: number | null;
+  ridesWeek: number | null;
+  kmWeek: number | null;
+  pointsWeek: number | null;
+  redemptionsWeek: number | null;
+  codesUsedTotal: number | null;
+  stores: number | null;
 }
 
 export const getKpis = () => api<Kpis>("users?stats=1", "GET");
