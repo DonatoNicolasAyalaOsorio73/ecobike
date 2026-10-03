@@ -84,12 +84,12 @@ function onLocations(locs: Location.LocationObject[]) {
     const before = store.getState();
     if (!before.ride) return;
     const last = before.ride.points[before.ride.points.length - 1];
-    const moving =
-      speedMs(
-        loc.coords.speed,
-        last ? incrementalDistanceMeters(last, { lat: loc.coords.latitude, lng: loc.coords.longitude, altitude: null, timestamp: loc.timestamp, speed: null }) : 0,
-        last ? loc.timestamp - last.timestamp : 0
-      ) >= MOVING_SPEED_MS;
+    const speed = speedMs(
+      loc.coords.speed,
+      last ? incrementalDistanceMeters(last, { lat: loc.coords.latitude, lng: loc.coords.longitude, altitude: null, timestamp: loc.timestamp, speed: null }) : 0,
+      last ? loc.timestamp - last.timestamp : 0
+    );
+    const moving = speed >= MOVING_SPEED_MS;
     if (moving) lastMovingAt = Date.now();
     if (autoPauseAction({ enabled: settings().autoPause, status: before.status, autoPaused: before.autoPaused, movingNow: moving, lastMovingAt, now: Date.now() }) === "resume") {
       before.resumeRide();
@@ -121,7 +121,7 @@ function onLocations(locs: Location.LocationObject[]) {
         ...state.ride,
         points,
         distanceMeters: state.ride.distanceMeters + added,
-        maxSpeedKmh: Math.max(state.ride.maxSpeedKmh, Math.max(0, loc.coords.speed ?? 0) * 3.6),
+        maxSpeedKmh: Math.max(state.ride.maxSpeedKmh, Math.min(speed, MAX_JUMP_KMH / 3.6) * 3.6),
         elevationGainMeters: totalElevationGainMeters(points),
       },
     });
