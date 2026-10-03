@@ -12,11 +12,11 @@ import {
   type User,
 } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as Crypto from "expo-crypto";
 import { Platform } from "react-native";
-import { getDb, getFirebaseAuth, getFirebaseStorage, isFirebaseConfigured } from "./firebase";
+import { getDb, getFirebaseAuth, isFirebaseConfigured } from "./firebase";
+import { toDataUrl } from "./imageData";
 import { publicMirrorFields } from "@/utils/publicMirror";
 import type { AuthProvider, UserProfile } from "@/types/user";
 
@@ -223,11 +223,8 @@ export async function updateUserProfile(
 
 export async function uploadProfilePhoto(uid: string, localUri: string): Promise<string> {
   requireFirebase();
-  const response = await fetch(localUri);
-  const blob = await response.blob();
-  const storageRef = ref(getFirebaseStorage(), `avatars/${uid}/photo.jpg`);
-  await uploadBytes(storageRef, blob, { contentType: "image/jpeg" });
-  const url = await getDownloadURL(storageRef);
+  // A 160 px JPEG data URL on the profile document (no Cloud Storage, see imageData.ts).
+  const url = await toDataUrl(localUri, 160, "jpeg", 0.7);
   await updateUserProfile(uid, { photoURL: url });
   return url;
 }
@@ -285,9 +282,8 @@ export async function reloadEmailVerification(): Promise<boolean> {
   return user.emailVerified;
 }
 
-/** Removes the profile photo (Storage object + profile fields). */
+/** Removes the profile photo. */
 export async function removeProfilePhoto(uid: string) {
   requireFirebase();
-  await deleteObject(ref(getFirebaseStorage(), `avatars/${uid}/photo.jpg`)).catch(() => {});
   await updateUserProfile(uid, { photoURL: null });
 }

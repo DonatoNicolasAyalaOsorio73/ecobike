@@ -164,7 +164,6 @@ async function deleteUserData(uid) {
   await Promise.all(chats.docs.map((c) => db.recursiveDelete(c.ref)));
   await db.recursiveDelete(db.collection("usuarios").doc(uid));
   await db.collection("usuarios_public").doc(uid).delete(); // deleting a missing doc is a no-op; real errors must surface
-  await a.storage().bucket().deleteFiles({ prefix: `avatars/${uid}/` }).catch(() => {});
   await a.auth().deleteUser(uid).catch((e) => {
     if (e?.code !== "auth/user-not-found") throw e;
   });

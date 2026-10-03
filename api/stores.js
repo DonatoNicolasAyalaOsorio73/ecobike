@@ -12,8 +12,12 @@ function clean(input, creating) {
   if (typeof input.name === "string" && input.name.trim()) out.name = input.name.trim().slice(0, 80);
   if (typeof input.description === "string") out.description = input.description.trim().slice(0, 500);
   if (typeof input.logo === "string") {
-    const logo = input.logo.trim().slice(0, 1000);
-    if (logo && !/^https:\/\//.test(logo)) throw httpError(400, "El logo debe ser una URL https.");
+    // An https URL, or a small data URL: logos live on the store document (no Cloud Storage).
+    const logo = input.logo.trim();
+    const ok =
+      (/^https:\/\//.test(logo) && logo.length <= 1000) ||
+      (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(logo) && logo.length <= 300_000);
+    if (logo && !ok) throw httpError(400, "El logo debe ser una imagen PNG, JPG o WebP de menos de 200 KB.");
     out.logo = logo;
   }
   if (typeof input.isActive === "boolean") out.isActive = input.isActive;
@@ -57,7 +61,6 @@ module.exports = handler(["GET", "POST", "PUT", "DELETE"], async (req) => {
     if (!partners.empty) throw httpError(409, "Esta tienda tiene partners asignados. Quítales el rol o desactívala.");
     if (!liveCodes.empty) throw httpError(409, "Hay clientes con códigos sin usar de esta tienda. Desactívala en lugar de eliminarla.");
     await ref.delete(); // used codes keep their own copy of the store name
-    await admin().storage().bucket().deleteFiles({ prefix: `stores/${input.id}/` }).catch(() => {}); // its logos
     await logAdmin(me.uid, "store.delete", "store", input.id, { name: snap.data().name ?? null });
     return { deleted: true };
   }

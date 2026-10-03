@@ -17,6 +17,7 @@ import { useTheme } from "@/theme/useTheme";
 import { type } from "@/theme/typography";
 import { enter } from "@/theme/motion";
 import { useAuthStore } from "@/stores/authStore";
+import { isImageSrc } from "@/domain/rewardsMapping";
 import { ROLE_LABEL, getKpis, listStores, searchUsers, validateCode, type AdminStore, type AdminUserSummary, type Kpis } from "@/services/admin.service";
 
 type Section = "stores" | "users" | "validate";
@@ -116,7 +117,7 @@ function SearchField({ value, onChange, placeholder, onSubmit }: { value: string
   );
 }
 
-const hasLogo = (s: AdminStore) => !!s.logo?.startsWith("https://");
+const hasLogo = (s: AdminStore) => isImageSrc(s.logo);
 
 function StoresSection() {
   const { colors } = useTheme();

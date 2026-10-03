@@ -67,7 +67,7 @@ test("guest tour: home, map, stats, rewards, friends, profile, settings", async 
   // Rewards: redeem an example reward and get a code
   await tab(page, "Premios").click();
   await expect(page.getByText("Premios").first()).toBeVisible();
-  await page.getByRole("button", { name: /^Coldest,/ }).first().click();
+  await page.getByRole("button", { name: /^Gains Fitness Club,/ }).first().click();
   // Redeem is one press-and-hold (the button fills, then confirms)
   const hold = page.getByRole("button", { name: "Mantén para canjear" });
   await hold.hover();

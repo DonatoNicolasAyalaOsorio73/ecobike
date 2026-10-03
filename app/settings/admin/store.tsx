@@ -38,8 +38,6 @@ function StoreEditor() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
-  // Logos of a store not created yet go under a one-off folder.
-  const [draftKey] = useState(() => `new-${Date.now().toString(36)}`);
 
   useEffect(() => {
     if (!id) return;
@@ -68,18 +66,12 @@ function StoreEditor() {
       return;
     }
     if (res.canceled || !res.assets?.[0]) return;
-    // Checked here so the admin hears it now, not as a Storage error.
-    if (res.assets[0].fileSize && res.assets[0].fileSize > 2 * 1024 * 1024) {
-      setError("El logo debe pesar menos de 2 MB.");
-      return;
-    }
     setUploading(true);
     try {
-      const a = res.assets[0];
-      const url = await uploadStoreLogo(id ?? draftKey, a.uri, a.mimeType);
-      setForm((f) => ({ ...f, logo: url }));
+      const logo = await uploadStoreLogo(res.assets[0].uri);
+      setForm((f) => ({ ...f, logo }));
     } catch (e: any) {
-      setError(e?.code === "storage/unauthorized" ? "No tienes permiso para subir logos." : e.message ?? "No se pudo subir el logo.");
+      setError(e?.message ?? "No se pudo procesar el logo.");
     } finally {
       setUploading(false);
     }
@@ -131,13 +123,13 @@ function StoreEditor() {
             </PressableScale>
             {!form.logo && (
               <Animated.Text entering={FadeIn} style={[type.footnote, { color: colors.inkSoft, marginTop: 8 }]}>
-                Sube el logo (PNG sin fondo, máx. 2 MB)
+                Sube el logo (cuadrado, se guarda a 256 px)
               </Animated.Text>
             )}
           </Animated.View>
 
           <Animated.View entering={enter(60)}>
-            <GlassInput label="Nombre" placeholder="Ej. Coldest" value={form.name} onChangeText={set("name")} maxLength={80} />
+            <GlassInput label="Nombre" placeholder="Ej. Pelu Store" value={form.name} onChangeText={set("name")} maxLength={80} />
             <GlassInput label="Puntos" placeholder="Ej. 400" keyboardType="number-pad" value={form.pointsRequired} onChangeText={(v) => set("pointsRequired")(v.replace(/\D/g, ""))} />
             <GlassInput label="Premio" placeholder="Ej. 2x1 en bebidas" value={form.description} onChangeText={set("description")} maxLength={500} multiline />
             <View style={styles.toggleRow}>

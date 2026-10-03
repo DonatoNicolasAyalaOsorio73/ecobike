@@ -41,3 +41,7 @@ yarn-error.*
 test-results/
 playwright-report/
 dist-native/
+
+# Firebase service account keys (scripts/seed-stores.mjs). Never commit.
+*service-account*.json
+*firebase-adminsdk*.json

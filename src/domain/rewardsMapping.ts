@@ -1,5 +1,9 @@
 import type { Reward } from "@/types/reward";
 
+/** An image we can show: an https URL or an inline data URL (logos and avatars stored in Firestore). */
+export const isImageSrc = (s: unknown): s is string =>
+  typeof s === "string" && (s.startsWith("https://") || /^data:image\/(png|jpeg|webp);base64,/.test(s));
+
 /** Maps a real `tiendas/{id}` document (see rewards.service.ts) to the app's Reward shape. */
 export function mapStoreDoc(id: string, data: Record<string, any>): Reward {
   return {
@@ -10,7 +14,7 @@ export function mapStoreDoc(id: string, data: Record<string, any>): Reward {
     // Legacy documents store this as a string (e.g. "80"), not a number.
     pointsCost: Number(data.pointsRequired ?? 0) || 0,
     icon: "gift-outline",
-    imageUrl: typeof data.logo === "string" && data.logo.startsWith("https://") ? data.logo : undefined,
+    imageUrl: isImageSrc(data.logo) ? data.logo : undefined,
   };
 }
 

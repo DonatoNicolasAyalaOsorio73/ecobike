@@ -1,6 +1,5 @@
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { api } from "./api";
-import { getFirebaseStorage } from "./firebase";
+import { toDataUrl } from "./imageData";
 
 // Admin panel client. Every call goes through /api/* (Vercel), which
 // re-checks the admin role server-side and writes the audit log; the same
@@ -77,22 +76,11 @@ export const deleteUser = (id: string, reason: string) => api("users", "DELETE",
 
 export const validateCode = (code: string, confirm: boolean) => api<{ code: string; store: string; status: string }>("validate", "POST", { code, confirm });
 
-const LOGO_TYPES = ["image/jpeg", "image/png", "image/webp"];
-
-/**
- * Uploads a picked image as a store logo (Storage rules allow admins only,
- * jpeg/png/webp under 2 MB) and returns its public https URL.
- */
-export async function uploadStoreLogo(storeKey: string, localUri: string, mimeType?: string | null): Promise<string> {
-  const blob = await (await fetch(localUri)).blob();
-  const contentType = [mimeType, blob.type].find((t) => t && LOGO_TYPES.includes(t));
-  // Never relabel other formats (HEIC...) as JPEG: they'd upload and then not display.
-  if (!contentType) throw new Error("Formato no compatible. Usa PNG, JPG o WebP.");
-  if (blob.size > 2 * 1024 * 1024) throw new Error("El logo debe pesar menos de 2 MB.");
-  const ext = contentType.split("/")[1].replace("jpeg", "jpg");
-  const fileRef = ref(getFirebaseStorage(), `stores/${storeKey}/logo-${Date.now()}.${ext}`);
-  await uploadBytes(fileRef, blob, { contentType, cacheControl: "public,max-age=31536000" });
-  return getDownloadURL(fileRef);
+/** Turns a picked image into a store logo: a 256 px WebP data URL saved on the store document. */
+export async function uploadStoreLogo(localUri: string): Promise<string> {
+  const logo = await toDataUrl(localUri, 256, "webp", 0.85);
+  if (logo.length > 300_000) throw new Error("El logo es demasiado pesado. Usa una imagen más simple.");
+  return logo;
 }
 
 /** Human line for an audit entry. */
@@ -115,6 +103,8 @@ export function describeLog(l: Pick<AdminLog, "action" | "details">): string {
       return "Tienda actualizada";
     case "code.validate":
       return `Código validado: ${d.code ?? ""} (${d.store ?? ""})`;
+    case "store.reset":
+      return `Catálogo reemplazado (${d.stores?.length ?? 0} tiendas)`;
     case "store.delete":
       return `Tienda eliminada: ${d.name ?? ""}`;
     default:

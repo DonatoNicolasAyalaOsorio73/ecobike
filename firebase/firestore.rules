@@ -30,12 +30,16 @@ service cloud.firestore {
         && d.get('city', '') is string && d.get('city', '').size() <= 80;
     }
 
-    // Profile photos other users see: our Storage bucket or the Google
-    // account photo only — never an arbitrary (tracking/abusive) URL.
+    // Profile photos other users see: a small inline JPEG (the app stores
+    // 160 px avatars on the profile, no Cloud Storage), our old Storage
+    // bucket or the Google account photo — never an arbitrary (tracking) URL.
     function validPhoto(d) {
       return d.get('profileImageUrl', null) == null
-        || (d.profileImageUrl is string && d.profileImageUrl.size() <= 2000
-            && d.profileImageUrl.matches('^https://(firebasestorage[.]googleapis[.]com|lh[0-9][.]googleusercontent[.]com)/.*'));
+        || (d.profileImageUrl is string
+            && ((d.profileImageUrl.size() <= 2000
+                 && d.profileImageUrl.matches('^https://(firebasestorage[.]googleapis[.]com|lh[0-9][.]googleusercontent[.]com)/.*'))
+              || (d.profileImageUrl.size() <= 60000
+                 && d.profileImageUrl.matches('^data:image/jpeg;base64,[A-Za-z0-9+/=]+$'))));
     }
 
     function validPublicNames(d) {

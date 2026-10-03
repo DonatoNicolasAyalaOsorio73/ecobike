@@ -128,7 +128,6 @@ test("stores: delete is refused while customers hold unused codes or partners ar
   const ok = await call(stores, { method: "DELETE", token: adminTok, body: { id: "coldest" } });
   assert.equal(ok.status, 200);
   assert.equal(db.get("tiendas/coldest"), undefined);
-  assert.deepEqual(db.deletedPrefixes, ["stores/coldest/"]); // its logos go too
 });
 
 // ─── /api/redeem ───────────────────────────────────────────────────────────

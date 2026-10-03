@@ -22,10 +22,12 @@ test("mapStoreDoc: garbage pointsRequired never produces NaN", () => {
   assert.equal(reward.pointsCost, 0);
 });
 
-test("mapStoreDoc: only https logos become imageUrl", () => {
+test("mapStoreDoc: only https or inline image logos become imageUrl", () => {
   assert.equal(mapStoreDoc("s4", { logo: "https://x.test/a.png" }).imageUrl, "https://x.test/a.png");
   assert.equal(mapStoreDoc("s5", { logo: "javascript:alert(1)" }).imageUrl, undefined);
   assert.equal(mapStoreDoc("s6", { logo: "" }).imageUrl, undefined);
+  assert.equal(mapStoreDoc("s7", { logo: "data:image/webp;base64,UklGRg==" }).imageUrl, "data:image/webp;base64,UklGRg==");
+  assert.equal(mapStoreDoc("s8", { logo: "data:text/html;base64,PHA+" }).imageUrl, undefined);
 });
 
 const r = (id: string, title: string, subtitle: string, pointsCost: number) => ({ id, title, subtitle, details: "", pointsCost, icon: "gift" });

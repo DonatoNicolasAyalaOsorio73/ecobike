@@ -48,7 +48,6 @@ flowchart TB
   subgraph Firebase["Firebase (ecobike-9dedd)"]
     auth[(Auth)]
     fs[(Firestore)]
-    st[(Cloud Storage)]
   end
   geo[Photon + Valhalla<br/>place search, bike routing]
   maps[Maps: Apple Maps on iOS<br/>OpenFreeMap / OSM on Android and web]
@@ -57,13 +56,11 @@ flowchart TB
   Clients -- "ID token" --> api
   Clients -- "reads, own profile fields" --> fs
   Clients -- "sign-in" --> auth
-  Clients -- "avatars, admin logos" --> st
   Clients --> geo
   Clients --> maps
   web -. served by .-> static
   api -- "every write of value" --> fs
   api --> auth
-  api --> st
 ```
 
 | Piece | Where | Responsibility |
@@ -71,7 +68,7 @@ flowchart TB
 | App (iOS, Android, web) | `app/`, `src/` | UI, offline recording, local stats, sync |
 | API | `api/` on Vercel | Points, rides, redemptions, roles, stores, admin, friends, chat, account deletion, export |
 | Database | Firestore | Shared data for all platforms; client writes limited by `firebase/firestore.rules` |
-| Files | Cloud Storage | Avatars (owner), store logos (admins) |
+| Images | Firestore (inline data URLs) | Avatars (160 px JPEG on the profile), store logos (256 px WebP on the store). Cloud Storage needs the paid Blaze plan since Feb 2026, so the app doesn't use it |
 | Maps and routing | Apple Maps (iOS), MapLibre + OpenFreeMap (Android), Leaflet + OSM (web), Photon, Valhalla | Map display, place search, bicycle routes; all free, no API keys |
 
 The 15 architecture rules every change must follow are in [docs/architecture/spine.md](docs/architecture/spine.md). Each rule states what it binds and the divergence it prevents.
@@ -322,7 +319,7 @@ Files starting with `_` in `api/` are not deployed as functions. `android/` and 
 | Technology | Use | Reason |
 | --- | --- | --- |
 | Firestore | `usuarios`, `usuarios_public`, `usernames`, `tiendas`, rides and redemption codes under each user, `chats`/`messages`, `admin_logs`, `rate_limits` | One database for all platforms |
-| Cloud Storage | `avatars/{uid}/` (owner), `stores/{storeId}/` (admins only, public read) | Images next to the data |
+| Images in Firestore | `usuarios/{uid}.profileImageUrl`, `tiendas/{id}.logo` as data URLs | Free on the Spark plan; images arrive with their document |
 | Firebase Auth | Email/password, Google, Apple; revocable sessions | Managed identity |
 | expo-sqlite | Local rides (summaries and tracks), achievements, redemptions on iOS/Android | Offline-first storage with in-place migrations |
 | localStorage | Same API on web, one key per GPS track, in-memory summary cache | No SQLite on web |
@@ -373,7 +370,7 @@ A ride is **verified** when it passed bike detection, even if a cap left it at 0
 | Public profiles | `usuarios_public` is readable only by id (no list queries), so profiles can't be enumerated. Username search goes through `/api/friends` and honors "hide me". Friend lists are not public. The mirror is written through a validated projection (`projectPublic`) |
 | Rate limits | `rate_limits/{uid}` (server-only): data export once every 10 minutes, friend requests every 5 seconds; chat 20 messages per minute; at most 100 pending friend requests |
 | Admin safety | Points change only with a written reason and the balance the admin saw (stale edits get 409). An admin can't demote, suspend or delete themself. Demoting revokes old admin claims |
-| Uploads | Avatars: owner only, images under 5 MB, deletable. Store logos: admins only (Storage checks the role in Firestore), PNG/JPG/WebP under 2 MB, required for new stores |
+| Uploads | Images are resized on the device (expo-image-manipulator) and saved as data URLs. Avatars: owner only, JPEG data URL under 60 KB (Firestore rules). Store logos: admins only through `/api/stores`, PNG/JPG/WebP under 200 KB, required for new stores |
 | Store deletion | Refused while partners are assigned or customers hold unused codes |
 | Personal data | Emails travel in request bodies, never URLs or logs. Signing out on web uploads pending rides, then clears local GPS history |
 | Secrets | `EXPO_PUBLIC_*` values are public client config. The service account key and the server Sentry DSN exist only as Vercel environment variables |
@@ -423,7 +420,7 @@ Agents draft plans and code. Changes are verified with typecheck, lint, tests, t
 | Incremental remote pull (last week) | Full history download on each start | Fewer reads and faster start | A ride deleted on another device stays until server reconciliation exists |
 | Public profile readable only by id; search through the API | Client list queries on `usuarios_public` | Profiles can't be enumerated; "hide me" is enforced | One function call per search; old app versions can't search until updated |
 | Per-user rate limits in a Firestore collection | Redis, Vercel KV or firewall rules | No new service; atomic in a transaction | One extra read and write per limited call |
-| Admin logos uploaded directly to Storage, checked by role | Upload through an API route | No 4.5 MB function body limit; no function used | Cross-service rules; orphan files if an editor is abandoned |
+| Logos and avatars as small data URLs in Firestore | Cloud Storage files | No paid plan (Storage requires Blaze since Feb 2026); no orphan files; one write path | Every read of the document carries the image; images must stay tiny (256 px) |
 | Apple Maps on iOS, MapLibre + OpenFreeMap on Android, Leaflet on web | Google Maps on Android (expo-maps), react-native-maps everywhere | No API keys or billing accounts anywhere; Android and web share OSM data, style and the heading arrow | Three map implementations behind one contract (`RideMap.types.ts`); expo-maps on iOS is alpha |
 | Free Photon and Valhalla servers | Paid geocoding/routing or self-hosting | No keys, no cost, understands unpaved roads | No SLA; fair-use limits |
 | Paired platform files (`name.ts` / `name.web.ts`) | `Platform.OS` branches in services | Web never imports native-only modules | Two files to keep in sync per service |
@@ -471,7 +468,8 @@ Press `w` for web. iOS and Android need a development build, because the app use
 | `npm run build:web` | Production web build to `dist/` (clean cache) |
 | `npm run build:web:e2e` | Test build with the e2e session to `dist-e2e/` (never deployed) |
 | `npm run test:e2e` | Playwright against both builds (run both builds first) |
-| `npm run deploy:rules` | Firestore rules, indexes and Storage rules to `ecobike-9dedd` |
+| `npm run deploy:rules` | Firestore rules and indexes to `ecobike-9dedd` |
+| `node scripts/seed-stores.mjs <key.json> [--apply]` | Replace the partner catalog in Firestore with `src/data/stores.json` (dry run without `--apply`) |
 
 ## Environment variables
 
@@ -502,7 +500,7 @@ Order matters, because rules must never require something the deployed API doesn
    ```bash
    npm run deploy:rules
    ```
-   The first deploy asks to let Storage read Firestore (store-logo rule); accept it. New composite indexes take a few minutes to build.
+   New composite indexes take a few minutes to build.
 3. **Mobile apps:**
    ```bash
    eas build --profile production --platform all

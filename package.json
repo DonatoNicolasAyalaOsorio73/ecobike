@@ -17,7 +17,7 @@
     "lint": "eslint .",
     "test": "node --import ./scripts/register-alias-loader.mjs --test \"src/**/__tests__/*.test.ts\" \"api/*.test.mjs\"",
     "build:web": "expo export --platform web --clear",
-    "deploy:rules": "firebase deploy --only firestore,storage --project ecobike-9dedd",
+    "deploy:rules": "firebase deploy --only firestore --project ecobike-9dedd",
     "test:rules": "firebase emulators:exec --only firestore --project demo-ecobike-rules \"node --test firebase/firestore.rules.test.mjs\"",
     "test:e2e": "playwright test",
     "build:web:e2e": "node scripts/build-web-e2e.mjs"
@@ -45,6 +45,7 @@
     "expo-file-system": "~57.0.7",
     "expo-font": "~57.0.4",
     "expo-haptics": "~57.0.3",
+    "expo-image-manipulator": "~57.0.20",
     "expo-image-picker": "~57.0.20",
     "expo-keep-awake": "~57.0.2",
     "expo-linear-gradient": "~57.0.2",

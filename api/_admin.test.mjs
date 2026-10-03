@@ -49,8 +49,11 @@ test("stores: every new store needs a name, points and an https logo", () => {
   assert.deepEqual(ok, { name: "Coldest", pointsRequired: 400, logo: "https://x.test/l.png" });
   err(() => clean({ name: "Coldest", pointsRequired: 400 }, true), 400, /logo/);
   err(() => clean({ name: "Coldest", pointsRequired: 400, logo: "" }, true), 400, /logo/);
-  err(() => clean({ name: "Coldest", pointsRequired: 400, logo: "http://x.test/l.png" }, true), 400, /https/);
-  err(() => clean({ name: "Coldest", pointsRequired: 400, logo: "javascript:alert(1)" }, true), 400, /https/);
+  err(() => clean({ name: "Coldest", pointsRequired: 400, logo: "http://x.test/l.png" }, true), 400, /imagen/);
+  err(() => clean({ name: "Coldest", pointsRequired: 400, logo: "javascript:alert(1)" }, true), 400, /imagen/);
+  err(() => clean({ name: "Coldest", pointsRequired: 400, logo: "data:text/html;base64,PHA+" }, true), 400, /imagen/);
+  err(() => clean({ name: "Coldest", pointsRequired: 400, logo: "data:image/webp;base64," + "A".repeat(300_000) }, true), 400, /imagen/);
+  assert.equal(clean({ name: "Coldest", pointsRequired: 400, logo: "data:image/webp;base64,UklGRg==" }, true).logo, "data:image/webp;base64,UklGRg==");
   err(() => clean({ pointsRequired: 400, logo: "https://x.test/l.png" }, true), 400, /obligatorios/);
   err(() => clean({ name: "Coldest", pointsRequired: 0, logo: "https://x.test/l.png" }, true), 400, /puntos/);
 });
