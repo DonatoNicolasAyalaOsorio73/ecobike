@@ -10,3 +10,4 @@ e2e
 test-results
 playwright-report
 tests
+dist-e2e
