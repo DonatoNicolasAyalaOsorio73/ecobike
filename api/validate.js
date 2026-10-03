@@ -2,13 +2,13 @@
 // checks a customer's redemption code. Without confirm it only looks it up;
 // with confirm: true it marks it "used" (one time only).
 // Needs the collection-group index on codigos_canjeados.code (firestore.indexes.json).
-const { admin, httpError, requireUser, body, handler } = require("./_lib");
+const { admin, httpError, requireUser, isAdminUser, logAdmin, body, handler } = require("./_lib");
 
 module.exports = handler(["POST"], async (req) => {
   const user = await requireUser(req);
   const db = admin().firestore();
   const caller = (await db.collection("usuarios").doc(user.uid).get()).data() || {};
-  const isAdmin = user.admin === true || caller.isAdmin === true || caller.role === "admin";
+  const isAdmin = await isAdminUser(user); // the one server definition of admin (AD-4)
   if (!isAdmin && caller.role !== "partner") throw httpError(403, "Solo tiendas aliadas o administradores pueden validar códigos.");
   // Partners are bound to one store: they must not see or burn other stores' codes.
   if (!isAdmin && !caller.storeId) throw httpError(403, "Tu cuenta de tienda no tiene una tienda asignada. Pide al administrador que la asigne.");
@@ -22,7 +22,7 @@ module.exports = handler(["POST"], async (req) => {
   const ref = snap.docs[0].ref;
   const { FieldValue } = require("firebase-admin/firestore");
 
-  return db.runTransaction(async (tx) => {
+  const result = await db.runTransaction(async (tx) => {
     const doc = await tx.get(ref);
     const d = doc.data();
     if (!isAdmin && d.rewardId !== caller.storeId) throw httpError(403, "Este código pertenece a otra tienda.");
@@ -30,6 +30,10 @@ module.exports = handler(["POST"], async (req) => {
     if (!confirm) return result;
     if (d.status === "used") throw httpError(409, "Este código ya fue usado.");
     tx.update(ref, { status: "used", usedAt: FieldValue.serverTimestamp(), validatedBy: user.uid });
-    return { ...result, status: "used" };
+    return { ...result, status: "used", rewardId: d.rewardId ?? null };
   });
+  // Every redeemed code is traceable to who confirmed it.
+  if (confirm) await logAdmin(user.uid, "code.validate", "code", ref.id, { code: clean, store: result.store, rewardId: result.rewardId, role: isAdmin ? "admin" : "partner" });
+  const { rewardId: _r, ...out } = result;
+  return out;
 });

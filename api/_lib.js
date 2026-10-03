@@ -78,6 +78,35 @@ async function requireAdmin(req) {
 }
 
 /**
+ * Per-user rate limit (spine AD-13): at most one `action` every `everyMs`.
+ * State lives in rate_limits/{uid}, which clients can't read or write
+ * (firestore.rules default deny), so it can't be reset from the app.
+ */
+async function rateLimit(uid, action, everyMs, message = "Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.") {
+  const db = admin().firestore();
+  const ref = db.collection("rate_limits").doc(uid);
+  await db.runTransaction(async (tx) => {
+    const last = (await tx.get(ref)).data()?.[action] ?? 0;
+    const now = Date.now();
+    if (now - last < everyMs) throw httpError(429, message);
+    tx.set(ref, { [action]: now }, { merge: true });
+  });
+}
+
+/**
+ * The public profile (usuarios_public) built from the private doc, with the
+ * same validation as firestore.rules (spine AD-10): anything a client wrote
+ * to its own private doc reaches the public mirror only if it would have
+ * passed the public rules. Friend lists are never public.
+ */
+const PUBLIC_PHOTO_RE = /^https:\/\/(firebasestorage\.googleapis\.com|lh[0-9]\.googleusercontent\.com)\//;
+function projectPublic(d) {
+  const name = (v) => (typeof v === "string" ? v.trim().slice(0, 60) : "");
+  const photo = typeof d.profileImageUrl === "string" && d.profileImageUrl.length <= 2000 && PUBLIC_PHOTO_RE.test(d.profileImageUrl) ? d.profileImageUrl : null;
+  return { nombre: name(d.nombre ?? d.nombres), apellido: name(d.apellido), profileImageUrl: photo, puntosAcumulados: Number.isFinite(d.puntosAcumulados) ? d.puntosAcumulados : 0 };
+}
+
+/**
  * Audit trail for every admin change (who, what, on whom, before/after,
  * why). Server-only collection: firestore.rules deny all client access.
  */
@@ -371,4 +400,4 @@ function redemptionCode() {
   return require("crypto").randomBytes(6).toString("hex").toUpperCase();
 }
 
-module.exports = { sanitizeTrack, capRidePoints, redeemLimitError, MIN_VERIFIED_RIDES, SAME_STORE_COOLDOWN_DAYS, requireAdmin, logAdmin, deleteUserData, analyzeTrack, scoreRide, DAILY_POINTS_CAP, isDocId, clampNum, MAX_RIDE_DURATION_S, weekKey, chatIdFor, cleanMessage, MAX_MESSAGE_LENGTH, sendPush, admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };
+module.exports = { rateLimit, projectPublic, sanitizeTrack, capRidePoints, redeemLimitError, MIN_VERIFIED_RIDES, SAME_STORE_COOLDOWN_DAYS, requireAdmin, logAdmin, deleteUserData, analyzeTrack, scoreRide, DAILY_POINTS_CAP, isDocId, clampNum, MAX_RIDE_DURATION_S, weekKey, chatIdFor, cleanMessage, MAX_MESSAGE_LENGTH, sendPush, admin, httpError, requireUser, isAdminUser, body, handler, validateRide, redemptionCode, MAX_RIDES_PER_DAY };

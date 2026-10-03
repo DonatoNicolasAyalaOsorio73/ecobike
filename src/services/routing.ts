@@ -58,7 +58,17 @@ export async function searchPlaces(query: string, near: { lat: number; lng: numb
     params.set("lat", near.lat.toFixed(3));
     params.set("lon", near.lng.toFixed(3));
   }
-  const res = await fetch(`${PHOTON}?${params}`, { signal });
+  // Own 10 s deadline on top of the caller's cancel (a newer query), so a
+  // stuck community server never leaves the search spinning.
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 10_000);
+  signal?.addEventListener("abort", () => ctrl.abort());
+  let res: Response;
+  try {
+    res = await fetch(`${PHOTON}?${params}`, { signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
   if (!res.ok) throw new Error("No pudimos buscar lugares ahora.");
   const json = await res.json();
   const places: Place[] = (json.features ?? []).map((f: any) => {

@@ -79,7 +79,10 @@ service cloud.firestore {
     // ─── /usuarios_public/{uid} — minimal public mirror for search/leaderboard ───
     // Owner may keep name/photo in sync; points, friends and username (unique) come from the server.
     match /usuarios_public/{uid} {
-      allow read: if isAuth();
+      // By id only: no list queries, so nobody can download every profile.
+      // Username search goes through api/friends.js (honors buscable).
+      allow get: if isAuth();
+      allow list: if false;
       allow create: if isOwner(uid)
         && request.resource.data.keys().hasOnly(publicFields())
         && !('username' in request.resource.data) // reserved + written by api/me.js only

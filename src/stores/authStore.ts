@@ -6,7 +6,9 @@ import { api } from "@/services/api";
 import { getOrCreateGuestId, isGuestMode, setGuestMode } from "@/services/guest";
 import { seedDemoIfEmpty } from "@/services/demo.service";
 import { setMonitoringUser } from "@/services/monitoring";
-import { initDb, wipeAllLocalData } from "@/services/db";
+import { initDb, unsyncedRides, wipeAllLocalData } from "@/services/db";
+import { syncPendingRides } from "@/services/rides.service";
+import { Platform } from "react-native";
 import { E2E_SESSION } from "@/services/e2e";
 import type { UserProfile } from "@/types/user";
 
@@ -94,6 +96,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await setGuestMode(false);
       set({ status: "signedOut", isGuest: false });
       return;
+    }
+    const uid = get().firebaseUser?.uid;
+    // Web: a shared browser must not keep this person's GPS history (home,
+    // work...) for the next one (AD-14). Upload what's pending first, and
+    // never wipe a ride that only exists here.
+    if (Platform.OS === "web" && uid) {
+      await syncPendingRides(uid).catch(() => 0);
+      if (unsyncedRides(uid).length === 0) wipeAllLocalData(uid);
     }
     await firebaseSignOut();
     set({ status: "signedOut", firebaseUser: null, profile: null });

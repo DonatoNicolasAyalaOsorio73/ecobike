@@ -1,5 +1,6 @@
 // Admin user management (all audited in admin_logs).
-// GET    /api/users?q=texto&after=uid   → search (username prefix, or exact email) / page through users
+// GET    /api/users?after=uid           → page through users
+// POST   /api/users { q }               → search (username prefix, or exact email); in the body so emails never land in URLs or logs
 // GET    /api/users?id=uid              → detail: profile, account status, activity counts, recent admin log
 // GET    /api/users?stats=1             → dashboard KPIs (aggregation queries only)
 // PUT    /api/users { id, role?, storeId?, points?, reason?, disabled?, nombre?, apellido? } → update
@@ -147,7 +148,7 @@ async function detail(db, uid) {
   };
 }
 
-module.exports = handler(["GET", "PUT", "DELETE"], async (req) => {
+module.exports = handler(["GET", "POST", "PUT", "DELETE"], async (req) => {
   const me = await requireAdmin(req);
   const db = admin().firestore();
   const { FieldValue } = require("firebase-admin/firestore");
@@ -159,10 +160,11 @@ module.exports = handler(["GET", "PUT", "DELETE"], async (req) => {
       if (!isDocId(id)) throw httpError(400, "id inválido.");
       return detail(db, id);
     }
-    return list(db, req.query?.q, req.query?.after);
+    return list(db, "", req.query?.after);
   }
 
   const input = body(req);
+  if (req.method === "POST") return list(db, input.q, undefined);
   if (req.method === "DELETE") {
     if (!isDocId(input.id)) throw httpError(400, "Falta el id del usuario.");
     if (input.id === me.uid) throw httpError(400, "No puedes eliminar tu propia cuenta desde el panel.");

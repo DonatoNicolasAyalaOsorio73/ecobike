@@ -65,8 +65,11 @@ export const listStores = () =>
 export const saveStore = (s: Partial<AdminStore>) => api<{ store: AdminStore }>("stores", s.id ? "PUT" : "POST", s).then((r) => r.store);
 export const deleteStore = (id: string) => api("stores", "DELETE", { id });
 
+// Search text (possibly an email) goes in the body, never the URL (AD-14).
 export const searchUsers = (q = "", after?: string) =>
-  api<{ users: AdminUserSummary[]; next: string | null }>(`users?q=${encodeURIComponent(q)}${after ? `&after=${encodeURIComponent(after)}` : ""}`, "GET");
+  q
+    ? api<{ users: AdminUserSummary[]; next: string | null }>("users", "POST", { q })
+    : api<{ users: AdminUserSummary[]; next: string | null }>(`users${after ? `?after=${encodeURIComponent(after)}` : ""}`, "GET");
 export const getUser = (id: string) => api<{ user: AdminUserDetail; logs: AdminLog[] }>(`users?id=${encodeURIComponent(id)}`, "GET");
 export const updateUser = (patch: { id: string; role?: Role; storeId?: string; points?: number; reason?: string; expectedPoints?: number; disabled?: boolean; nombre?: string; apellido?: string }) =>
   api<{ user: AdminUserDetail; logs: AdminLog[] }>("users", "PUT", patch);
@@ -110,6 +113,8 @@ export function describeLog(l: Pick<AdminLog, "action" | "details">): string {
       return `Tienda creada: ${d.name ?? ""}`;
     case "store.update":
       return "Tienda actualizada";
+    case "code.validate":
+      return `Código validado: ${d.code ?? ""} (${d.store ?? ""})`;
     case "store.delete":
       return `Tienda eliminada: ${d.name ?? ""}`;
     default:

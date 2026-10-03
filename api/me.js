@@ -5,7 +5,7 @@
 //
 // Username uniqueness is enforced with a reservation doc usernames/{name}
 // = { uid }, created inside a transaction (no check-then-write race).
-const { admin, httpError, requireUser, body, handler } = require("./_lib");
+const { admin, httpError, requireUser, body, handler, projectPublic } = require("./_lib");
 
 const USERNAME_RE = /^[a-z0-9._]{3,20}$/;
 
@@ -51,14 +51,8 @@ module.exports = handler(["POST"], async (req) => {
     // merge keeps owner-controlled fields like "buscable" and league fields.
     tx.set(
       db.collection("usuarios_public").doc(user.uid),
-      {
-        username: chosen,
-        nombre: d.nombre ?? d.nombres ?? "",
-        apellido: d.apellido ?? "",
-        profileImageUrl: d.profileImageUrl ?? null,
-        puntosAcumulados: d.puntosAcumulados ?? 0,
-        amigos: d.amigos ?? [],
-      },
+      // Validated projection; friend lists are removed from public view.
+      { username: chosen, ...projectPublic(d), amigos: require("firebase-admin/firestore").FieldValue.delete() },
       { merge: true }
     );
     return chosen;

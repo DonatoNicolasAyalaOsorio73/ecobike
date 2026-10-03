@@ -1,4 +1,4 @@
-import { collection, doc, documentId, getDoc, getDocs, limit, query, where } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { getDb, isFirebaseConfigured } from "./firebase";
 import { api } from "./api";
 import { weekKey } from "@/utils/week";
@@ -17,59 +17,38 @@ function requireFirebase() {
   }
 }
 
-/**
- * IMPORTANT: the real, deployed `usuarios/{uid}` security rule is
- * `allow read: if isOwner(uid)` — only a user's own document is readable.
- * That means searching, viewing, or comparing another user's profile from
- * a plain client can come back permission-denied depending on how the
- * project's rules are configured; this isn't a bug in this app, it's the
- * live project's current rules. Every function here surfaces that as a
- * clear message instead of a raw Firestore error or a silent no-op.
- */
-function friendlyDenied(): never {
-  throw new Error("Esta función social necesita permisos adicionales en las reglas de Firebase del proyecto (ver SECURITY.md).");
-}
-
-async function tryOrExplain<T>(fn: () => Promise<T>): Promise<T> {
-  try {
-    return await fn();
-  } catch (e: any) {
-    if (e?.code === "permission-denied") friendlyDenied();
-    throw e;
-  }
-}
-
 export async function searchUserByUsername(username: string): Promise<UserProfile | null> {
   requireFirebase();
-  return tryOrExplain(async () => {
-    const q = query(collection(getDb(), PUBLIC_COLLECTION), where("username", "==", username.toLowerCase()), limit(1));
-    const snap = await getDocs(q);
-    if (snap.empty) return null;
-    const data = snap.docs[0].data();
-    if (data.buscable === false) return null; // user chose not to appear in search
-    return {
-      uid: snap.docs[0].id,
-      email: null,
-      displayName: [data.nombre, data.apellido].filter(Boolean).join(" ") || data.username,
-      username: data.username,
-      photoURL: data.profileImageUrl ?? null,
-      city: null,
-      bikeType: null,
-      firstName: data.nombre ?? "",
-      lastName: data.apellido ?? "",
-      bio: null,
-      birthDate: null,
-      gender: null,
-      experience: null,
-      ridingGoal: null,
-      friends: data.amigos ?? [],
-      puntosAcumulados: data.puntosAcumulados ?? 0,
-      role: "user",
-      createdAt: Date.now(),
-      providers: ["password"],
-      emailVerified: false,
-    };
-  });
+  // Server-side lookup: clients can't list usuarios_public (no enumeration),
+  // and the server honors "hide me from search".
+  const { user: data } = await api<{ user: { uid: string; username: string; nombre: string; apellido: string; profileImageUrl: string | null; puntosAcumulados: number } | null }>(
+    "friends",
+    "POST",
+    { action: "search", username }
+  );
+  if (!data) return null;
+  return {
+    uid: data.uid,
+    email: null,
+    displayName: [data.nombre, data.apellido].filter(Boolean).join(" ") || data.username,
+    username: data.username,
+    photoURL: data.profileImageUrl,
+    city: null,
+    bikeType: null,
+    firstName: data.nombre,
+    lastName: data.apellido,
+    bio: null,
+    birthDate: null,
+    gender: null,
+    experience: null,
+    ridingGoal: null,
+    friends: [],
+    puntosAcumulados: data.puntosAcumulados,
+    role: "user",
+    createdAt: Date.now(),
+    providers: ["password"],
+    emailVerified: false,
+  };
 }
 
 // Friendship writes touch two users, so they go through the server
@@ -121,13 +100,13 @@ export interface PublicProfile {
 /** Names/photos for a list of uids, from the public mirror (missing docs fall back to the uid). */
 export async function fetchPublicProfiles(uids: string[]): Promise<PublicProfile[]> {
   if (!isFirebaseConfigured || uids.length === 0) return [];
-  // One `in` query per 30 uids (Firestore limit) instead of one read per friend.
+  // One get per uid: the rules only allow reading someone else's public
+  // profile by id (no list queries, so profiles can't be enumerated).
   const byId = new Map<string, Record<string, unknown>>();
-  const chunks = Array.from({ length: Math.ceil(uids.length / 30) }, (_, i) => uids.slice(i * 30, i * 30 + 30));
   await Promise.all(
-    chunks.map(async (ids) => {
-      const snap = await getDocs(query(collection(getDb(), PUBLIC_COLLECTION), where(documentId(), "in", ids))).catch(() => null);
-      snap?.docs.forEach((d) => byId.set(d.id, d.data()));
+    [...new Set(uids)].map(async (id) => {
+      const d = await getDoc(doc(getDb(), PUBLIC_COLLECTION, id)).catch(() => null);
+      if (d?.exists()) byId.set(id, d.data());
     })
   );
   return uids.map((uid, i) => {
@@ -145,8 +124,8 @@ export async function fetchPublicProfiles(uids: string[]): Promise<PublicProfile
 }
 
 /** Live availability check for the edit-profile username field. The server re-checks on save. */
-export async function isUsernameAvailable(username: string, myUid: string): Promise<boolean> {
+export async function isUsernameAvailable(username: string, _myUid: string): Promise<boolean> {
   if (!isFirebaseConfigured) return true;
-  const snap = await getDocs(query(collection(getDb(), PUBLIC_COLLECTION), where("username", "==", username.toLowerCase()), limit(2)));
-  return snap.docs.every((d) => d.id === myUid);
+  const { available } = await api<{ available: boolean }>("friends", "POST", { action: "available", username });
+  return available;
 }

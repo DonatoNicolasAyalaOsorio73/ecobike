@@ -1,4 +1,4 @@
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { getDb, isFirebaseConfigured } from "./firebase";
 import { api } from "./api";
 import { deleteRide, getRide, initDb, listRides, markSynced, saveRide, unlockAchievement, unsyncedRides, wipeAllLocalData } from "./db";
@@ -12,6 +12,13 @@ import type { Ride } from "@/types/ride";
  * stays flagged unsynced — `retryUnsyncedRidesOnReconnect` (app/_layout.tsx)
  * retries once connectivity actually returns, so nothing is lost either way.
  */
+/**
+ * Server answers that mean "this ride will never be accepted" (bad data,
+ * overlap with another ride). Anything else — 401 expired token, 404 profile
+ * not created yet, 429, 5xx, offline — is retried later, never zeroed (AD-12).
+ */
+const PERMANENT_REJECTIONS = new Set([400, 403, 409, 413, 422]);
+
 export async function queueRideForSync(ride: Ride) {
   if (!isFirebaseConfigured) return;
   // The server (api/rides.js) validates the ride, computes the points and
@@ -43,7 +50,7 @@ export async function queueRideForSync(ride: Ride) {
     // retrying it, and it earns nothing locally either (no achievements,
     // missions or streak from a ride the server refused). Network/5xx errors
     // stay unsynced and retry later.
-    if (!(e?.status >= 400 && e?.status < 500 && e?.status !== 401)) throw e;
+    if (!PERMANENT_REJECTIONS.has(e?.status)) throw e;
     saveRide({ ...ride, pointsEarned: 0, verified: false, pointsReason: e?.message ?? "El servidor rechazó este recorrido." });
   }
   markSynced(ride.id);
@@ -80,18 +87,26 @@ export function getLocalRide(id: string) {
  */
 export async function pullRemoteRides(userId: string): Promise<number> {
   if (!isFirebaseConfigured) return 0;
-  const snap = await getDocs(collection(getDb(), "usuarios", userId, "rides"));
+  // Incremental: a device that already has history only asks for the last
+  // week (new rides from other devices + recent server verdicts), instead of
+  // re-downloading every ride on each start. An empty device gets everything.
+  const local = listRides(userId);
+  const byId = new Map(local.map((r) => [r.id, r]));
+  const newest = local.filter((r) => r.synced).reduce((m, r) => Math.max(m, r.startedAt), 0);
+  const rides = collection(getDb(), "usuarios", userId, "rides");
+  const snap = await getDocs(newest ? query(rides, where("startedAt", ">", newest - 7 * 86_400_000)) : rides);
   let added = 0;
   for (const d of snap.docs) {
     const r = d.data();
     const num = (v: unknown) => (typeof v === "number" ? v : 0);
     // Server docs without the flag predate bike verification: never count them as verified.
     const verified = r.verified === true;
-    const local = getRide(d.id);
-    if (local) {
+    const known = byId.get(d.id);
+    if (known) {
       // The server's word on points/verification wins over what this device computed.
-      if (local.synced && (local.pointsEarned !== num(r.pointsEarned) || local.verified !== verified)) {
-        saveRide({ ...local, pointsEarned: num(r.pointsEarned), verified, pointsReason: r.pointsReason ?? null });
+      if (known.synced && (known.pointsEarned !== num(r.pointsEarned) || known.verified !== verified)) {
+        const full = getRide(d.id); // with its track, so the update never drops it
+        if (full) saveRide({ ...full, pointsEarned: num(r.pointsEarned), verified, pointsReason: r.pointsReason ?? null });
       }
       continue;
     }

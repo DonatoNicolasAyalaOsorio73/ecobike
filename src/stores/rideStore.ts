@@ -313,8 +313,8 @@ export const useRideStore = create<RideState>((set, get) => ({
   clearJustUnlocked: () => set({ justUnlocked: [] }),
 
   recoverInProgressRide: (userId: string) => {
-    const rides = db.listRides(userId);
-    const inProgress = rides.find((r) => r.endedAt === null);
+    const found = db.listRides(userId).find((r) => r.endedAt === null);
+    const inProgress = found ? db.getRide(found.id) : null; // with its track
     if (inProgress) {
       baseSeconds = inProgress.durationSeconds;
       activeSince = null;

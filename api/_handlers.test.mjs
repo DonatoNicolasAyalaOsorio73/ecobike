@@ -11,6 +11,8 @@ const users = require("./users.js");
 const stores = require("./stores.js");
 const redeem = require("./redeem.js");
 const rides = require("./rides.js");
+const friends = require("./friends.js");
+const me = require("./me.js");
 
 const ADMIN = "admin1";
 const RIDER = "rider1";
@@ -42,12 +44,12 @@ test("users: only admins get in", async () => {
 });
 
 test("users: search by username prefix and by exact email", async () => {
-  const byName = await call(users, { token: adminTok, query: { q: "@ri" } });
+  const byName = await call(users, { method: "POST", token: adminTok, body: { q: "@ri" } });
   assert.equal(byName.status, 200);
   assert.deepEqual(byName.body.users.map((u) => u.uid), [RIDER]);
-  const byEmail = await call(users, { token: adminTok, query: { q: "rider1@example.test" } });
+  const byEmail = await call(users, { method: "POST", token: adminTok, body: { q: "rider1@example.test" } });
   assert.deepEqual(byEmail.body.users.map((u) => u.uid), [RIDER]);
-  const none = await call(users, { token: adminTok, query: { q: "nadie@example.test" } });
+  const none = await call(users, { method: "POST", token: adminTok, body: { q: "nadie@example.test" } });
   assert.deepEqual(none.body.users, []);
 });
 
@@ -203,4 +205,56 @@ test("rides: a walk stores 0 points and is not verified", async () => {
   assert.equal(r.body.pointsEarned, 0);
   assert.equal(r.body.verified, false);
   assert.equal(db.get(`usuarios/${RIDER}`).puntosAcumulados, 500);
+});
+
+// ─── /api/friends search, /api/me projection ──────────────────────────────
+
+test("friends: exact username search honors 'hide me'; availability", async () => {
+  db.put("usernames/rita", { uid: RIDER });
+  const found = await call(friends, { method: "POST", token: adminTok, body: { action: "search", username: "@Rita" } });
+  assert.equal(found.status, 200);
+  assert.equal(found.body.user.uid, RIDER);
+  assert.equal(found.body.user.amigos, undefined); // never exposes friend lists
+  db.put(`usuarios_public/${RIDER}`, { ...db.get(`usuarios_public/${RIDER}`), buscable: false });
+  assert.equal((await call(friends, { method: "POST", token: adminTok, body: { action: "search", username: "rita" } })).body.user, null);
+  assert.equal((await call(friends, { method: "POST", token: adminTok, body: { action: "available", username: "rita" } })).body.available, false);
+  assert.equal((await call(friends, { method: "POST", token: riderTok, body: { action: "available", username: "rita" } })).body.available, true); // my own
+  assert.equal((await call(friends, { method: "POST", token: adminTok, body: { action: "available", username: "nueva.ciclista" } })).body.available, true);
+});
+
+test("me: the public mirror gets only validated fields, never friends", async () => {
+  db.put(`usuarios/${RIDER}`, { ...db.get(`usuarios/${RIDER}`), profileImageUrl: "https://evil.test/x.png", amigos: ["a", "b"] });
+  db.put(`usuarios_public/${RIDER}`, { ...db.get(`usuarios_public/${RIDER}`), amigos: ["a", "b"] });
+  const r = await call(me, { method: "POST", token: riderTok });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  const pub = db.get(`usuarios_public/${RIDER}`);
+  assert.equal(pub.profileImageUrl, null);
+  assert.equal(pub.amigos, undefined);
+  assert.equal(pub.username, "rita");
+});
+
+test("export: everything about me, but at most once every 10 minutes", async () => {
+  const exp = require("./export.js");
+  db.put(`usuarios/${RIDER}/rides/r1`, { pointsEarned: 10 });
+  const first = await call(exp, { token: riderTok });
+  assert.equal(first.status, 200);
+  assert.equal(first.body.rides.length, 1);
+  assert.equal(first.body.profile.pushToken, undefined);
+  assert.equal((await call(exp, { token: riderTok })).status, 429);
+});
+
+test("validate: a partner confirms a code of its store once, and it's audited", async () => {
+  const validate = require("./validate.js");
+  const pTok = db.signIn("partner1");
+  db.put("usuarios/partner1", { role: "partner", storeId: "coldest" });
+  db.put(`usuarios/${RIDER}/codigos_canjeados/c1`, { code: "ECO7K2Q9", rewardId: "coldest", store: "Coldest", status: "active" });
+  db.put(`usuarios/${RIDER}/codigos_canjeados/c2`, { code: "OTHER123", rewardId: "ciclofix", store: "CicloFix", status: "active" });
+  assert.equal((await call(validate, { method: "POST", token: pTok, body: { code: "other123" } })).status, 403); // another store's code
+  const ok = await call(validate, { method: "POST", token: pTok, body: { code: "eco7k2q9", confirm: true } });
+  assert.deepEqual(ok.body, { code: "ECO7K2Q9", store: "Coldest", status: "used" });
+  assert.equal((await call(validate, { method: "POST", token: pTok, body: { code: "ECO7K2Q9", confirm: true } })).status, 409);
+  const [log] = logs();
+  assert.equal(log.action, "code.validate");
+  assert.equal(log.adminUid, "partner1");
+  assert.equal((await call(validate, { method: "POST", token: riderTok, body: { code: "ECO7K2Q9" } })).status, 403);
 });

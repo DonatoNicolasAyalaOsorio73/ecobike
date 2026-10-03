@@ -1,7 +1,9 @@
 // GET /api/export — every piece of data EcoBike stores about the caller, as
 // JSON (right of access / data portability). Excludes other users' data and
 // the push token (a device secret).
-const { admin, requireUser, handler } = require("./_lib");
+const { admin, requireUser, handler, rateLimit } = require("./_lib");
+
+const MAX_MESSAGES_PER_CHAT = 2000; // keeps the response under Vercel's size limit
 
 const iso = (v) => (v && typeof v.toDate === "function" ? v.toDate().toISOString() : v);
 function plain(obj) {
@@ -15,6 +17,8 @@ function plain(obj) {
 
 module.exports = handler(["GET"], async (req, res) => {
   const { uid } = await requireUser(req);
+  // Reads everything the user has: once every 10 minutes, so it can't be looped to run up costs.
+  await rateLimit(uid, "export", 10 * 60_000, "Ya descargaste tus datos hace poco. Inténtalo de nuevo en unos minutos.");
   const db = admin().firestore();
   const userRef = db.collection("usuarios").doc(uid);
 
@@ -28,7 +32,7 @@ module.exports = handler(["GET"], async (req, res) => {
 
   const conversations = await Promise.all(
     chats.docs.map(async (c) => {
-      const msgs = await c.ref.collection("messages").orderBy("createdAt").get();
+      const msgs = await c.ref.collection("messages").orderBy("createdAt").limit(MAX_MESSAGES_PER_CHAT).get();
       return {
         id: c.id,
         participants: c.data().participants,

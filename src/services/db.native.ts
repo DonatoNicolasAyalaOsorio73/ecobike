@@ -55,6 +55,9 @@ export function initDb() {
   if (!cols.includes("pointsReason")) db.execSync(`ALTER TABLE rides ADD COLUMN pointsReason TEXT`);
 }
 
+const SUMMARY_COLUMNS =
+  "id, userId, startedAt, endedAt, distanceMeters, durationSeconds, avgSpeedKmh, maxSpeedKmh, elevationGainMeters, caloriesKcal, pointsEarned, synced, error, verified, pointsReason";
+
 function rowToRide(row: any): Ride {
   return {
     id: row.id,
@@ -67,7 +70,7 @@ function rowToRide(row: any): Ride {
     maxSpeedKmh: row.maxSpeedKmh,
     elevationGainMeters: row.elevationGainMeters,
     caloriesKcal: row.caloriesKcal,
-    points: JSON.parse(row.pointsJson) as TrackPoint[],
+    points: row.pointsJson ? (JSON.parse(row.pointsJson) as TrackPoint[]) : [],
     pointsEarned: row.pointsEarned,
     verified: row.verified == null ? undefined : Boolean(row.verified),
     pointsReason: row.pointsReason ?? null,
@@ -104,7 +107,8 @@ export function saveRide(ride: Ride) {
 
 export function listRides(userId: string): Ride[] {
   const rows = db.getAllSync(
-    `SELECT * FROM rides WHERE userId = ? ORDER BY startedAt DESC`,
+    // Summaries only (spine AD-6): stats and lists never parse every GPS track. getRide returns the track.
+    `SELECT ${SUMMARY_COLUMNS} FROM rides WHERE userId = ? ORDER BY startedAt DESC`,
     [userId]
   );
   return rows.map(rowToRide);

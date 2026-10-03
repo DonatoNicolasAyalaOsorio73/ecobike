@@ -66,6 +66,9 @@ test("usuarios: sign-up must start at zero points and plain user role", async ()
 test("usuarios_public: readable by signed-in users; owner can't fake points or friends", async () => {
   await assertSucceeds(getDoc(doc(as(BOB), "usuarios_public", ALICE)));
   await assertFails(getDoc(doc(as(null), "usuarios_public", ALICE)));
+  // No list queries: profiles can't be enumerated (search goes through the API).
+  await assertFails(getDocs(collection(as(BOB), "usuarios_public")));
+  await assertFails(getDocs(query(collection(as(BOB), "usuarios_public"), where("username", "==", "alice"))));
   const db = as(ALICE);
   await assertSucceeds(updateDoc(doc(db, "usuarios_public", ALICE), { nombre: "Alicia", buscable: false }));
   await assertFails(updateDoc(doc(db, "usuarios_public", ALICE), { buscable: "no" }));
