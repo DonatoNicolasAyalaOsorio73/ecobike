@@ -3,9 +3,15 @@ export const MOVING_SPEED_MS = 1.2;
 /** Stopped for this long → auto-pause. */
 export const AUTO_PAUSE_AFTER_MS = 25_000;
 
-/** Speed from GPS when present, else derived from the distance/time to the previous fix. */
+/**
+ * Speed from GPS when it reports one, else derived from the distance/time to
+ * the previous fix. A reported 0 counts as "unknown": Android gives 0.0 when
+ * the fix has no speed (some phones, the emulator), which would auto-pause a
+ * moving rider forever. Fixes only arrive after ~5 m of movement, so the
+ * derived speed of a rider who is really stopped stays low.
+ */
 export function speedMs(reported: number | null | undefined, meters: number, ms: number): number {
-  if (typeof reported === "number" && reported >= 0) return reported;
+  if (typeof reported === "number" && reported > 0) return reported;
   return ms > 0 ? meters / (ms / 1000) : 0;
 }
 

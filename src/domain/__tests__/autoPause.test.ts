@@ -21,4 +21,6 @@ test("speedMs prefers GPS speed, falls back to distance/time", () => {
   assert.equal(speedMs(null, 10, 2000), 5);
   assert.equal(speedMs(undefined, 10, 0), 0);
   assert.equal(speedMs(-1, 4, 1000), 4); // iOS reports -1 when unknown
+  assert.equal(speedMs(0, 6, 1000), 6); // Android reports 0.0 when the fix has no speed: use the movement
+  assert.equal(speedMs(0, 0, 3000), 0); // really stopped
 });
