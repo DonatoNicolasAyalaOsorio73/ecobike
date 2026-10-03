@@ -35,9 +35,14 @@ export default function Reveal({ children, style }: { children: React.ReactNode;
   // Content above may grow/shrink without this view's own layout changing.
   useEffect(measure, [ctx?.version]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // The worklet must capture only shared values: `ctx` also holds a React ref
+  // (contentRef), and copying it to the UI thread crashes on iOS/Android
+  // ("Cannot copy value of type ReactNativeElement"); web doesn't check.
+  const scrollY = ctx?.scrollY;
+  const viewportH = ctx?.viewportH;
   const animated = useAnimatedStyle(() => {
-    if (!ctx || reduce || top.value < 0 || ctx.viewportH.value === 0) return {};
-    const p = interpolate(ctx.scrollY.value + ctx.viewportH.value - top.value, [0, DISTANCE], [0, 1], Extrapolation.CLAMP);
+    if (!scrollY || !viewportH || reduce || top.value < 0 || viewportH.value === 0) return {};
+    const p = interpolate(scrollY.value + viewportH.value - top.value, [0, DISTANCE], [0, 1], Extrapolation.CLAMP);
     return { opacity: p, transform: [{ translateY: (1 - p) * 32 }, { scale: 0.95 + 0.05 * p }] };
   });
 
