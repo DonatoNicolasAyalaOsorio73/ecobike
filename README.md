@@ -41,7 +41,7 @@ The paradigm is **local-first client, authoritative server for value**:
 - **On the server:** points, roles, redemptions, the store catalog and the public profile are decided only by `api/*.js` through the Admin SDK.
 - **Back to the device:** the server's verdict replaces whatever the device computed.
 
-The architecture rules (15 decisions, each with what it binds and the divergence it prevents) are kept in the architecture spine from the BMad review. [ARCHITECTURE.md](ARCHITECTURE.md) has the longer narrative.
+The architecture rules (15 decisions, each with what it binds and the divergence it prevents) are in [docs/architecture/spine.md](docs/architecture/spine.md). [docs/architecture.md](docs/architecture.md) has the longer narrative, and [docs/architecture/review-2026-10.md](docs/architecture/review-2026-10.md) the review that produced the rules.
 
 ## Features
 
@@ -115,7 +115,7 @@ The architecture rules (15 decisions, each with what it binds and the divergence
 | Firebase JS SDK 12.19 | Client reads and profile writes | One SDK for all platforms |
 | firebase-admin 13 | Every write of value, in transactions | Bypasses rules only on the server |
 
-The schema, collections, rules and endpoints are documented in [DATABASE.md](DATABASE.md).
+The schema, collections, rules and endpoints are documented in [docs/database.md](docs/database.md).
 
 ### Server and cloud
 
@@ -164,7 +164,7 @@ A ride is **verified** when it passed bike detection, even if a cap left it at 0
 | Secrets | `EXPO_PUBLIC_*` values are public client config. The service account key and the Sentry server DSN exist only as Vercel environment variables |
 | Test session | The Playwright test session exists only in the `dist-e2e` build (`EXPO_PUBLIC_E2E=1`). Builds use `--clear` so it can't leak into production, and it can't pass server token checks anyway |
 
-[SECURITY.md](SECURITY.md) has the full endpoint list and the privacy model.
+[docs/security.md](docs/security.md) has the full endpoint list and the privacy model.
 
 ## Quality
 
@@ -173,7 +173,7 @@ A ride is **verified** when it passed bike detection, even if a cap left it at 0
 | Type checking | `npm run typecheck` (TypeScript strict) |
 | Unit and API tests | 172 tests with `node:test` (`npm test`). They cover domain rules (scoring, verification, streaks, missions, navigation, polyline, routing ranking, rewards mapping, week keys) and the web storage contract. API handlers run end to end on an in-memory Firebase Admin (`api/_fake-admin.cjs`): users, stores, redeem, rides, friends, me, export, validate, plus the single-points-writer guard |
 | Parity tests | Device and server give the same score, caps and league week for the same input (`scoreParity.test.ts`) |
-| Rules tests | `tests/firestore.rules.test.mjs` on the Firestore emulator (CI; locally needs Java) |
+| Rules tests | `firebase/firestore.rules.test.mjs` on the Firestore emulator (CI; locally needs Java) |
 | End-to-end tests | Playwright, phone and desktop projects, 22 tests. `e2e/smoke.spec.ts` covers a guest tour of every screen. `e2e/flows.spec.ts` runs on a test build with `/api`, Photon and Valhalla mocked and Firebase hosts blocked: admin panel, real redemption (success, limit then retry, insufficient points) and Eco ruta |
 | Continuous integration | `.github/workflows/ci.yml`: typecheck, unit tests, web build, iOS and Android bundles, `expo-doctor`, rules emulator tests, both web builds and Playwright |
 | Code review | Independent review passes (adversarial, edge cases, verification gaps, intent alignment) with findings triaged before merge |
@@ -250,9 +250,10 @@ api/                         Vercel functions (11): account, export, friends, me
   _lib.js                      auth, scoring, caps, applyPoints, projectPublic, rateLimit, audit, deletion
   _fake-admin.cjs, _*.test.mjs  in-memory Firebase Admin and handler tests (not deployed)
 e2e/                         Playwright: smoke.spec.ts (prod build), flows.spec.ts (test build)
-tests/firestore.rules.test.mjs  rules tests on the emulator
+firebase/                    firestore.rules, firestore.indexes.json, storage.rules, rules tests (emulator)
+docs/                        architecture spine and review, database, security, deployment, development, environment
 scripts/                     serve-dist.mjs, build-web-e2e.mjs, test alias loader
-firestore.rules, firestore.indexes.json, storage.rules, firebase.json
+firebase.json
 vercel.json, eas.json, app.config.ts
 .github/workflows/ci.yml
 ```
@@ -272,7 +273,7 @@ npm install
 npx expo start
 ```
 
-Press `w` for web, or open the project in a development build on iOS/Android. To enable accounts and sync, copy `.env.example` to `.env` and fill in the Firebase values ([ENVIRONMENT.md](ENVIRONMENT.md)).
+Press `w` for web, or open the project in a development build on iOS/Android. To enable accounts and sync, copy `.env.example` to `.env` and fill in the Firebase values ([docs/environment.md](docs/environment.md)).
 
 | Command | Purpose |
 | --- | --- |
@@ -322,7 +323,7 @@ Order matters, because rules must never require something the deployed API doesn
    eas build --profile production --platform all
    ```
 
-Keep `api/` at 12 functions or fewer on Vercel Hobby: files starting with `_` are not functions. Details in [DEPLOY.md](DEPLOY.md).
+Keep `api/` at 12 functions or fewer on Vercel Hobby: files starting with `_` are not functions. Details in [docs/deployment.md](docs/deployment.md).
 
 ## Known limitations and next steps
 
@@ -338,12 +339,15 @@ Keep `api/` at 12 functions or fewer on Vercel Hobby: files starting with `_` ar
 
 | File | Content |
 | --- | --- |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Design narrative, ride state machine, motion system |
-| [DATABASE.md](DATABASE.md) | Collections, Storage paths, admin endpoints, Vercel limit |
-| [SECURITY.md](SECURITY.md) | Endpoints, rules and privacy model |
-| [DEPLOY.md](DEPLOY.md) | Web, API, rules and store releases |
-| [DEVELOPMENT.md](DEVELOPMENT.md) | Day-to-day scripts and platform testing |
-| [ENVIRONMENT.md](ENVIRONMENT.md) | Where each configuration value comes from |
+| [docs/architecture/spine.md](docs/architecture/spine.md) | Architecture rules (AD-1 to AD-15) every change must follow |
+| [docs/architecture/review-2026-10.md](docs/architecture/review-2026-10.md) | Architecture review: decisions questioned, findings and their status |
+| [docs/architecture/deferred-work.md](docs/architecture/deferred-work.md) | Known issues deliberately deferred, with what would settle them |
+| [docs/architecture.md](docs/architecture.md) | Design narrative, ride state machine, motion system |
+| [docs/database.md](docs/database.md) | Collections, Storage paths, admin endpoints, Vercel limit |
+| [docs/security.md](docs/security.md) | Endpoints, rules and privacy model |
+| [docs/deployment.md](docs/deployment.md) | Web, API, rules and store releases |
+| [docs/development.md](docs/development.md) | Day-to-day scripts and platform testing |
+| [docs/environment.md](docs/environment.md) | Where each configuration value comes from |
 
 ## License
 

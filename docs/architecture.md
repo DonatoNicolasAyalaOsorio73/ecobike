@@ -26,7 +26,7 @@ API; Metro picks the right file per platform automatically.
 `EXPO_PUBLIC_FIREBASE_*` env vars. Every screen that needs a backend
 (auth, social, cloud sync) checks this flag and degrades to "configure
 Firebase to use this" instead of crashing or faking success. See
-[ENVIRONMENT.md](ENVIRONMENT.md).
+[environment.md](environment.md).
 
 **A guest session (`authStore.continueAsGuest`) alongside real auth.**
 Without it, the entire tab navigator (map/history/stats) would be
@@ -47,7 +47,7 @@ of the box.
 **Biometrics as a local unlock, not identity.** `expo-local-authentication`
 gates re-entry into an *already-authenticated* session
 (`authStore` status `"locked"`); it never substitutes for Firebase Auth. See
-[SECURITY.md](SECURITY.md).
+[security.md](security.md).
 
 **Zustand over Context/Redux.** Three small stores (`authStore`,
 `rideStore`, `settingsStore`) — no reducers/actions boilerplate needed for
@@ -197,8 +197,8 @@ the dev server — the two behave differently in exactly this area.
   request, ride reminder) wired to it.
 - **Route sharing.** GPS polylines stay local-only; a friend's leaderboard
   entry never exposes where they actually rode unless that's built
-  deliberately with an explicit opt-in (see SECURITY.md's privacy notes).
+  deliberately with an explicit opt-in (see security.md's privacy notes).
 - **Per-friend distance/ride-history on the leaderboard.** The real backend
-  has no rides collection to read a friend's distance from (see SECURITY.md),
+  has no rides collection to read a friend's distance from (see security.md),
   so `fetchFriendsLeaderboard` ranks by the real `puntosAcumulados` balance
   only, mirrored via `usuarios_public/{uid}`.

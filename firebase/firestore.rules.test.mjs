@@ -13,7 +13,7 @@ const BOB = "bob";
 before(async () => {
   env = await initializeTestEnvironment({
     projectId: "demo-ecobike-rules",
-    firestore: { rules: readFileSync("firestore.rules", "utf8") },
+    firestore: { rules: readFileSync("firebase/firestore.rules", "utf8") },
   });
 });
 after(() => env.cleanup());
