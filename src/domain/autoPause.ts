@@ -4,15 +4,15 @@ export const MOVING_SPEED_MS = 1.2;
 export const AUTO_PAUSE_AFTER_MS = 25_000;
 
 /**
- * Speed from GPS when it reports one, else derived from the distance/time to
- * the previous fix. A reported 0 counts as "unknown": Android gives 0.0 when
- * the fix has no speed (some phones, the emulator), which would auto-pause a
- * moving rider forever. Fixes only arrive after ~5 m of movement, so the
- * derived speed of a rider who is really stopped stays low.
+ * The higher of the GPS-reported speed and the speed derived from the
+ * distance/time to the previous fix. Android's fused provider often reports
+ * ~0 (0.0 or 1e-4 m/s) for fixes that clearly moved, which would auto-pause a
+ * moving rider for good. ponytail: GPS drift while standing can read as slow
+ * movement and delay an auto-pause; that only costs a few idle seconds.
  */
 export function speedMs(reported: number | null | undefined, meters: number, ms: number): number {
-  if (typeof reported === "number" && reported > 0) return reported;
-  return ms > 0 ? meters / (ms / 1000) : 0;
+  const derived = ms > 0 ? meters / (ms / 1000) : 0;
+  return typeof reported === "number" && reported > 0 ? Math.max(reported, derived) : derived;
 }
 
 export type AutoPauseAction = "pause" | "resume" | null;

@@ -18,6 +18,7 @@ test("resumes only rides it auto-paused, and never when disabled", () => {
 
 test("speedMs prefers GPS speed, falls back to distance/time", () => {
   assert.equal(speedMs(3, 0, 0), 3);
+  assert.equal(speedMs(0.0001, 6, 1000), 6); // fused provider's near-zero speed on a fix that moved
   assert.equal(speedMs(null, 10, 2000), 5);
   assert.equal(speedMs(undefined, 10, 0), 0);
   assert.equal(speedMs(-1, 4, 1000), 4); // iOS reports -1 when unknown
