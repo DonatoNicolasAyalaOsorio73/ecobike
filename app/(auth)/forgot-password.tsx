@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import Animated, { ZoomIn } from "react-native-reanimated";
 import AuthScaffold, { AuthLink, Rise } from "@/components/auth/AuthScaffold";
 import GlassInput from "@/components/ui/GlassInput";

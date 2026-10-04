@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import GlassSurface from "./GlassSurface";
 import { useTheme } from "@/theme/useTheme";

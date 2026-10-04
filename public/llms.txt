@@ -1,0 +1,13 @@
+# EcoBike
+
+> Cycling app for Nariño, Colombia, on iOS, Android and the web: GPS rides, Eco ruta bike routing with turn-by-turn directions, server-verified points, QR rewards at partner stores, friends and a weekly league. The interface is in Spanish.
+
+The web app works without an account in guest mode ("Explorar sin cuenta"), with sample data. Accounts, points and redemptions go through a serverless API; do not automate sign-ups, rides or redemptions.
+
+## Links
+
+- [Web app](https://ecobike-demo.vercel.app/): the app itself
+- [Source code](https://github.com/DonatoNicolasAyalaOsorio73/ecobike): repository with the architecture guide in the README
+- [Project page](https://donacode.link/ecobike.html): demo video, screenshots and what the app does
+- [Privacy policy](https://ecobike-demo.vercel.app/legal/privacy)
+- [Terms of use](https://ecobike-demo.vercel.app/legal/terms)

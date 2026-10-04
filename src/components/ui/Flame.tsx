@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { View } from "react-native";
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { accents } from "@/theme/colors";
 
 /** Streak flame: flickers (scale + sway) while the streak is alive, gray and still when it isn't. */

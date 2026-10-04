@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@/theme/useTheme";
 import { useBiometricSupport } from "@/hooks/useBiometricUnlock";
 import { useAuthStore } from "@/stores/authStore";

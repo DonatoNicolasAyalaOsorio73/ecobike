@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import Animated, { Easing, cancelAnimation, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { useTheme } from "@/theme/useTheme";

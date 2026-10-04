@@ -2,7 +2,7 @@ import AppModal from "@/components/ui/AppModal";
 import React, { useEffect, useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import GlassButton from "@/components/ui/GlassButton";
 

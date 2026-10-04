@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeIn, LinearTransition } from "react-native-reanimated";
 import LargeTitleScreen from "@/components/ui/LargeTitleScreen";

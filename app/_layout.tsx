@@ -6,6 +6,8 @@ import { ReduceMotion, ReducedMotionConfig } from "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
+import * as Font from "expo-font";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useLocalProfileStore } from "@/stores/localProfileStore";
@@ -32,6 +34,12 @@ import { onConnectivityChange } from "@/services/connectivity";
 if (Platform.OS === "web" && typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
   const vibrate = navigator.vibrate.bind(navigator);
   navigator.vibrate = ((pattern: VibratePattern) => ((navigator as any).userActivation?.hasBeenActive === false ? false : vibrate(pattern))) as Navigator["vibrate"];
+}
+
+// Web: register the icon font with font-display: swap before any icon mounts
+// (the icon component would otherwise load it with the default "auto").
+if (Platform.OS === "web") {
+  Font.loadAsync({ ionicons: { uri: Ionicons.font.ionicons, display: Font.FontDisplay.SWAP } }).catch(() => {});
 }
 
 SplashScreen.preventAutoHideAsync().catch(() => {});

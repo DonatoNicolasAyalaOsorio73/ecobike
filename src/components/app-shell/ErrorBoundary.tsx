@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { captureError } from "@/services/monitoring";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import GlassCard from "@/components/ui/GlassCard";
 import GlassButton from "@/components/ui/GlassButton";

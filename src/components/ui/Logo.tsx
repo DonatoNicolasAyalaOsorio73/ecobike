@@ -3,7 +3,7 @@ import { Image, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { SPRING } from "@/theme/motion";
 
-const LOGO = require("../../../assets/logo.png");
+import { LOGO_SOURCE as LOGO } from "./logoSource";
 
 /**
  * Brand mark. The PNG carries ~15% transparent padding, so the visible

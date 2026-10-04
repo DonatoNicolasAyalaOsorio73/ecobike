@@ -1,6 +1,6 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import Animated, { FadeIn, SlideInDown } from "react-native-reanimated";
 import AppModal from "@/components/ui/AppModal";
 import GlassSurface from "@/components/ui/GlassSurface";

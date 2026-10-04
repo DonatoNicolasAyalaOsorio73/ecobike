@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import PressableScale from "./PressableScale";
-import { AntDesign } from "@expo/vector-icons";
+import AntDesign from "@expo/vector-icons/AntDesign";
 import GlassSurface from "./GlassSurface";
 import { useTheme } from "@/theme/useTheme";
 

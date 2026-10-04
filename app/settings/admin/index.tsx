@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import Animated, { LinearTransition } from "react-native-reanimated";
 import { router, useFocusEffect } from "expo-router";
 import LargeTitleScreen from "@/components/ui/LargeTitleScreen";

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import Animated from "react-native-reanimated";
 import GlassSurface from "@/components/ui/GlassSurface";
 import LiquidToggle from "@/components/ui/LiquidToggle";

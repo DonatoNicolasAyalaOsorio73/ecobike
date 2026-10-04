@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import Animated, { ZoomIn } from "react-native-reanimated";
 import { enter } from "@/theme/motion";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";

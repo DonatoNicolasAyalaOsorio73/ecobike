@@ -1,10 +1,10 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import Animated, { FadeIn } from "react-native-reanimated";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { format } from "date-fns/format";
+import { es } from "date-fns/locale/es";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import BackButton from "@/components/ui/BackButton";
 import { columnStyle, useLargeTitle } from "@/components/ui/LargeTitleScreen";

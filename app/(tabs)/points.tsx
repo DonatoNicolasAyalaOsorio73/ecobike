@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { RefreshControl, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import LargeTitleScreen from "@/components/ui/LargeTitleScreen";
 import ProfileButton from "@/components/ui/ProfileButton";
 import GlassCard from "@/components/ui/GlassCard";

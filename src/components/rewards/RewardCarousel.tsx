@@ -16,7 +16,7 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/theme/useTheme";
 import { elevation } from "@/theme/colors";

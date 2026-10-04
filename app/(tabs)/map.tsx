@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Location from "expo-location";
 import Animated, { FadeInDown, FadeOutDown, ZoomIn, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import RideMap from "@/components/map/RideMap";

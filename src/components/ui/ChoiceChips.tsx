@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import { accents, type AccentName } from "@/theme/colors";
 import { SPRING } from "@/theme/motion";

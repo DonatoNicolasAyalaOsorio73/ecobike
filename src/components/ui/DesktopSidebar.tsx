@@ -1,6 +1,6 @@
 import React from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import GlassSurface from "./GlassSurface";
@@ -10,7 +10,7 @@ import { spring } from "@/theme/motion";
 import { type } from "@/theme/typography";
 import { SIDEBAR_WIDTH } from "@/hooks/useLayout";
 
-const LOGO = require("../../../assets/logo.png");
+import { LOGO_SOURCE as LOGO } from "./logoSource";
 const ITEM_H = 44;
 const GAP = 4;
 const SELECT_SPRING = spring(0.8, 0.4);

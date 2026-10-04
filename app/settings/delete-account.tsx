@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { api } from "@/services/api";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import BackButton from "@/components/ui/BackButton";
 import GlassCard from "@/components/ui/GlassCard";

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>%WEB_TITLE%</title>
+    <!-- Origins the first screen talks to (Firebase Auth's iframe and config). -->
+    <link rel="preconnect" href="https://ecobike-9dedd.firebaseapp.com" crossorigin />
+    <link rel="preconnect" href="https://apis.google.com" crossorigin />
+    <link rel="preconnect" href="https://www.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+    <!-- The splash logo below is the largest element of the first paint. -->
+    <link rel="preload" href="/logo.webp" as="image" type="image/webp" fetchpriority="high" />
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+        margin: 0;
+        background: #ffffff;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+      /* Static splash: painted before the JavaScript bundle runs, replaced by the app on mount. */
+      .boot {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .boot img {
+        width: min(300px, 78vw);
+        height: auto;
+      }
+    </style>
+  </head>
+
+  <body>
+    <noscript>
+      EcoBike necesita JavaScript para funcionar.
+    </noscript>
+    <!-- The root element for your Expo app. React replaces the splash when it mounts. -->
+    <div id="root"><div class="boot"><img src="/logo.webp" width="600" height="600" alt="EcoBike" fetchpriority="high" decoding="async" /></div></div>
+  </body>
+</html>

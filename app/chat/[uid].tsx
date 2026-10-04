@@ -3,10 +3,12 @@ import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import Animated, { FadeInUp } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
-import { format, isToday, isYesterday } from "date-fns";
-import { es } from "date-fns/locale";
+import { format } from "date-fns/format";
+import { isToday } from "date-fns/isToday";
+import { isYesterday } from "date-fns/isYesterday";
+import { es } from "date-fns/locale/es";
 import BackgroundBlobs from "@/components/ui/BackgroundBlobs";
 import BackButton from "@/components/ui/BackButton";
 import GlassSurface from "@/components/ui/GlassSurface";

@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { ZoomIn } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import GlassCard from "@/components/ui/GlassCard";
 import Flame from "@/components/ui/Flame";
 import DuoProgressBar from "@/components/ui/DuoProgressBar";

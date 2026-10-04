@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeIn, FadeOut, LinearTransition } from "react-native-reanimated";
 import GlassSurface from "@/components/ui/GlassSurface";
