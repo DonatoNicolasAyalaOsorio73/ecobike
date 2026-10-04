@@ -305,8 +305,10 @@ export const useRideStore = create<RideState>((set, get) => ({
 
   discardRide: () => {
     stopTracking();
-    const ride = get().ride;
-    if (ride) db.deleteRide(ride.id);
+    const { ride, status } = get();
+    // A COMPLETED ride is saved history: closing its summary only resets the
+    // map. Deleting it here erased every finished ride from the device.
+    if (ride && status !== "COMPLETED") db.deleteRide(ride.id);
     set({ status: "IDLE", ride: null, currentLocation: null, error: null, goal: null, goalReached: false });
   },
 
